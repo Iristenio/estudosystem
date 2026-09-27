@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { APP } from '../../app.config';
 
-const TEMPO_VISIVEL_MS = 1200;
+const TEMPO_VISIVEL_MS = 4000;
 const DURACAO_FADE_MS = 600; // precisa bater com .abertura.saindo em global.css
 
 /** Tela de apresentação ao abrir o app (inspirada na do Sistema PCA). Some sozinha. */

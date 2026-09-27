@@ -14,8 +14,8 @@ import {
 } from './icones';
 
 export const TELAS = [
+  'dashboard', // a primeira é a tela inicial, logo depois da abertura
   'estudar',
-  'dashboard',
   'sessoes',
   'acompanhamento',
   'ciclo',
@@ -38,8 +38,8 @@ export interface GrupoMenu {
 
 /** Menu lateral, no estilo do Sistema PCA: itens principais e grupos com título. "Ajustes" fica no rodapé do menu. */
 export const MENU: (ItemMenu | GrupoMenu)[] = [
-  { tela: 'estudar', rotulo: 'Estudar', Icone: IconeCronometro },
   { tela: 'dashboard', rotulo: 'Dashboard', Icone: IconeGrafico },
+  { tela: 'estudar', rotulo: 'Estudar', Icone: IconeCronometro },
   { tela: 'sessoes', rotulo: 'Sessões', Icone: IconeLista },
   { tela: 'acompanhamento', rotulo: 'Acompanhamento', Icone: IconeProgresso },
   { tela: 'ciclo', rotulo: 'Ciclo de estudos', Icone: IconeCiclo },
