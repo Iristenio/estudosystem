@@ -18,10 +18,10 @@ import { FormLei } from './paineis/FormLei';
 import { FormHorarios } from './paineis/FormHorarios';
 import { TelaEstudar } from './telas/TelaEstudar';
 import { TelaSessoes } from './telas/TelaSessoes';
+import { TelaCiclo } from './telas/TelaCiclo';
 import { listarTodos } from '../dados/repositorio';
 import { sessaoAberta } from '../dominio/sessoes';
 import {
-  IconeCiclo,
   IconeGrafico,
   IconeMenu,
   IconeProgresso,
@@ -47,14 +47,7 @@ const TELA: Record<Tela, () => JSX.Element> = {
       descricao="Progresso de cada disciplina: páginas, vídeo, lei seca, questões e minutos por página e por questão."
     />
   ),
-  ciclo: () => (
-    <TelaEmConstrucao
-      titulo="Ciclo de estudos"
-      etapa={4}
-      Icone={IconeCiclo}
-      descricao="Sequência do ciclo por pesos, posição atual (ex.: 4F4) e a sugestão da próxima disciplina."
-    />
-  ),
+  ciclo: TelaCiclo,
   disciplinas: TelaDisciplinas,
   leis: TelaLeis,
   config: TelaAjustes,

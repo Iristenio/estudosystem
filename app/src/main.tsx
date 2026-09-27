@@ -9,6 +9,7 @@ import './estilos/itens.css';
 import './estilos/cadastros.css';
 import './estilos/estudar.css';
 import './estilos/sessoes.css';
+import './estilos/ciclo.css';
 import './estilos/ajustes.css';
 
 // Perfil de dispositivos (app.config.ts) → classes que ajustam o layout (ver global.css)

@@ -75,8 +75,29 @@ export interface Sessao extends Registro {
   status: StatusRegistro;
 }
 
+/* ---------------- Ciclo de estudos (antigas abas Config_Ciclo e Ciclo_Atual) ---------------- */
+
+export interface PosicaoCiclo {
+  disciplina_id: Id;
+  /** Horas previstas para esta posição (ex.: 30 h ÷ soma dos pesos 8 = 3,75). */
+  duracao_prevista: number;
+}
+
+/** Registro único (id "atual"): horas do ciclo, sequência de uma volta e o ponteiro (volta F ordem). */
+export interface Ciclo extends Registro {
+  horas_totais: number;
+  sequencia: PosicaoCiclo[];
+  /** Ponteiro: próxima posição sugerida — ex.: volta 4, ordem 4 = "4F4". */
+  volta: number;
+  ordem: number;
+  /** Quando a sequência foi gerada (sessões anteriores não contam nas horas feitas da volta). */
+  gerado_em: string | null;
+}
+
+export const ID_CICLO = 'atual';
+
 /** Nomes das entidades sincronizadas (cada uma vira uma loja local e uma aba na planilha). */
-export const ENTIDADES = ['disciplinas', 'leis', 'sessoes'] as const;
+export const ENTIDADES = ['disciplinas', 'leis', 'sessoes', 'ciclo'] as const;
 export type Entidade = (typeof ENTIDADES)[number];
 
 /* ---------------- Infraestrutura ---------------- */

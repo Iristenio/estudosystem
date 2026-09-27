@@ -1,8 +1,9 @@
 // Tela Estudar: iniciar sessão → cronômetro (pausar/continuar) → finalizar (campos finais) → concluída.
 // Ao lado, as sessões de hoje.
-import { useState } from 'preact/hooks';
-import type { Disciplina, Lei, Sessao, TipoSessao } from '../../dominio/tipos';
-import { TIPOS_SESSAO } from '../../dominio/tipos';
+import { useEffect, useState } from 'preact/hooks';
+import type { Ciclo, Disciplina, Lei, Sessao, TipoSessao } from '../../dominio/tipos';
+import { ID_CICLO, TIPOS_SESSAO } from '../../dominio/tipos';
+import { disciplinaSugerida, posicaoAtual } from '../../dominio/ciclo';
 import { ordenarDisciplinas } from '../../dominio/disciplinas';
 import { lerNumero } from '../../dominio/numeros';
 import {
@@ -23,7 +24,7 @@ import { useAgora, useEntidade } from '../../dados/ganchos';
 import * as acoes from '../acoes/sessoes';
 import { useEstado } from '../estado';
 import { irPara } from '../rotas';
-import { IconeCronometro, IconeLapis } from '../icones';
+import { IconeCiclo, IconeCronometro, IconeLapis } from '../icones';
 
 const fmtHora = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
 const fmtDataLonga = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -32,6 +33,7 @@ export function TelaEstudar() {
   const sessoes = useEntidade('sessoes');
   const disciplinas = useEntidade('disciplinas');
   const leis = useEntidade('leis');
+  const ciclo = useEntidade('ciclo').find((c) => c.id === ID_CICLO) ?? null;
   const aberta = sessaoAberta(sessoes);
 
   return (
@@ -42,7 +44,7 @@ export function TelaEstudar() {
       </header>
       <div class="conteudo">
         <div class="grade-estudar">
-          {!aberta && <NovaSessao disciplinas={disciplinas} leis={leis} sessoes={sessoes} />}
+          {!aberta && <NovaSessao disciplinas={disciplinas} leis={leis} sessoes={sessoes} ciclo={ciclo} />}
           {aberta && aberta.situacao !== 'finalizando' && <Cronometro s={aberta} disciplinas={disciplinas} leis={leis} />}
           {aberta && aberta.situacao === 'finalizando' && <Finalizar s={aberta} disciplinas={disciplinas} leis={leis} />}
           <Hoje sessoes={sessoes} disciplinas={disciplinas} />
@@ -74,8 +76,15 @@ function Identificacao({ s, disciplinas, leis }: { s: Sessao; disciplinas: Disci
 
 /* ---------------- 1. Nova sessão ---------------- */
 
-function NovaSessao({ disciplinas, leis, sessoes }: { disciplinas: Disciplina[]; leis: Lei[]; sessoes: Sessao[] }) {
+function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Disciplina[]; leis: Lei[]; sessoes: Sessao[]; ciclo: Ciclo | null }) {
   const [disciplinaId, setDisciplinaId] = useState('');
+  const [escolheu, setEscolheu] = useState(false);
+  const sugerida = disciplinaSugerida(ciclo);
+  const nomeSugerida = disciplinas.find((d) => d.id === sugerida)?.nome;
+  // R2 — já vem marcada a disciplina sugerida pelo ciclo (até o usuário escolher outra)
+  useEffect(() => {
+    if (!escolheu && sugerida && disciplinas.some((d) => d.id === sugerida && d.ativa && d.status !== 'excluido')) setDisciplinaId(sugerida);
+  }, [sugerida, escolheu, disciplinas]);
   const [tipo, setTipo] = useState<TipoSessao | null>(null);
   const [leiId, setLeiId] = useState<string | null>(null);
   const [aula, setAula] = useState('');
@@ -84,6 +93,7 @@ function NovaSessao({ disciplinas, leis, sessoes }: { disciplinas: Disciplina[];
   const opcoesLei = disciplinaId ? leisDisponiveis(leis, disciplinaId) : [];
 
   function escolherDisciplina(id: string) {
+    setEscolheu(true);
     setDisciplinaId(id);
     setLeiId(null);
     setErros([]);
@@ -119,6 +129,12 @@ function NovaSessao({ disciplinas, leis, sessoes }: { disciplinas: Disciplina[];
         <IconeCronometro /> Nova sessão
       </h2>
 
+      {ciclo && sugerida && (
+        <p class="sugestao-ciclo">
+          <IconeCiclo /> Próxima do ciclo: <strong>{posicaoAtual(ciclo)}</strong> · {nomeSugerida ?? 'disciplina removida'}
+        </p>
+      )}
+
       <fieldset>
         <legend>Disciplina</legend>
         <div class="chips">
@@ -126,6 +142,7 @@ function NovaSessao({ disciplinas, leis, sessoes }: { disciplinas: Disciplina[];
             <button key={d.id} type="button" class="chip" aria-pressed={d.id === disciplinaId} onClick={() => escolherDisciplina(d.id)}>
               <span class="bolinha" style={{ background: d.cor }} />
               {d.nome}
+              {d.id === sugerida && <span class="marca-sugerida">ciclo</span>}
             </button>
           ))}
         </div>
@@ -275,8 +292,9 @@ function Finalizar({ s, disciplinas, leis }: { s: Sessao; disciplinas: Disciplin
     const problemas = validarDadosFinais(s.tipo, dados);
     setErros(problemas);
     if (problemas.length) return;
-    await acoes.concluir(s, dados);
-    avisar({ texto: `Sessão concluída: ${formatarDuracaoCurta(duracao)}` });
+    const r = await acoes.concluir(s, dados);
+    const ciclo = !r.posicao ? '' : r.avancou ? ` · ciclo: ${r.posicao} cumprida` : ` · ciclo mantido em ${r.posicao}`;
+    avisar({ texto: `Sessão concluída: ${formatarDuracaoCurta(duracao)}${ciclo}` });
   }
 
   async function cancelar() {

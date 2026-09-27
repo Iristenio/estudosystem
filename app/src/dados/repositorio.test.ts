@@ -53,4 +53,13 @@ describe('repositório local', () => {
     expect((await listarTodos('disciplinas')).filter((d) => d.status === 'excluido')).toHaveLength(1);
     expect(await listarTodos('disciplinas')).toHaveLength(5);
   });
+
+  it('cria o ciclo da planilha (30 h, 8 posições, ponteiro 4F4) uma única vez', async () => {
+    await garantirDadosIniciais();
+    const [ciclo] = await listarTodos('ciclo');
+    expect([ciclo.horas_totais, ciclo.sequencia.length, ciclo.volta, ciclo.ordem]).toEqual([30, 8, 4, 4]);
+    await salvar('ciclo', { ...ciclo, ordem: 6 });
+    await garantirDadosIniciais();
+    expect((await listarTodos('ciclo'))[0].ordem).toBe(6);
+  });
 });

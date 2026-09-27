@@ -2,15 +2,16 @@
 // Regras: nada é apagado de verdade (exclusão lógica via status); toda gravação carimba
 // atualizado_em e entra na fila, que o motor de sincronização envia quando houver internet.
 import { abrirBanco } from './db';
-import type { Config, Disciplina, Entidade, ItemFila, Lei, Registro, Sessao } from '../dominio/tipos';
-import { CONFIG_PADRAO, ENTIDADES } from '../dominio/tipos';
-import { disciplinasIniciais, leisIniciais } from '../dominio/dadosIniciais';
+import type { Ciclo, Config, Disciplina, Entidade, ItemFila, Lei, Registro, Sessao } from '../dominio/tipos';
+import { CONFIG_PADRAO, ENTIDADES, ID_CICLO } from '../dominio/tipos';
+import { cicloInicial, disciplinasIniciais, leisIniciais } from '../dominio/dadosIniciais';
 
 /** ► Nova entidade: acrescente aqui o tipo correspondente. */
 export type MapaEntidades = {
   disciplinas: Disciplina;
   leis: Lei;
   sessoes: Sessao;
+  ciclo: Ciclo;
 };
 
 export const novoId = (): string => crypto.randomUUID();
@@ -215,15 +216,21 @@ export async function salvarConfig(parcial: Partial<Config>) {
  */
 export async function garantirDadosIniciais(agora = new Date()) {
   // Uma única vez por aparelho: as disciplinas e a lei da planilha antiga (ids fixos → sem duplicar entre aparelhos)
-  if (await lerInterno('_cadastros_iniciais')) return;
-  const existentes = await listarTodos('disciplinas');
-  if (!existentes.length) {
-    await gravar([
-      ...disciplinasIniciais(agora).map((registro) => ({ entidade: 'disciplinas' as const, registro })),
-      ...leisIniciais(agora).map((registro) => ({ entidade: 'leis' as const, registro })),
-    ]);
+  if (!(await lerInterno('_cadastros_iniciais'))) {
+    const existentes = await listarTodos('disciplinas');
+    if (!existentes.length) {
+      await gravar([
+        ...disciplinasIniciais(agora).map((registro) => ({ entidade: 'disciplinas' as const, registro })),
+        ...leisIniciais(agora).map((registro) => ({ entidade: 'leis' as const, registro })),
+      ]);
+    }
+    await salvarInterno('_cadastros_iniciais', true);
   }
-  await salvarInterno('_cadastros_iniciais', true);
+  // Etapa 4: o ciclo da planilha (30 h, ponteiro 4F4), também uma única vez
+  if (!(await lerInterno('_ciclo_inicial'))) {
+    if (!(await buscar('ciclo', ID_CICLO))) await salvar('ciclo', cicloInicial(agora));
+    await salvarInterno('_ciclo_inicial', true);
+  }
 }
 
 /** RS09 — pede ao navegador para não apagar os dados locais. */

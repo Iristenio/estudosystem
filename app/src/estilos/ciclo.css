@@ -1,0 +1,64 @@
+/* ============ Tela Ciclo de estudos ============ */
+
+.grade-ciclo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 320px); gap: 20px; align-items: start; }
+.coluna-ciclo { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.conteudo:has(.grade-ciclo) { container-type: inline-size; }
+@container (max-width: 820px) {
+  .grade-ciclo { grid-template-columns: minmax(0, 1fr); }
+}
+
+.botao-pequeno { min-height: 36px; padding: 0 14px; font-size: 14px; }
+.cartao h2 .botao-pequeno { margin-left: auto; }
+
+/* Próxima posição */
+.proxima-ciclo { position: relative; overflow: hidden; display: flex; align-items: center; gap: 20px; padding-left: 28px; }
+.proxima-ciclo .faixa-cor { position: absolute; left: 0; top: 0; bottom: 0; width: 8px; }
+.proxima-codigo { font-size: 44px; font-weight: 800; color: var(--primaria); font-variant-numeric: tabular-nums; }
+.proxima-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.proxima-texto span { font-size: 13px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.04em; color: var(--texto-2); }
+.proxima-texto strong { font-size: 22px; }
+.proxima-texto small { color: var(--texto-2); }
+
+/* Sequência */
+.sequencia-ciclo { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.posicao-ciclo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 64px;
+  padding: 8px 12px 8px 20px;
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.posicao-ciclo .faixa-cor { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; }
+.posicao-ciclo .codigo { flex: none; width: 48px; font-weight: 750; font-variant-numeric: tabular-nums; color: var(--texto-2); }
+.posicao-ciclo.atual { border-color: var(--primaria); background: var(--primaria-suave); }
+.posicao-ciclo.atual .codigo { color: var(--primaria); }
+.posicao-ciclo.cumprida { opacity: 0.7; }
+.posicao-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.posicao-texto strong { font-weight: 600; }
+.posicao-texto small { color: var(--texto-2); font-size: 13.5px; }
+.posicao-texto select.campo { width: 100%; min-height: 40px; padding: 6px 10px; }
+.barra-horas { display: block; height: 6px; border-radius: 3px; background: var(--superficie-2); overflow: hidden; }
+.barra-horas span { display: block; height: 100%; border-radius: 3px; }
+.acoes-posicao { display: flex; align-items: center; gap: 2px; flex: none; }
+
+.ajuste-volta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 12px; padding: 10px 14px; border-radius: 12px; background: var(--superficie-2); }
+.ajuste-volta strong { font-size: 20px; min-width: 28px; text-align: center; font-variant-numeric: tabular-nums; }
+.ajuste-volta small { flex-basis: 100%; color: var(--texto-2); }
+
+.incluir-posicao { display: flex; gap: 10px; margin-top: 12px; }
+.incluir-posicao select.campo { flex: 1; width: auto; }
+.incluir-posicao .botao svg { width: 18px; height: 18px; }
+
+/* Gerar */
+.cartao-gerar { display: flex; flex-direction: column; gap: 14px; }
+.cartao-gerar h2 { margin-bottom: 0; }
+
+/* Sugestão na tela Estudar */
+.sugestao-ciclo { display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 14px; border-radius: 12px; background: var(--primaria-suave); color: var(--texto); }
+.sugestao-ciclo svg { width: 20px; height: 20px; color: var(--primaria); flex: none; }
+.sugestao-ciclo strong { color: var(--primaria); }
+.marca-sugerida { padding: 0 8px; border-radius: 999px; background: var(--primaria); color: var(--primaria-texto); font-size: 11.5px; font-weight: 700; text-transform: uppercase; }

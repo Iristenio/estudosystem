@@ -37,6 +37,13 @@ var ESQUEMA = {
       ['criado_em', 's'], ['atualizado_em', 's'],
     ],
   },
+  ciclo: {
+    aba: 'CICLO',
+    campos: [
+      ['id', 's'], ['horas_totais', 'n'], ['sequencia', 'j'], ['volta', 'n'], ['ordem', 'n'], ['gerado_em', 's?'],
+      ['criado_em', 's'], ['atualizado_em', 's'],
+    ],
+  },
 };
 
 var COLUNA_RECEBIDO = '_recebido_em';

@@ -1,9 +1,10 @@
 // Cadastros iniciais, copiados da planilha EstudoSystem (abas Config_Disciplinas e Leis).
 // Os ids são os MESMOS da planilha (D01…, L01…): assim a importação do histórico (etapa 7)
 // reconhece esses registros em vez de duplicá-los. Observações virão com a importação.
-import type { Disciplina, Lei } from './tipos';
+import type { Ciclo, Disciplina, Lei } from './tipos';
 import { novaDisciplina } from './disciplinas';
 import { novaLei } from './leis';
+import { novoCiclo } from './ciclo';
 
 export function disciplinasIniciais(agora = new Date()): Disciplina[] {
   const d = (id: string, ordem: number, nome: string, categoria: string, peso: number, paginas: number, horas: number, cor: string) =>
@@ -30,4 +31,10 @@ export function leisIniciais(agora = new Date()): Lei[] {
       agora,
     ),
   ];
+}
+
+/** Ciclo da planilha (Config_Ciclo + Ciclo_Atual): 30 h, 8 posições de 3,75 h, ponteiro em 4F4. */
+export function cicloInicial(agora = new Date()): Ciclo {
+  const sequencia = ['D01', 'D02', 'D03', 'D04', 'D05', 'D01', 'D02', 'D04'].map((disciplina_id) => ({ disciplina_id, duracao_prevista: 3.75 }));
+  return novoCiclo({ horas_totais: 30, sequencia, volta: 4, ordem: 4 }, agora);
 }
