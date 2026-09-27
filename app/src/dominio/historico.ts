@@ -4,14 +4,16 @@ import type { Id, Sessao, TipoSessao } from './tipos';
 import { duracaoSegundos, sessoesValidas } from './sessoes';
 import { hojeISO, inicioDoMes, paraDataISO, somarDias, somarMeses } from './datas';
 
-export type Periodo = 'hoje' | '7dias' | '30dias' | 'mes' | 'mesPassado' | 'tudo' | 'personalizado';
+export type Periodo = 'hoje' | '7dias' | '30dias' | '90dias' | 'mes' | 'mesPassado' | 'ano' | 'tudo' | 'personalizado';
 
 export const ROTULO_PERIODO: Record<Periodo, string> = {
   hoje: 'Hoje',
   '7dias': 'Últimos 7 dias',
   '30dias': 'Últimos 30 dias',
+  '90dias': 'Últimos 90 dias',
   mes: 'Este mês',
   mesPassado: 'Mês passado',
+  ano: 'Este ano',
   tudo: 'Tudo',
   personalizado: 'Escolher datas',
 };
@@ -37,6 +39,10 @@ export function intervaloDoPeriodo(f: Filtro, agora = new Date()): { de: string 
       return { de: somarDias(hoje, -6), ate: hoje };
     case '30dias':
       return { de: somarDias(hoje, -29), ate: hoje };
+    case '90dias':
+      return { de: somarDias(hoje, -89), ate: hoje };
+    case 'ano':
+      return { de: `${hoje.slice(0, 4)}-01-01`, ate: hoje };
     case 'mes':
       return { de: inicioDoMes(hoje), ate: hoje };
     case 'mesPassado': {

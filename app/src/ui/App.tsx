@@ -9,7 +9,6 @@ import { AvisoAtualizacao } from './layout/AvisoAtualizacao';
 import { AvisoDesfazer } from './componentes/AvisoDesfazer';
 import { Dialogo } from './componentes/Dialogo';
 import { ProvedorEstado, useEstado, type Painel } from './estado';
-import { TelaEmConstrucao } from './telas/TelaEmConstrucao';
 import { TelaAjustes } from './telas/TelaAjustes';
 import { TelaDisciplinas } from './telas/TelaDisciplinas';
 import { TelaLeis } from './telas/TelaLeis';
@@ -19,34 +18,18 @@ import { FormHorarios } from './paineis/FormHorarios';
 import { TelaEstudar } from './telas/TelaEstudar';
 import { TelaSessoes } from './telas/TelaSessoes';
 import { TelaCiclo } from './telas/TelaCiclo';
+import { TelaDashboard } from './telas/TelaDashboard';
+import { TelaAcompanhamento } from './telas/TelaAcompanhamento';
 import { listarTodos } from '../dados/repositorio';
 import { sessaoAberta } from '../dominio/sessoes';
-import {
-  IconeGrafico,
-  IconeMenu,
-  IconeProgresso,
-} from './icones';
+import { IconeMenu } from './icones';
 
 /** ► Nova tela: acrescente aqui (e em TELAS/MENU, em rotas.ts). */
 const TELA: Record<Tela, () => JSX.Element> = {
+  dashboard: TelaDashboard,
   estudar: TelaEstudar,
-  dashboard: () => (
-    <TelaEmConstrucao
-      titulo="Dashboard"
-      etapa={5}
-      Icone={IconeGrafico}
-      descricao="Indicadores e gráficos de horas por dia e por mês, com animação ao rolar a tela, como no PCA."
-    />
-  ),
   sessoes: TelaSessoes,
-  acompanhamento: () => (
-    <TelaEmConstrucao
-      titulo="Acompanhamento"
-      etapa={5}
-      Icone={IconeProgresso}
-      descricao="Progresso de cada disciplina: páginas, vídeo, lei seca, questões e minutos por página e por questão."
-    />
-  ),
+  acompanhamento: TelaAcompanhamento,
   ciclo: TelaCiclo,
   disciplinas: TelaDisciplinas,
   leis: TelaLeis,

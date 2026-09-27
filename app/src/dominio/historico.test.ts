@@ -28,6 +28,8 @@ describe('períodos', () => {
     expect(intervaloDoPeriodo(f({ periodo: 'mes' }), agora)).toEqual({ de: '2026-09-01', ate: '2026-09-27' });
     expect(intervaloDoPeriodo(f({ periodo: 'mesPassado' }), agora)).toEqual({ de: '2026-08-01', ate: '2026-08-31' });
     expect(intervaloDoPeriodo(f({ periodo: 'tudo' }), agora)).toEqual({ de: null, ate: null });
+    expect(intervaloDoPeriodo(f({ periodo: '90dias' }), agora)).toEqual({ de: '2026-06-30', ate: '2026-09-27' });
+    expect(intervaloDoPeriodo(f({ periodo: 'ano' }), agora)).toEqual({ de: '2026-01-01', ate: '2026-09-27' });
     expect(intervaloDoPeriodo(f({ periodo: 'personalizado', de: '2026-08-03' }), agora)).toEqual({ de: '2026-08-03', ate: null });
   });
 });
