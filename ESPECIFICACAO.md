@@ -1,8 +1,7 @@
 # EstudoSystem — Especificação
 
-> Rascunho para revisão. Nada será programado antes de você aprovar este documento.
-> As regras vieram do Apps Script atual (planilha **EstudoSystem**), mais as novidades pedidas.
-> Itens marcados com **❓** são perguntas em aberto.
+> Perguntas em aberto respondidas em 26/09/2026. As regras vieram do Apps Script atual (planilha **EstudoSystem**), mais as
+> novidades pedidas.
 
 ## 1. Objetivo
 
@@ -107,8 +106,7 @@ Dia da semana e mês são **derivados da data** e não precisam ser guardados.
   deixa salvar.
 - **R15.** Depois de concluída, uma sessão **só permite alterar os horários (início e fim) e a
   descrição da aula**. Disciplina, tipo, páginas, questões, acertos e artigos ficam travados.
-- **R16.** Uma sessão concluída pode ser **excluída** (fica marcada como excluída, com Desfazer).
-  ❓ Quer manter essa opção ou prefere que sessões concluídas nunca sejam excluídas?
+- **R16.** Uma sessão concluída **não pode ser excluída**.
 
 ### Ciclo de estudos
 - **R17.** Geração da sequência: a duração de cada vez é igual às horas totais ÷ soma dos pesos das
@@ -194,7 +192,3 @@ Numa etapa própria, depois do app funcionando:
 Você tem interesse. Elas entram **depois** que o app estiver funcionando e com o histórico
 migrado. Os detalhes serão combinados na hora: meta diária ou semanal, em horas, páginas ou
 questões, por disciplina ou geral.
-
-## 10. Perguntas em aberto
-
-1. **R16:** manter a opção de excluir uma sessão concluída (com Desfazer)?
