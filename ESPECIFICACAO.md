@@ -90,9 +90,8 @@ Dia da semana e mês são **derivados da data** e não precisam ser guardados.
 - **R7.** O cronômetro continua certo mesmo se o app for fechado ou o aparelho desligar. Ele é
   calculado pelos horários gravados, e não por um contador rodando.
 - **R8.** Ao abrir o app com uma sessão aberta, ele volta direto para o cronômetro dela.
-- **R9.** **Cancelar** uma sessão aberta a descarta: ela não conta em nada.
-  ❓ Hoje ela é apagada sem rastro. A base recomenda "nada se perde": a sessão fica marcada como
-  cancelada, oculta, com opção **Desfazer**. Pode ser assim?
+- **R9.** **Cancelar** uma sessão aberta a **apaga sem rastro**, como hoje. O app pede
+  confirmação antes.
 
 ### Edição manual (novidade)
 - **R10.** **Horário de início editável** na sessão aberta: ao corrigir para um horário anterior, o
@@ -105,11 +104,11 @@ Dia da semana e mês são **derivados da data** e não precisam ser guardados.
   - as pausas não podem ser maiores que o tempo entre início e fim;
   - a duração é recalculada na hora.
 - **R14.** Se o horário editado **se sobrepuser** a outra sessão, o app mostra um **aviso**, mas
-  deixa salvar. ❓ Prefere que bloqueie?
-- **R15.** Em sessões concluídas também dá para corrigir páginas, questões, acertos e artigos.
-  ❓ E a **disciplina** ou o **tipo** de uma sessão concluída, também pode mudar? Isso não mexe no
-  ciclo, que já avançou.
+  deixa salvar.
+- **R15.** Depois de concluída, uma sessão **só permite alterar os horários (início e fim) e a
+  descrição da aula**. Disciplina, tipo, páginas, questões, acertos e artigos ficam travados.
 - **R16.** Uma sessão concluída pode ser **excluída** (fica marcada como excluída, com Desfazer).
+  ❓ Quer manter essa opção ou prefere que sessões concluídas nunca sejam excluídas?
 
 ### Ciclo de estudos
 - **R17.** Geração da sequência: a duração de cada vez é igual às horas totais ÷ soma dos pesos das
@@ -151,6 +150,19 @@ Consideram apenas as **sessões concluídas**.
 - **Ciclo:** a sequência da volta atual, com a posição do ponteiro destacada e as horas feitas em
   cada posição.
 
+### Dashboard dinâmico ao rolar (igual ao PCA)
+- Cada bloco **aparece suavemente quando entra na tela** durante a rolagem: ele sobe um pouco e
+  fica visível.
+- Ao aparecer:
+  - as **barras crescem** a partir do zero;
+  - as **rosquinhas se desenham**;
+  - os **números contam** de 0 até o valor final;
+  - os blocos lado a lado entram com um pequeno atraso um após o outro.
+- Cada bloco anima **uma vez só**, na primeira vez que aparece.
+- **Trocar um filtro** (período, disciplina) atualiza os valores **sem animar de novo**.
+- Com "reduzir movimento" ligado no aparelho, tudo aparece pronto, sem animação.
+- Tocar ou passar o mouse numa barra ou fatia mostra os detalhes (dica flutuante), como no PCA.
+
 ## 6. Telas (menu lateral)
 
 1. **Estudar** (tela principal): botão grande **Iniciar**. Com uma sessão aberta, mostra o
@@ -176,11 +188,13 @@ Numa etapa própria, depois do app funcionando:
 
 - Versão para celular.
 - Lembretes e notificações.
-- Metas diárias ou semanais. ❓ Tem interesse no futuro?
 
-## 9. Resumo das perguntas em aberto
+## 9. Etapa futura: metas de estudo
 
-1. **R9:** cancelar marca como cancelada (com Desfazer) em vez de apagar?
-2. **R14:** sobreposição de horários só avisa ou bloqueia?
-3. **R15:** pode mudar a disciplina ou o tipo de uma sessão concluída?
-4. **Seção 8:** metas de estudo no futuro?
+Você tem interesse. Elas entram **depois** que o app estiver funcionando e com o histórico
+migrado. Os detalhes serão combinados na hora: meta diária ou semanal, em horas, páginas ou
+questões, por disciplina ou geral.
+
+## 10. Perguntas em aberto
+
+1. **R16:** manter a opção de excluir uma sessão concluída (com Desfazer)?
