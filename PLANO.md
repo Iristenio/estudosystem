@@ -4,18 +4,18 @@ Cada etapa termina com algo **usável no tablet e no PC**. As regras (R1, R2…)
 [ESPECIFICACAO.md](ESPECIFICACAO.md). Primeiro o app funciona no aparelho, sem internet; a ligação com
 o Google vem depois. A planilha antiga continua sendo usada normalmente até a troca (etapa 8).
 
-| # | Etapa | O que você consegue fazer no fim |
-|---|---|---|
-| 0 | Cara do app + publicação | Abrir o app no tablet/PC, com o visual do PCA, e instalá-lo |
-| 1 | Cadastros | Cadastrar disciplinas e leis |
-| 2 | Cronômetro | Estudar de verdade: iniciar, pausar, finalizar, cancelar |
-| 3 | Histórico e edição | Ver as sessões e corrigir horários e descrição |
-| 4 | Ciclo de estudos | Gerar o ciclo e receber a sugestão da próxima disciplina |
-| 5 | Painéis | Dashboard animado ao rolar e acompanhamento por disciplina |
-| 6 | Planilha do Google | Backup automático e tablet/PC com os mesmos dados |
-| 7 | Importação | Trazer todo o histórico da planilha antiga |
-| 8 | Conferência e troca | Conferir os totais e passar a usar só o app |
-| 9 | (futuro) Metas | A combinar |
+| # | Etapa | O que você consegue fazer no fim | Situação |
+|---|---|---|---|
+| 0 | Cara do app + publicação | Abrir o app no tablet/PC, com o visual do PCA, e instalá-lo | ✅ 26/09 |
+| 1 | Cadastros | Cadastrar disciplinas e leis | ✅ 27/09 |
+| 2 | Cronômetro | Estudar de verdade: iniciar, pausar, finalizar, cancelar | ✅ 27/09 |
+| 3 | Histórico e edição | Ver as sessões e corrigir horários e descrição | ✅ 27/09 |
+| 4 | Ciclo de estudos | Gerar o ciclo e receber a sugestão da próxima disciplina | ✅ 27/09 |
+| 5 | Painéis | Dashboard animado ao rolar e acompanhamento por disciplina | ✅ 27/09 |
+| 6 | Planilha do Google | Backup automático e tablet/PC com os mesmos dados | ✅ 27/09 |
+| 7 | Importação | Trazer todo o histórico da planilha antiga | ✅ 27/09 |
+| 8 | Conferência e troca | Conferir os totais e passar a usar só o app | ✅ 27/09 |
+| 9 | (futuro) Metas | A combinar | — |
 
 ---
 
@@ -100,3 +100,27 @@ o Google vem depois. A planilha antiga continua sendo usada normalmente até a t
 2. Salvo (commit) e publico. O app instalado se atualiza sozinho.
 3. Explico **como usar** o que ficou pronto, e você testa no seu tablet.
 4. Ajustamos o que precisar antes de ir para a próxima etapa.
+
+---
+
+## Resultado da conferência (etapa 8 — 27/09/2026)
+
+Comparação da planilha antiga (Cronograma) com os dados do app já sincronizados na planilha nova:
+
+| | Planilha antiga | App |
+|---|---|---|
+| Sessões concluídas | 53 | 53 (todas importadas) |
+| Horas (recalculadas pelos horários) | 39h52 | 39h52 |
+| Horas pela coluna DURAÇÃO (arredondada) | 39h50 | — |
+| Páginas | 202 | 202 |
+| Questões / acertos | 70 / 48 | 70 / 48 |
+| Horas de vídeo | 31h55 | 31h55 |
+| Agosto / setembro | 20h15 / 19h37 | 20h15 / 19h37 |
+| Por disciplina (D01…D05) | 18h45 · 7h33 · 5h44 · 6h09 · 1h42 | iguais |
+| Minutos por página / questão | 2,09 / 0,75 | 2,10 / 0,76 |
+| Ciclo | 4F4, 30 h | 4F4, 30 h |
+
+- Sessão a sessão: as 53 batem uma a uma (mesma duração e mesma posição do ciclo).
+- As diferenças de 2 minutos no total e de 0,01 nas médias vêm da planilha antiga, que arredondava
+  cada sessão em 2 casas decimais; o app usa os segundos exatos.
+
