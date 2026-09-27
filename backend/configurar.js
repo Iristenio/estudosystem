@@ -7,7 +7,7 @@
  *   Obtenha com: npx @google/clasp list-deployments  → https://script.google.com/macros/s/<ID>/exec
  *   (ScriptApp.getService().getUrl() no editor devolve o endereço de TESTE /dev, que exige login.)
  */
-var URL_PUBLICA = '';
+var URL_PUBLICA = 'https://script.google.com/macros/s/AKfycbzkH15Xp-OLKJQFZrN8ffqlY7OZXsiuIy3n0_LXtZ6QxXMlVLSZW202RoUVo2Jgd5iQ/exec';
 var NOME_PLANILHA = 'EstudoSystem - dados';
 
 function configurar() {
