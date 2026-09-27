@@ -17,12 +17,12 @@ import { FormDisciplina } from './paineis/FormDisciplina';
 import { FormLei } from './paineis/FormLei';
 import { FormHorarios } from './paineis/FormHorarios';
 import { TelaEstudar } from './telas/TelaEstudar';
+import { TelaSessoes } from './telas/TelaSessoes';
 import { listarTodos } from '../dados/repositorio';
 import { sessaoAberta } from '../dominio/sessoes';
 import {
   IconeCiclo,
   IconeGrafico,
-  IconeLista,
   IconeMenu,
   IconeProgresso,
 } from './icones';
@@ -38,14 +38,7 @@ const TELA: Record<Tela, () => JSX.Element> = {
       descricao="Indicadores e gráficos de horas por dia e por mês, com animação ao rolar a tela, como no PCA."
     />
   ),
-  sessoes: () => (
-    <TelaEmConstrucao
-      titulo="Sessões"
-      etapa={3}
-      Icone={IconeLista}
-      descricao="Histórico das sessões com filtros. Nas concluídas, será possível corrigir os horários e a descrição da aula."
-    />
-  ),
+  sessoes: TelaSessoes,
   acompanhamento: () => (
     <TelaEmConstrucao
       titulo="Acompanhamento"

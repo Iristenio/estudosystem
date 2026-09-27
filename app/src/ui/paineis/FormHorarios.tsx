@@ -8,6 +8,8 @@ import {
   fimAtual,
   formatarDuracao,
   juntarDataHora,
+  resumoProducao,
+  ROTULO_TIPO,
   sessoesSobrepostas,
   validarHorarios,
 } from '../../dominio/sessoes';
@@ -39,6 +41,7 @@ export function FormHorarios({ id }: { id: string }) {
   const agora = useAgora(1000);
   const todas = useEntidade('sessoes');
   const disciplinas = useEntidade('disciplinas');
+  const leis = useEntidade('leis');
   const [s, setS] = useState<Sessao | null>(null);
   const [inicio, setInicio] = useState<Momento | null>(null);
   const [fim, setFim] = useState<Momento | null>(null);
@@ -74,6 +77,16 @@ export function FormHorarios({ id }: { id: string }) {
 
   return (
     <form class="formulario" onSubmit={salvar}>
+      {s.situacao === 'concluida' && (
+        <div class="resumo-sessao">
+          <strong>{nomeDisciplina(s.disciplina_id) || 'Disciplina removida'}</strong>
+          <span>
+            {[ROTULO_TIPO[s.tipo], s.lei_id && leis.find((l) => l.id === s.lei_id)?.nome, resumoProducao(s)].filter(Boolean).join(' · ')}
+          </span>
+          <small>Depois de concluída, a sessão só permite corrigir os horários e a descrição da aula.</small>
+        </div>
+      )}
+
       <fieldset>
         <legend>Início</legend>
         <div class="linha">
@@ -110,7 +123,7 @@ export function FormHorarios({ id }: { id: string }) {
 
       {sobrepostas.length > 0 && (
         <div class="alerta">
-          Esse horário se sobrepõe a{sobrepostas.length === 1 ? '' : 's'} sessão{sobrepostas.length === 1 ? '' : 'ões'}:{' '}
+          Esse horário se sobrepõe {sobrepostas.length === 1 ? 'à sessão' : 'às sessões'}:{' '}
           {sobrepostas
             .map((o) => `${nomeDisciplina(o.disciplina_id)} (${fmtHora.format(new Date(o.inicio))}–${fmtHora.format(new Date(o.fim!))})`)
             .join(', ')}

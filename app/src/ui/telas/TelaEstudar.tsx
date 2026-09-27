@@ -14,6 +14,7 @@ import {
   leisDisponiveis,
   percentualAcerto,
   resumoProducao,
+  ROTULO_TIPO,
   sessaoAberta,
   validarDadosFinais,
   validarInicio,
@@ -26,13 +27,6 @@ import { IconeCronometro, IconeLapis } from '../icones';
 
 const fmtHora = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
 const fmtDataLonga = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
-const ROTULO_TIPO: Record<TipoSessao, string> = {
-  PDF: 'PDF',
-  VideoAula: 'Videoaula',
-  Revisão: 'Revisão',
-  'Lei Seca': 'Lei seca',
-  Questões: 'Questões',
-};
 
 export function TelaEstudar() {
   const sessoes = useEntidade('sessoes');

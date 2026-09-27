@@ -5,6 +5,15 @@
 // (início, pausas, instante em que o relógio parou). Por isso continua certa com o app fechado (R7).
 import type { Disciplina, Id, Lei, Sessao, TipoSessao } from './tipos';
 
+/** Nome de cada tipo como aparece na tela. */
+export const ROTULO_TIPO: Record<TipoSessao, string> = {
+  PDF: 'PDF',
+  VideoAula: 'Videoaula',
+  Revisão: 'Revisão',
+  'Lei Seca': 'Lei seca',
+  Questões: 'Questões',
+};
+
 const seg = (iso: string) => new Date(iso).getTime() / 1000;
 
 export function sessoesValidas(lista: Sessao[]): Sessao[] {
