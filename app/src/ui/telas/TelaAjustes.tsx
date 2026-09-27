@@ -7,6 +7,7 @@ import { baixarTudo, conectar, desconectar, ErroApi, sincronizar } from '../../s
 import { APP } from '../../app.config';
 import { descreverUltimaSync, ROTULO_STATUS, useSync } from '../../sync/ganchos';
 import { useEstado } from '../estado';
+import { CartaoImportar } from './CartaoImportar';
 
 export function TelaAjustes() {
   return (
@@ -16,6 +17,7 @@ export function TelaAjustes() {
       </header>
       <div class="conteudo ajustes">
         <CartaoGoogle />
+        <CartaoImportar />
         <CartaoPreferencias />
         <CartaoAparelho />
       </div>

@@ -46,3 +46,10 @@
 /* Status de sincronização no menu é um botão */
 button.status-sync { cursor: pointer; border-radius: 10px; }
 button.status-sync:active { background: var(--superficie-2); }
+
+/* Importar da planilha antiga */
+.importar { display: flex; flex-direction: column; gap: 14px; }
+.importar .cartao h2, .importar h2 { margin-bottom: 0; }
+.resumo-importacao { display: flex; flex-direction: column; gap: 14px; }
+.resumo-importacao .info-lista strong { text-align: right; }
+.lista-problemas { margin: 6px 0 0; padding-left: 20px; font-size: 14px; }

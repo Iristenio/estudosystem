@@ -17,6 +17,8 @@ function doPost(e) {
     var token = PropertiesService.getScriptProperties().getProperty(PROP_TOKEN);
     if (!token || req.token !== token) {
       resposta = { ok: false, erro: 'Token inválido', codigo: 401 };
+    } else if (req.acao === 'lerPlanilha') {
+      resposta = lerPlanilhaExterna(req.planilha_id, req.abas || []);
     } else {
       var trava = LockService.getScriptLock();
       trava.waitLock(30000);
@@ -35,6 +37,26 @@ function doPost(e) {
     resposta = { ok: false, erro: String(erro && erro.message ? erro.message : erro) };
   }
   return ContentService.createTextOutput(JSON.stringify(resposta)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Lê (sem alterar nada) abas de outra planilha da mesma conta — usado para importar o histórico
+ * da planilha antiga. Devolve os valores como aparecem na tela (datas e horas já como texto).
+ */
+function lerPlanilhaExterna(id, abas) {
+  if (!id) throw new Error('Informe a planilha.');
+  var planilha;
+  try {
+    planilha = SpreadsheetApp.openById(id);
+  } catch (e) {
+    throw new Error('Não consegui abrir essa planilha. Confira o endereço e se ela é da mesma conta Google do app.');
+  }
+  var resultado = {};
+  abas.forEach(function (nome) {
+    var aba = planilha.getSheetByName(nome);
+    resultado[nome] = aba && aba.getLastRow() > 0 ? aba.getRange(1, 1, aba.getLastRow(), aba.getLastColumn()).getDisplayValues() : null;
+  });
+  return { ok: true, titulo: planilha.getName(), abas: resultado };
 }
 
 function abrirPlanilha() {

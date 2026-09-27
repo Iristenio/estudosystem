@@ -174,6 +174,16 @@ export async function baixarTudo() {
   await sincronizar();
 }
 
+/* ---------------- Leitura de outra planilha (importação) ---------------- */
+
+/** Pede ao backend para ler (sem alterar) abas de outra planilha da mesma conta Google. */
+export async function lerPlanilhaExterna(planilhaId: string, abas: readonly string[]): Promise<{ titulo: string; abas: Record<string, string[][] | null> }> {
+  const conexao = await lerInterno<Conexao>('_conexao');
+  if (!conexao) throw new ErroApi('Conecte o app à planilha do Google (em Sincronização) antes de importar.');
+  const r = (await chamar(conexao, { acao: 'lerPlanilha', planilha_id: planilhaId, abas })) as RespostaSync & { titulo?: string; abas?: Record<string, string[][] | null> };
+  return { titulo: r.titulo ?? 'Planilha', abas: r.abas ?? {} };
+}
+
 /* ---------------- Ciclo de sincronização ---------------- */
 
 let rodando: Promise<void> | null = null;
