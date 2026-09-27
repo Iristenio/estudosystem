@@ -27,6 +27,16 @@ var ESQUEMA = {
       ['status', 's'], ['criado_em', 's'], ['atualizado_em', 's'],
     ],
   },
+  sessoes: {
+    aba: 'SESSOES',
+    campos: [
+      ['id', 's'], ['disciplina_id', 's'], ['tipo', 's'], ['aula', 's'], ['lei_id', 's?'],
+      ['inicio', 's'], ['fim', 's?'], ['segundos_pausados', 'n'], ['pausado_desde', 's?'],
+      ['paginas', 'n'], ['artigos', 'n'], ['questoes', 'n'], ['acertos', 'n'],
+      ['situacao', 's'], ['posicao_ciclo', 's?'], ['status', 's'],
+      ['criado_em', 's'], ['atualizado_em', 's'],
+    ],
+  },
 };
 
 var COLUNA_RECEBIDO = '_recebido_em';

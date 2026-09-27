@@ -20,6 +20,7 @@ export function FormDisciplina({ id }: { id?: string }) {
   const { fecharPainel, avisar, perguntar } = useEstado();
   const todas = useEntidade('disciplinas');
   const leis = useEntidade('leis');
+  const sessoes = useEntidade('sessoes');
   const [d, setD] = useState<Disciplina | null>(null);
   // Números ficam como texto enquanto o usuário digita (para aceitar "36," no meio da digitação)
   const [textos, setTextos] = useState({ peso: '', paginas: '', horas: '' });
@@ -45,8 +46,7 @@ export function FormDisciplina({ id }: { id?: string }) {
   if (!d) return null;
   const mudar = (parcial: Partial<Disciplina>) => setD({ ...d, ...parcial });
   const leisDaDisciplina = leis.filter((l) => l.disciplina_id === d.id && l.status !== 'excluido');
-  // As sessões chegam na etapa 2; até lá nenhuma disciplina tem sessões registradas.
-  const podeExcluir = podeExcluirDisciplina(d.id, []);
+  const podeExcluir = podeExcluirDisciplina(d.id, sessoes.filter((s) => s.status !== 'excluido'));
 
   async function salvar(e: Event) {
     e.preventDefault();

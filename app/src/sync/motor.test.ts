@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { abrirBanco, fecharBanco, NOME_BANCO } from '../dados/db';
 import { buscar, listarFila, salvar, salvarInterno } from '../dados/repositorio';
 import { novaDisciplina } from '../dominio/disciplinas';
+import { finalizar, iniciarSessao } from '../dominio/sessoes';
 import { baixarTudo, decodificarCodigo, lerEstadoSync, sincronizar } from './motor';
 
 const require = createRequire(import.meta.url);
@@ -52,6 +53,15 @@ describe('código de conexão', () => {
 });
 
 describe('núcleo do backend', () => {
+  it('sessão: linha ↔ registro preserva tipos (nulos, números e textos)', () => {
+    const s = finalizar(
+      iniciarSessao('s1', { disciplina_id: 'D01', tipo: 'Questões', aula: 'ADI', lei_id: null }, new Date('2026-08-03T08:00:00Z')),
+      new Date('2026-08-03T09:00:00Z'),
+    );
+    const reg = { ...s, segundos_pausados: 45, questoes: 10, acertos: 7 };
+    expect(nucleo.linhaParaRegistro('sessoes', nucleo.registroParaLinha('sessoes', reg, 'T'))).toEqual(reg);
+  });
+
   it('linha ↔ registro preserva tipos', () => {
     const reg = { ...item('a', 'x'), total_paginas: null, total_horas_video: 36.5, ativa: false };
     expect(nucleo.linhaParaRegistro('disciplinas', nucleo.registroParaLinha('disciplinas', reg, 'T'))).toEqual(reg);

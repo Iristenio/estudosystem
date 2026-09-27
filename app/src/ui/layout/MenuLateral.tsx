@@ -3,6 +3,18 @@ import { APP } from '../../app.config';
 import { ehGrupo, irPara, MENU, type ItemMenu, type Tela } from '../rotas';
 import { ROTULO_STATUS, useSync } from '../../sync/ganchos';
 import { IconeConfig } from '../icones';
+import { useAgora, useEntidade } from '../../dados/ganchos';
+import { duracaoSegundos, formatarDuracao, sessaoAberta } from '../../dominio/sessoes';
+
+/** Tempo da sessão aberta ao lado de "Estudar" (componente próprio: só ele se redesenha a cada segundo). */
+function TempoSessao() {
+  const aberta = sessaoAberta(useEntidade('sessoes'));
+  const agora = useAgora(1000);
+  if (!aberta) return null;
+  return (
+    <span class={`menu-tempo${aberta.situacao === 'andamento' ? '' : ' parado'}`}>{formatarDuracao(duracaoSegundos(aberta, agora))}</span>
+  );
+}
 
 function useOnline() {
   const [online, setOnline] = useState(navigator.onLine);
@@ -48,6 +60,7 @@ export function MenuLateral({ atual, aberto, aoFechar }: Props) {
     >
       <item.Icone />
       {item.rotulo}
+      {item.tela === 'estudar' && <TempoSessao />}
     </button>
   );
 

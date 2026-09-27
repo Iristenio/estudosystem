@@ -12,6 +12,7 @@ import { useEstado } from '../estado';
 export function FormLei({ id, disciplinaId }: { id?: string; disciplinaId?: string }) {
   const { fecharPainel, avisar, perguntar } = useEstado();
   const todas = useEntidade('leis');
+  const sessoes = useEntidade('sessoes');
   const disciplinas = ordenarDisciplinas(useEntidade('disciplinas'));
   const [l, setL] = useState<Lei | null>(null);
   const [artigos, setArtigos] = useState('');
@@ -32,8 +33,7 @@ export function FormLei({ id, disciplinaId }: { id?: string; disciplinaId?: stri
 
   if (!l) return null;
   const mudar = (parcial: Partial<Lei>) => setL({ ...l, ...parcial });
-  // As sessões chegam na etapa 2; até lá nenhuma lei tem sessões registradas.
-  const podeExcluir = podeExcluirLei(l.id, []);
+  const podeExcluir = podeExcluirLei(l.id, sessoes.filter((s) => s.status !== 'excluido'));
 
   async function salvar(e: Event) {
     e.preventDefault();

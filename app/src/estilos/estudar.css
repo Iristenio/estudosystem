@@ -1,0 +1,96 @@
+/* ============ Tela Estudar: nova sessão, cronômetro, finalizar e "hoje" ============ */
+
+.grade-estudar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
+  gap: 20px;
+  align-items: start;
+}
+/* Responde à largura disponível (o painel lateral aberto também estreita o conteúdo) */
+.conteudo:has(.grade-estudar) { container-type: inline-size; }
+@container (max-width: 860px) {
+  .grade-estudar { grid-template-columns: minmax(0, 1fr); }
+}
+
+.cartao-sessao { padding: 22px 24px; }
+.cartao-sessao.formulario { gap: 20px; }
+
+.botao-grande { min-height: 56px; padding: 0 28px; font-size: 18px; }
+form.cartao-sessao > .botao-grande { align-self: stretch; }
+
+/* Disciplina + tipo + aula no topo do cronômetro */
+.identificacao { position: relative; display: flex; align-items: center; gap: 12px; padding-left: 16px; }
+.identificacao .faixa-cor { position: absolute; left: 0; top: 2px; bottom: 2px; width: 6px; border-radius: 3px; }
+.identificacao strong { display: block; font-size: 20px; }
+.identificacao small { display: block; color: var(--texto-2); font-size: 15px; }
+
+/* Cronômetro */
+.cronometro { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.cronometro .identificacao { align-self: stretch; }
+.relogio {
+  margin-top: 18px;
+  font-size: clamp(52px, 13cqi, 120px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--primaria);
+}
+.cronometro.pausada .relogio { color: var(--texto-2); }
+.situacao { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--texto-2); text-align: center; }
+.situacao-ponto { width: 10px; height: 10px; border-radius: 50%; background: var(--sucesso); animation: pulsar 1.6s ease-in-out infinite; flex: none; }
+.cronometro.pausada .situacao-ponto { background: var(--aviso); animation: none; }
+
+.link-inline { display: inline-flex; align-items: center; gap: 6px; margin: 0; }
+.link-inline svg { width: 18px; height: 18px; }
+.cartao-sessao.formulario .link-inline { align-self: flex-start; }
+
+.botoes-cronometro { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 14px; align-self: stretch; }
+.botoes-cronometro .primario { flex: 1 1 200px; }
+.botoes-cronometro .botao-grande:not(.primario) { flex: 1 1 160px; }
+
+/* Finalizar */
+.resumo-final { display: flex; flex-wrap: wrap; gap: 12px 40px; padding: 14px 18px; border-radius: 12px; background: var(--superficie-2); }
+.resumo-final span, .calculado span { display: block; font-size: 13px; font-weight: 650; text-transform: uppercase; letter-spacing: 0.04em; color: var(--texto-2); }
+.resumo-final strong { font-size: 26px; font-variant-numeric: tabular-nums; }
+.campos-questoes { gap: 16px 24px; align-items: flex-end; }
+.calculado strong { display: block; font-size: 22px; min-height: var(--toque); line-height: var(--toque); font-variant-numeric: tabular-nums; }
+
+/* Sessões de hoje */
+.cartao-hoje h2 { justify-content: space-between; }
+.total-hoje { font-variant-numeric: tabular-nums; color: var(--primaria); }
+.lista-hoje { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.lista-hoje li { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--borda); }
+.lista-hoje-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.lista-hoje-texto strong { font-size: 15px; font-weight: 600; }
+.lista-hoje-texto small { color: var(--texto-2); font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lista-hoje-duracao { font-weight: 650; font-variant-numeric: tabular-nums; }
+
+/* Correção de horários (painel) */
+.previa-duracao { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; padding: 12px 16px; border-radius: 12px; background: var(--primaria-suave); }
+.previa-duracao span { font-weight: 650; color: var(--texto-2); }
+.previa-duracao strong { font-size: 24px; color: var(--primaria); font-variant-numeric: tabular-nums; }
+.previa-duracao small { flex-basis: 100%; color: var(--texto-2); }
+.botao.primario:disabled { opacity: 0.45; cursor: default; }
+
+.alerta {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--aviso) 14%, var(--superficie));
+  color: var(--texto);
+  border-left: 4px solid var(--aviso);
+  font-size: 15px;
+}
+
+/* Tempo da sessão aberta no menu */
+.menu-tempo {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--primaria);
+  color: var(--primaria-texto);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.menu-tempo.parado { background: var(--aviso); }

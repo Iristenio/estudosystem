@@ -2,7 +2,7 @@
 // Regras: nada é apagado de verdade (exclusão lógica via status); toda gravação carimba
 // atualizado_em e entra na fila, que o motor de sincronização envia quando houver internet.
 import { abrirBanco } from './db';
-import type { Config, Disciplina, Entidade, ItemFila, Lei, Registro } from '../dominio/tipos';
+import type { Config, Disciplina, Entidade, ItemFila, Lei, Registro, Sessao } from '../dominio/tipos';
 import { CONFIG_PADRAO, ENTIDADES } from '../dominio/tipos';
 import { disciplinasIniciais, leisIniciais } from '../dominio/dadosIniciais';
 
@@ -10,6 +10,7 @@ import { disciplinasIniciais, leisIniciais } from '../dominio/dadosIniciais';
 export type MapaEntidades = {
   disciplinas: Disciplina;
   leis: Lei;
+  sessoes: Sessao;
 };
 
 export const novoId = (): string => crypto.randomUUID();

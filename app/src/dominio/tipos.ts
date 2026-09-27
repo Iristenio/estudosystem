@@ -44,8 +44,39 @@ export interface Lei extends Registro {
   status: StatusRegistro;
 }
 
+/* ---------------- Sessão de estudo (antiga aba Cronograma) ---------------- */
+
+export const TIPOS_SESSAO = ['PDF', 'VideoAula', 'Revisão', 'Lei Seca', 'Questões'] as const;
+export type TipoSessao = (typeof TIPOS_SESSAO)[number];
+
+/** andamento → pausada ⇄ andamento → finalizando (relógio congelado) → concluida */
+export type SituacaoSessao = 'andamento' | 'pausada' | 'finalizando' | 'concluida';
+
+export interface Sessao extends Registro {
+  disciplina_id: Id;
+  tipo: TipoSessao;
+  aula: string;
+  lei_id: Id | null; // só no tipo Lei Seca
+  inicio: string; // ISO completo
+  /** Fim: preenchido ao concluir. */
+  fim: string | null;
+  /** Soma das pausas já encerradas. */
+  segundos_pausados: number;
+  /** Quando o relógio parou (pausa em curso ou "Finalizar"). */
+  pausado_desde: string | null;
+  paginas: number;
+  artigos: number;
+  questoes: number;
+  acertos: number;
+  situacao: SituacaoSessao;
+  /** Posição do ciclo cumprida (ex.: "3F2") — preenchida a partir da etapa 4. */
+  posicao_ciclo: string | null;
+  /** Cancelar = "excluido": some do app e não conta em nada (a sincronização precisa do registro). */
+  status: StatusRegistro;
+}
+
 /** Nomes das entidades sincronizadas (cada uma vira uma loja local e uma aba na planilha). */
-export const ENTIDADES = ['disciplinas', 'leis'] as const;
+export const ENTIDADES = ['disciplinas', 'leis', 'sessoes'] as const;
 export type Entidade = (typeof ENTIDADES)[number];
 
 /* ---------------- Infraestrutura ---------------- */

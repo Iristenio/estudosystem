@@ -25,7 +25,7 @@ export function Dialogo() {
             </button>
           ))}
           <button class="botao fantasma" onClick={() => dialogo.responder(null)}>
-            Cancelar
+            Voltar
           </button>
         </div>
       </div>

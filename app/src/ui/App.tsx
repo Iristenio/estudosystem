@@ -1,7 +1,7 @@
 import type { JSX } from 'preact';
-import { useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { APP } from '../app.config';
-import { useTela, type Tela } from './rotas';
+import { irPara, useTela, type Tela } from './rotas';
 import { MenuLateral } from './layout/MenuLateral';
 import { PainelLateral } from './layout/PainelLateral';
 import { TelaAbertura } from './layout/TelaAbertura';
@@ -15,9 +15,12 @@ import { TelaDisciplinas } from './telas/TelaDisciplinas';
 import { TelaLeis } from './telas/TelaLeis';
 import { FormDisciplina } from './paineis/FormDisciplina';
 import { FormLei } from './paineis/FormLei';
+import { FormHorarios } from './paineis/FormHorarios';
+import { TelaEstudar } from './telas/TelaEstudar';
+import { listarTodos } from '../dados/repositorio';
+import { sessaoAberta } from '../dominio/sessoes';
 import {
   IconeCiclo,
-  IconeCronometro,
   IconeGrafico,
   IconeLista,
   IconeMenu,
@@ -26,14 +29,7 @@ import {
 
 /** ► Nova tela: acrescente aqui (e em TELAS/MENU, em rotas.ts). */
 const TELA: Record<Tela, () => JSX.Element> = {
-  estudar: () => (
-    <TelaEmConstrucao
-      titulo="Estudar"
-      etapa={2}
-      Icone={IconeCronometro}
-      descricao="Aqui ficará o cronômetro: escolher disciplina, tipo e aula, iniciar, pausar, finalizar e corrigir o horário de início."
-    />
-  ),
+  estudar: TelaEstudar,
   dashboard: () => (
     <TelaEmConstrucao
       titulo="Dashboard"
@@ -78,6 +74,8 @@ function tituloPainel(p: Painel): string {
       return p.id ? 'Disciplina' : 'Nova disciplina';
     case 'lei':
       return p.id ? 'Lei seca' : 'Nova lei seca';
+    case 'horarios':
+      return 'Corrigir sessão';
   }
 }
 
@@ -87,6 +85,8 @@ function ConteudoPainel({ painel }: { painel: Painel }) {
       return <FormDisciplina id={painel.id} />;
     case 'lei':
       return <FormLei id={painel.id} disciplinaId={painel.disciplinaId} />;
+    case 'horarios':
+      return <FormHorarios id={painel.id} />;
   }
 }
 
@@ -95,6 +95,12 @@ function Estrutura() {
   const { painel, fecharPainel } = useEstado();
   const [menuAberto, setMenuAberto] = useState(false);
   const Conteudo = TELA[tela];
+
+  // R8 — ao abrir o app com uma sessão aberta, vai direto para o cronômetro
+  useEffect(() => {
+    if (location.hash) return;
+    listarTodos('sessoes').then((lista) => sessaoAberta(lista) && irPara('estudar'));
+  }, []);
 
   return (
     <div class="estrutura">
