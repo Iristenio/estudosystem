@@ -124,3 +124,51 @@ export const IconeAlerta = (p: Props) => (
     <path d="M12 9v4M12 17h.01" />
   </Base>
 );
+
+export const IconeCronometro = (p: Props) => (
+  <Base {...p}>
+    <circle cx="12" cy="13.5" r="7.5" />
+    <path d="M12 13.5V10M10 2.5h4M18.5 6.5l1.5-1.5" />
+  </Base>
+);
+
+export const IconeGrafico = (p: Props) => (
+  <Base {...p}>
+    <path d="M4 20h16" />
+    <path d="M7 16v-4M12 16V7M17 16v-6" stroke-width={2.6} />
+  </Base>
+);
+
+export const IconeProgresso = (p: Props) => (
+  <Base {...p}>
+    <path d="M4 7h16M4 12h16M4 17h16" stroke-opacity={0.3} stroke-width={3} />
+    <path d="M4 7h10M4 12h14M4 17h6" stroke-width={3} />
+  </Base>
+);
+
+export const IconeCiclo = (p: Props) => (
+  <Base {...p}>
+    <path d="M20 12a8 8 0 0 1-13.7 5.7M4 12a8 8 0 0 1 13.7-5.7" />
+    <path d="M18 3v3.5h-3.5M6 21v-3.5h3.5" />
+  </Base>
+);
+
+export const IconeLivro = (p: Props) => (
+  <Base {...p}>
+    <path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5z" />
+    <path d="M12 6.5v13" />
+  </Base>
+);
+
+export const IconeBalanca = (p: Props) => (
+  <Base {...p}>
+    <path d="M12 4v16M8 20h8M5 7h14" />
+    <path d="M5 7l-2.5 6a2.5 2.5 0 0 0 5 0L5 7zM19 7l-2.5 6a2.5 2.5 0 0 0 5 0L19 7z" />
+  </Base>
+);
+
+export const IconeMenu = (p: Props) => (
+  <Base {...p}>
+    <path d="M4 6h16M4 12h16M4 18h16" />
+  </Base>
+);

@@ -10,7 +10,7 @@ export const APP = {
   nome: 'EstudoSystem',
   /** Nome curto (aparece embaixo do ícone na tela inicial). */
   nomeCurto: 'Estudos',
-  descricao: 'Aplicativo pessoal que funciona offline',
+  descricao: 'Ciclo de estudos com cronômetro e acompanhamento por disciplina',
   /** Cor principal (botões, destaques, barra do sistema). */
   corPrimaria: '#30503a',
   /**

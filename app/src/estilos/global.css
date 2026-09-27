@@ -1,7 +1,7 @@
 /* ============ Tokens de design ============ */
 :root {
   color-scheme: light;
-  --fundo: #f4f5f8;
+  --fundo: #f5f6f9;          /* mesmo cinza-claro do Sistema PCA */
   --superficie: #ffffff;
   --superficie-2: #eef0f4;
   --borda: #dde1e8;
@@ -18,7 +18,7 @@
 
   --raio: 14px;
   --toque: 48px;           /* alvo mínimo de toque */
-  --menu-largura: 92px;
+  --menu-largura: 248px;
   --painel-largura: 420px;
   --fonte: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
@@ -82,51 +82,87 @@ h1, h2, h3 { margin: 0; line-height: 1.2; }
   overflow: hidden;
 }
 
-/* ---- Menu lateral ---- */
+/* ---- Menu lateral (estilo Sistema PCA: branco, cabeçalho, grupos com título) ---- */
 .menu {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  padding: 16px 0 12px;
+  min-height: 0;
   background: var(--superficie);
   border-right: 1px solid var(--borda);
 }
 
-.menu-item {
+.menu-cabecalho {
+  padding: 22px 20px 16px;
+  border-bottom: 1px solid var(--borda);
+}
+.menu-titulo { margin: 0 0 2px; font-size: 19px; font-weight: 750; color: var(--primaria); }
+.menu-sub { margin: 0; font-size: 13.5px; color: var(--texto-2); }
+
+.menu-lista {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  width: 76px;
-  min-height: 68px;
-  border-radius: var(--raio);
-  color: var(--texto-2);
-  font-size: 12.5px;
-  font-weight: 500;
+  gap: 2px;
+  padding: 10px;
 }
-.menu-item svg { width: 26px; height: 26px; }
-.menu-item[aria-current='page'] {
+
+.menu-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: var(--toque);
+  padding: 0 12px;
+  border-radius: 10px;
+  color: var(--texto);
+  font-size: 15.5px;
+  font-weight: 600;
+  text-align: left;
+}
+.menu-link svg { width: 22px; height: 22px; flex-shrink: 0; color: var(--texto-2); }
+.menu-link.filho { font-weight: 500; padding-left: 22px; }
+.menu-link[aria-current='page'] {
   background: var(--primaria-suave);
   color: var(--primaria);
-  font-weight: 650;
+  font-weight: 700;
 }
-.menu-espaco { flex: 1; }
+.menu-link[aria-current='page'] svg { color: var(--primaria); }
+
+.menu-grupo { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }
+.menu-grupo-titulo {
+  margin: 0;
+  padding: 8px 12px 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texto-2);
+}
+
+.menu-rodape {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  border-top: 1px solid var(--borda);
+}
 
 .status-sync {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  font-size: 11px;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
   color: var(--texto-2);
-  text-align: center;
-  padding: 6px 4px;
+  text-align: left;
 }
 .status-ponto {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: var(--texto-2);
 }
@@ -137,6 +173,10 @@ h1, h2, h3 { margin: 0; line-height: 1.2; }
 .status-ponto.offline { background: transparent; border: 2px solid var(--texto-2); }
 .status-ponto.desconectado { background: var(--borda); }
 .status-sync small { font-weight: 700; }
+.menu-veu { display: none; }
+
+/* Barra do topo: só em telas estreitas, para abrir o menu-gaveta */
+.barra-topo { display: none; }
 @keyframes pulsar { 50% { opacity: 0.3; } }
 
 /* ---- Área principal ---- */
@@ -154,7 +194,7 @@ h1, h2, h3 { margin: 0; line-height: 1.2; }
   gap: 16px;
   padding: 20px 28px 12px;
 }
-.cabecalho h1 { font-size: 28px; font-weight: 700; }
+.cabecalho h1 { font-size: 28px; font-weight: 700; color: var(--primaria); }
 .cabecalho .sub { color: var(--texto-2); font-size: 17px; }
 .cabecalho .sub::first-letter { text-transform: uppercase; }
 
@@ -323,35 +363,51 @@ h1, h2, h3 { margin: 0; line-height: 1.2; }
 }
 .aviso .botao { background: var(--primaria); color: var(--primaria-texto); }
 
-/* ============ Retrato / telas estreitas ============ */
+/* ============ Retrato / telas estreitas: o menu vira gaveta ============ */
 @media (max-width: 899px) {
-  .estrutura {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) auto;
-  }
+  .estrutura { grid-template-columns: minmax(0, 1fr); }
   .menu {
-    grid-row: 2;
-    flex-direction: row;
-    justify-content: space-around;
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-    border-right: none;
-    border-top: 1px solid var(--borda);
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(var(--menu-largura), 85vw);
+    z-index: 30;
+    box-shadow: var(--sombra);
+    transform: translateX(-105%);
+    transition: transform 0.22s ease-out;
   }
-  .menu-espaco, .status-sync { display: none; }
-  .menu-item { min-height: 58px; width: auto; flex: 1; }
-  .principal { grid-row: 1; }
-  .painel {
+  .menu.aberto { transform: none; }
+  .menu-veu {
+    display: block;
     position: fixed;
     inset: 0;
-    width: auto;
+    z-index: 29;
+    background: rgba(0, 0, 0, 0.25);
+    animation: aparecer 0.2s ease-out;
+  }
+  .barra-topo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px 0;
+    font-weight: 700;
+    color: var(--primaria);
+  }
+  .painel {
+    position: fixed;
+    inset: 0 0 0 auto;
+    width: min(var(--painel-largura), 100vw);
     z-index: 10;
-    border-left: none;
+    box-shadow: var(--sombra);
   }
   .colunas { grid-template-columns: 1fr; }
-  .cabecalho { padding: 16px 20px 8px; }
+  .cabecalho { padding: 8px 20px 8px; }
   .conteudo { padding: 8px 20px 110px; }
   .novo { right: 20px; bottom: 20px; }
 }
+
+@keyframes aparecer { from { opacity: 0; } to { opacity: 1; } }
 
 /* ============ Perfil "só celular": layout de celular em qualquer tamanho de tela ============ */
 html.so-celular .estrutura {
@@ -387,8 +443,68 @@ html.so-pc { --toque: 40px; }
 /* ============ Com PC: efeitos de mouse ============ */
 @media (hover: hover) {
   html.com-pc .botao:hover,
-  html.com-pc .menu-item:hover,
+  html.com-pc .menu-link:hover,
   html.com-pc .botao-icone:hover { filter: brightness(0.96); background-color: var(--superficie-2); }
   html.com-pc .botao.primario:hover { filter: brightness(1.08); background-color: var(--primaria); }
   html.com-pc .linha-item:hover { border-color: var(--primaria); }
+}
+
+/* ============ Tela de abertura (inspirada na do Sistema PCA) ============ */
+.abertura {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  background: var(--fundo);
+  animation: aparecer 0.5s ease both;
+}
+.abertura.saindo { animation: sumir 0.6s ease forwards; pointer-events: none; }
+.abertura-faixa {
+  height: 140px;
+  background:
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0 14px, transparent 14px 28px),
+    linear-gradient(120deg, var(--primaria-app), color-mix(in srgb, var(--primaria-app) 70%, white));
+}
+.abertura-conteudo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 20px;
+}
+.abertura-titulo { margin: 0 0 6px; font-size: 30px; font-weight: 750; letter-spacing: 0.02em; color: var(--primaria); }
+.abertura-sub { margin: 0 0 28px; font-size: 18px; font-weight: 600; color: var(--primaria); }
+.abertura-carregando { margin: 0; font-size: 15px; color: var(--texto-2); animation: pulsar 1.4s ease-in-out infinite; }
+.abertura-rodape { text-align: center; font-size: 13px; color: var(--texto-2); padding: 16px 20px 24px; }
+@keyframes sumir { to { opacity: 0; } }
+
+/* ============ Tela provisória "em construção" ============ */
+.em-construcao {
+  max-width: 560px;
+  margin: 40px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 36px 28px;
+  text-align: center;
+}
+.em-construcao svg { width: 48px; height: 48px; color: var(--primaria); }
+.em-construcao strong { font-size: 20px; }
+.em-construcao p { margin: 0; color: var(--texto-2); }
+.etiqueta {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--primaria-suave);
+  color: var(--primaria);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .abertura, .abertura.saindo, .menu, .menu-veu { animation-duration: 0.01s; transition: none; }
 }

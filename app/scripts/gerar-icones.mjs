@@ -12,7 +12,7 @@ await sharp(svg).resize(180, 180).png().toFile(destino('apple-touch-icon.png'));
 
 // Ícone "maskable": o Android recorta em círculo/squircle, então o desenho precisa de margem
 const interno = await sharp(svg).resize(384, 384).png().toBuffer();
-await sharp({ create: { width: 512, height: 512, channels: 4, background: '#2f6fed' } })
+await sharp({ create: { width: 512, height: 512, channels: 4, background: '#30503a' } })
   .composite([{ input: interno, top: 64, left: 64 }])
   .png()
   .toFile(destino('icone-maskable-512.png'));

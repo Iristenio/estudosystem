@@ -3,17 +3,56 @@
 // ► Nova tela: acrescente em TELAS e em MENU (e o componente em App.tsx).
 import type { ComponentType, JSX } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import { IconeConfig, IconeHoje, IconeLista } from './icones';
+import {
+  IconeBalanca,
+  IconeCiclo,
+  IconeCronometro,
+  IconeGrafico,
+  IconeLista,
+  IconeLivro,
+  IconeProgresso,
+} from './icones';
 
-export const TELAS = ['inicio', 'itens', 'config'] as const;
+export const TELAS = [
+  'estudar',
+  'dashboard',
+  'sessoes',
+  'acompanhamento',
+  'ciclo',
+  'disciplinas',
+  'leis',
+  'config',
+] as const;
 export type Tela = (typeof TELAS)[number];
 
-/** Itens do menu (lateral em telas largas, rodapé no celular). "config" fica sempre por último. */
-export const MENU: { tela: Tela; rotulo: string; Icone: ComponentType<JSX.SVGAttributes<SVGSVGElement>> }[] = [
-  { tela: 'inicio', rotulo: 'Início', Icone: IconeHoje },
-  { tela: 'itens', rotulo: 'Itens', Icone: IconeLista },
-  { tela: 'config', rotulo: 'Ajustes', Icone: IconeConfig },
+type Icone = ComponentType<JSX.SVGAttributes<SVGSVGElement>>;
+export interface ItemMenu {
+  tela: Tela;
+  rotulo: string;
+  Icone: Icone;
+}
+export interface GrupoMenu {
+  grupo: string;
+  itens: ItemMenu[];
+}
+
+/** Menu lateral, no estilo do Sistema PCA: itens principais e grupos com título. "Ajustes" fica no rodapé do menu. */
+export const MENU: (ItemMenu | GrupoMenu)[] = [
+  { tela: 'estudar', rotulo: 'Estudar', Icone: IconeCronometro },
+  { tela: 'dashboard', rotulo: 'Dashboard', Icone: IconeGrafico },
+  { tela: 'sessoes', rotulo: 'Sessões', Icone: IconeLista },
+  { tela: 'acompanhamento', rotulo: 'Acompanhamento', Icone: IconeProgresso },
+  { tela: 'ciclo', rotulo: 'Ciclo de estudos', Icone: IconeCiclo },
+  {
+    grupo: 'Cadastros',
+    itens: [
+      { tela: 'disciplinas', rotulo: 'Disciplinas', Icone: IconeLivro },
+      { tela: 'leis', rotulo: 'Leis secas', Icone: IconeBalanca },
+    ],
+  },
 ];
+
+export const ehGrupo = (m: ItemMenu | GrupoMenu): m is GrupoMenu => 'grupo' in m;
 
 function lerTela(): Tela {
   const nome = location.hash.replace(/^#\/?/, '') as Tela;
