@@ -1,8 +1,5 @@
-// Tela Ajustes: conexão com o Google, preferências e informações do aparelho.
+// Tela Ajustes: conexão com o Google, importação da planilha antiga e informações do aparelho.
 import { useEffect, useState } from 'preact/hooks';
-import type { Config } from '../../dominio/tipos';
-import { salvarConfig } from '../../dados/repositorio';
-import { useConfig } from '../../dados/ganchos';
 import { baixarTudo, conectar, desconectar, ErroApi, sincronizar } from '../../sync/motor';
 import { APP } from '../../app.config';
 import { descreverUltimaSync, ROTULO_STATUS, useSync } from '../../sync/ganchos';
@@ -18,7 +15,6 @@ export function TelaAjustes() {
       <div class="conteudo ajustes">
         <CartaoGoogle />
         <CartaoImportar />
-        <CartaoPreferencias />
         <CartaoAparelho />
       </div>
     </>
@@ -133,49 +129,6 @@ function CartaoGoogle() {
         </div>
       )}
     </section>
-  );
-}
-
-/* ---------------- Preferências ---------------- */
-
-function CartaoPreferencias() {
-  const config = useConfig();
-  const mudar = (parcial: Partial<Config>) => salvarConfig(parcial);
-
-  return (
-    <section class="cartao">
-      <h2>Preferências</h2>
-      <div class="preferencias">
-        <label>
-          <span>A semana começa no</span>
-          <div class="segmentado pequeno">
-            <button role="radio" aria-checked={config.primeiro_dia_semana === 0} onClick={() => mudar({ primeiro_dia_semana: 0 })}>
-              Domingo
-            </button>
-            <button role="radio" aria-checked={config.primeiro_dia_semana === 1} onClick={() => mudar({ primeiro_dia_semana: 1 })}>
-              Segunda
-            </button>
-          </div>
-        </label>
-      </div>
-      <p class="dica">As preferências valem para este aparelho.</p>
-    </section>
-  );
-}
-
-export function Numero(props: { rotulo: string; sufixo: string; valor: number; opcoes: number[]; aoMudar: (v: number) => void }) {
-  return (
-    <label>
-      <span>{props.rotulo}</span>
-      <span class="linha">
-        <select class="campo" value={props.valor} onChange={(e) => props.aoMudar(Number(e.currentTarget.value))}>
-          {props.opcoes.map((n) => (
-            <option key={n} value={n}>{n}</option>
-          ))}
-        </select>
-        {props.sufixo}
-      </span>
-    </label>
   );
 }
 

@@ -116,6 +116,87 @@ export function tempoPorTipo(concluidas: Sessao[]): { tipo: TipoSessao; segundos
     .sort((a, b) => b.segundos - a.segundos);
 }
 
+export interface QuestoesDisciplina {
+  id: Id;
+  disciplina: Disciplina | null;
+  questoes: number;
+  acertos: number;
+  erros: number;
+  percentual: number; // 0–100, uma casa
+}
+
+/** Questões, acertos, erros e % de acerto por disciplina (maior número de questões primeiro; sem as zeradas). */
+export function questoesPorDisciplina(concluidas: Sessao[], disciplinas: Disciplina[]): QuestoesDisciplina[] {
+  const porId = new Map<Id, { questoes: number; acertos: number }>();
+  for (const s of doTipo(concluidas, 'Questões')) {
+    const a = porId.get(s.disciplina_id) ?? { questoes: 0, acertos: 0 };
+    porId.set(s.disciplina_id, { questoes: a.questoes + s.questoes, acertos: a.acertos + s.acertos });
+  }
+  return [...porId.entries()]
+    .filter(([, v]) => v.questoes > 0)
+    .map(([id, v]) => ({
+      id,
+      disciplina: disciplinas.find((d) => d.id === id) ?? null,
+      ...v,
+      erros: v.questoes - v.acertos,
+      percentual: Math.round((v.acertos / v.questoes) * 1000) / 10,
+    }))
+    .sort((a, b) => b.questoes - a.questoes || b.percentual - a.percentual);
+}
+
+/* ============================ Constância ============================ */
+
+export interface Constancia {
+  diasEstudados: number;
+  diasNoPeriodo: number;
+  /** Tempo médio nos dias em que houve estudo. */
+  mediaPorDiaEstudado: number;
+  /** Dias seguidos com estudo terminando hoje (ou ontem, se hoje ainda não estudou). */
+  sequenciaAtual: number;
+  /** Maior sequência de dias seguidos com estudo dentro do período. */
+  maiorSequencia: number;
+}
+
+function diasComEstudo(concluidas: Sessao[]): Set<string> {
+  return new Set(concluidas.filter((s) => duracaoSegundos(s) > 0).map(diaDaSessao));
+}
+
+/**
+ * `doPeriodo`: sessões do período filtrado (dias, média e maior sequência);
+ * `todas`: todas as concluídas (a sequência atual não depende do filtro).
+ */
+export function constancia(doPeriodo: Sessao[], todas: Sessao[], de: string, ate: string, hoje: string): Constancia {
+  const dias = diasComEstudo(doPeriodo);
+  const diasNoPeriodo = Math.round((deDataISO(ate).getTime() - deDataISO(de).getTime()) / 86_400_000) + 1;
+  let maior = 0;
+  let atual = 0;
+  for (let d = de; d <= ate; d = somarDias(d, 1)) {
+    atual = dias.has(d) ? atual + 1 : 0;
+    maior = Math.max(maior, atual);
+  }
+  const todosOsDias = diasComEstudo(todas);
+  let dia = todosOsDias.has(hoje) ? hoje : somarDias(hoje, -1);
+  let sequenciaAtual = 0;
+  while (todosOsDias.has(dia)) {
+    sequenciaAtual++;
+    dia = somarDias(dia, -1);
+  }
+  return {
+    diasEstudados: dias.size,
+    diasNoPeriodo,
+    mediaPorDiaEstudado: dias.size ? somaSeg(doPeriodo) / dias.size : 0,
+    sequenciaAtual,
+    maiorSequencia: maior,
+  };
+}
+
+/** Tempo por dia da semana (0 = domingo … 6 = sábado). */
+export function tempoPorDiaDaSemana(concluidas: Sessao[]): number[] {
+  const t = [0, 0, 0, 0, 0, 0, 0];
+  for (const s of concluidas) t[deDataISO(diaDaSessao(s)).getDay()] += duracaoSegundos(s);
+  return t;
+}
+
 /* ============================ Acompanhamento por disciplina ============================ */
 
 export interface LinhaAcompanhamento {
@@ -137,6 +218,12 @@ export interface LinhaAcompanhamento {
   segundos: number;
   minutosPorPagina: number | null;
   minutosPorQuestao: number | null;
+  /** Páginas que faltam do PDF (null sem total). */
+  paginasRestantes: number | null;
+  /** Horas estimadas para terminar o PDF no seu ritmo (páginas restantes × min/página); null sem ritmo ou sem total. */
+  horasEstimadasPdf: number | null;
+  /** Horas de vídeo que faltam (null sem total). */
+  horasVideoRestantes: number | null;
 }
 
 const pct = (parte: number, total: number | null) => (total ? Math.round((parte / total) * 10000) / 100 : null);
@@ -157,6 +244,7 @@ export function acompanhamento(disciplinasOrdenadas: Disciplina[], leis: Lei[], 
         leisAtivas.length && leisAtivas.every((l) => l.total_artigos) ? leisAtivas.reduce((s, l) => s + (l.total_artigos ?? 0), 0) : null;
       const totalPaginas = d.possui_pdf ? d.total_paginas : null;
       const totalHorasVideo = d.possui_video ? d.total_horas_video : null;
+      const paginasRestantes = totalPaginas ? Math.max(0, totalPaginas - ind.paginas) : null;
       return {
         disciplina: d,
         paginasLidas: ind.paginas,
@@ -174,6 +262,9 @@ export function acompanhamento(disciplinasOrdenadas: Disciplina[], leis: Lei[], 
         segundos: ind.segundos,
         minutosPorPagina: ind.minutosPorPagina,
         minutosPorQuestao: ind.minutosPorQuestao,
+        paginasRestantes,
+        horasEstimadasPdf: paginasRestantes !== null && ind.minutosPorPagina !== null ? (paginasRestantes * ind.minutosPorPagina) / 60 : null,
+        horasVideoRestantes: totalHorasVideo ? Math.max(0, totalHorasVideo - ind.horasVideo) : null,
       };
     });
 }

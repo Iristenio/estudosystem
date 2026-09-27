@@ -150,17 +150,30 @@ export interface Coluna {
   chave: string;
   rotulo: string; // eixo X (pode ficar vazio para não amontoar)
   valor: number;
+  /** Valor escrito em cima da coluna (vazio = sem rótulo, ex.: dia sem estudo). */
+  texto?: string;
   dica: ConteudoDica;
 }
 
-export function GraficoColunas({ colunas, formatarEixo, descricao }: { colunas: Coluna[]; formatarEixo: (n: number) => string; descricao: string }) {
+interface PropsColunas {
+  colunas: Coluna[];
+  formatarEixo: (n: number) => string;
+  descricao: string;
+}
+
+/** Com muitas colunas, os valores ficam na vertical para não se sobreporem. */
+const LIMITE_VALORES_HORIZONTAIS = 16;
+
+export function GraficoColunas({ colunas, formatarEixo, descricao }: PropsColunas) {
+  const comValores = colunas.some((c) => c.texto);
+  const vertical = colunas.length > LIMITE_VALORES_HORIZONTAIS;
   const dica = useDica();
   const { max, passo } = escalaRedonda(Math.max(0, ...colunas.map((c) => c.valor)));
   const linhas: number[] = [];
   for (let v = 0; v <= max + 1e-9; v += passo) linhas.push(v);
 
   return (
-    <div class="grafico-colunas" role="img" aria-label={descricao}>
+    <div class={`grafico-colunas${comValores ? ' com-valores' : ''}${vertical ? ' valores-verticais' : ''}`} role="img" aria-label={descricao}>
       <div class="eixo-y" aria-hidden="true">
         {linhas.map((v) => (
           <span key={v} style={{ bottom: `${(v / max) * 100}%` }}>
@@ -180,7 +193,13 @@ export function GraficoColunas({ colunas, formatarEixo, descricao }: { colunas: 
             aria-label={`${c.dica.titulo}: ${c.dica.linhas.map((l) => l.valor).join(', ')}`}
             {...comDica(dica, c.dica)}
           >
-            <span class="coluna-barra" style={{ height: `${(c.valor / max) * 100}%`, transitionDelay: `${Math.min(i * 25, 600)}ms` }} />
+            <span class="coluna-barra" style={{ height: `${(c.valor / max) * 100}%`, transitionDelay: `${Math.min(i * 25, 600)}ms` }}>
+              {c.texto && (
+                <span class="coluna-valor" aria-hidden="true">
+                  {c.texto}
+                </span>
+              )}
+            </span>
             <span class="coluna-rotulo" aria-hidden="true">
               {c.rotulo}
             </span>
@@ -212,12 +231,96 @@ export function BarrasHorizontais({ barras }: { barras: Barra[] }) {
           <button type="button" class="barra-h" aria-label={`${b.rotulo}: ${b.texto}`} {...comDica(dica, b.dica)}>
             <span class="barra-h-nome">
               <span class="bolinha" style={{ background: b.cor }} />
-              {b.rotulo}
+              <span class="barra-h-nome-texto">{b.rotulo}</span>
             </span>
             <span class="barra-h-trilho">
               <span class="barra-h-preench" style={{ width: `${(b.valor / max) * 100}%`, background: b.cor, transitionDelay: `${i * 60}ms` }} />
             </span>
             <span class="barra-h-valor">{b.texto}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/* ---------------- Barras empilhadas (duas partes: ex. acertos + erros) ---------------- */
+
+export interface BarraEmpilhada {
+  chave: string;
+  rotulo: string;
+  cor: string; // bolinha de identidade (a disciplina)
+  partes: [number, number];
+  texto: string; // na ponta (ex.: "85%")
+  dica: ConteudoDica;
+}
+
+/** Partes em cores fixas (legenda acima); a 2ª parte é neutra. Comprimento proporcional ao total. */
+export function BarrasEmpilhadas({ barras, legenda }: { barras: BarraEmpilhada[]; legenda: [string, string] }) {
+  const dica = useDica();
+  const max = Math.max(0, ...barras.map((b) => b.partes[0] + b.partes[1])) || 1;
+  return (
+    <>
+      <div class="legenda" aria-hidden="true">
+        <span>
+          <span class="legenda-chave parte-1" /> {legenda[0]}
+        </span>
+        <span>
+          <span class="legenda-chave parte-2" /> {legenda[1]}
+        </span>
+      </div>
+      <ul class="barras-h">
+        {barras.map((b, i) => (
+          <li key={b.chave}>
+            <button type="button" class="barra-h" aria-label={`${b.rotulo}: ${b.dica.linhas.map((l) => `${l.valor} ${l.rotulo ?? ''}`).join(', ')}`} {...comDica(dica, b.dica)}>
+              <span class="barra-h-nome">
+                <span class="bolinha" style={{ background: b.cor }} />
+                <span class="barra-h-nome-texto">{b.rotulo}</span>
+              </span>
+              <span class="barra-h-trilho">
+                <span class="empilhada" style={{ width: `${((b.partes[0] + b.partes[1]) / max) * 100}%`, transitionDelay: `${i * 60}ms` }}>
+                  {b.partes[0] > 0 && <span class="parte parte-1" style={{ flexGrow: b.partes[0] }} />}
+                  {b.partes[1] > 0 && <span class="parte parte-2" style={{ flexGrow: b.partes[1] }} />}
+                </span>
+              </span>
+              <span class="barra-h-valor">{b.texto}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+/* ---------------- Comparativo: nome · medidor (0–100%) · percentual ---------------- */
+
+export interface ItemComparativo {
+  chave: string;
+  rotulo: string;
+  cor: string;
+  percentual: number | null; // null = sem dado ("—")
+  detalhe: string; // na dica (ex.: "12h de 70h")
+}
+
+export function Comparativo({ itens }: { itens: ItemComparativo[] }) {
+  const dica = useDica();
+  const fmt = (n: number) => `${n.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
+  return (
+    <ul class="barras-h comparativo">
+      {itens.map((it) => (
+        <li key={it.chave}>
+          <button
+            type="button"
+            class="barra-h"
+            aria-label={`${it.rotulo}: ${it.percentual === null ? 'sem dado' : fmt(it.percentual)} (${it.detalhe})`}
+            {...comDica(dica, { titulo: it.rotulo, linhas: [{ valor: it.percentual === null ? '—' : fmt(it.percentual), rotulo: it.detalhe, cor: it.cor }] })}
+          >
+            <span class="barra-h-nome">
+              <span class="bolinha" style={{ background: it.cor }} />
+              <span class="barra-h-nome-texto">{it.rotulo}</span>
+            </span>
+            <Medidor percentual={it.percentual ?? 0} cor={it.cor} />
+            <span class="barra-h-valor">{it.percentual === null ? '—' : fmt(it.percentual)}</span>
           </button>
         </li>
       ))}

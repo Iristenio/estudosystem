@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Sessao } from './tipos';
-import { acompanhamento, horasPorDia, horasPorMes, indicadores, primeiroDia, serieDoPeriodo, tempoPorDisciplina, tempoPorTipo } from './painel';
+import { acompanhamento, constancia, horasPorDia, horasPorMes, indicadores, primeiroDia, questoesPorDisciplina, serieDoPeriodo, tempoPorDiaDaSemana, tempoPorDisciplina, tempoPorTipo } from './painel';
 import { concluir, finalizar, iniciarSessao, juntarDataHora } from './sessoes';
 import { disciplinasIniciais, leisIniciais } from './dadosIniciais';
 import { novaLei } from './leis';
@@ -114,3 +114,44 @@ describe('acompanhamento por disciplina', () => {
     expect(acompanhamento(semD05, [], todas).map((l) => l.disciplina.id)).toEqual(['D01', 'D02', 'D03', 'D04']);
   });
 });
+
+describe('novas métricas', () => {
+  it('questões por disciplina: acertos, erros e % de acerto (mais questões primeiro)', () => {
+    const q2 = sessao('2026-09-22', 10, { tipo: 'Questões', disciplina_id: 'D04', questoes: 30, acertos: 27 });
+    const q3 = sessao('2026-09-23', 10, { tipo: 'Questões', disciplina_id: 'D01', questoes: 10, acertos: 3 });
+    const r = questoesPorDisciplina([...todas, q2, q3], disciplinasIniciais());
+    // empate em 30 questões: desempata pelo maior % de acerto
+    expect(r.map((x) => [x.id, x.questoes, x.acertos, x.erros, x.percentual])).toEqual([
+      ['D04', 30, 27, 3, 90],
+      ['D01', 30, 16, 14, 53.3],
+    ]);
+    expect(r[0].disciplina?.nome).toBe('BANCO DE DADOS');
+    expect(questoesPorDisciplina([pdf], [])).toEqual([]);
+  });
+
+  it('constância: dias estudados, média por dia estudado e sequências', () => {
+    // estudou 20, 21 e 22/09 (seguidos) e 10/08
+    const c = constancia(todas.filter((s) => s !== video), todas, '2026-09-18', '2026-09-24', '2026-09-23');
+    expect(c.diasEstudados).toBe(3);
+    expect(c.diasNoPeriodo).toBe(7);
+    expect(c.mediaPorDiaEstudado).toBe((145 * 60) / 3);
+    expect(c.maiorSequencia).toBe(3);
+    expect(c.sequenciaAtual).toBe(3); // hoje (23) ainda sem estudo: conta até ontem
+    expect(constancia(todas, todas, '2026-09-18', '2026-09-24', '2026-09-25').sequenciaAtual).toBe(0);
+  });
+
+  it('tempo por dia da semana (0 = domingo)', () => {
+    const t = tempoPorDiaDaSemana(todas);
+    expect(t[0]).toBe(60 * 60); // 20/09/2026 é domingo
+    expect(t[1]).toBe(90 * 60 + 45 * 60); // segundas: 10/08 (vídeo) e 21/09
+  });
+
+  it('estimativa para terminar o material, no seu ritmo', () => {
+    const [d01, d02] = acompanhamento(disciplinasIniciais(), [], todas);
+    expect(d01.paginasRestantes).toBe(1064 - 30);
+    expect(d01.horasEstimadasPdf).toBeCloseTo((1034 * 2) / 60, 5); // 2 min por página
+    expect(d02.horasVideoRestantes).toBe(38.5);
+    expect(acompanhamento(disciplinasIniciais(), [], [])[0].horasEstimadasPdf).toBeNull(); // sem ritmo ainda
+  });
+});
+

@@ -5,7 +5,7 @@ import { ordenarDisciplinas } from '../../dominio/disciplinas';
 import { acompanhamento, type LinhaAcompanhamento } from '../../dominio/painel';
 import { formatarDuracaoCurta, sessoesValidas } from '../../dominio/sessoes';
 import { useEntidade } from '../../dados/ganchos';
-import { AlternarTabela, Contador, Medidor, ProvedorDica, Revelar } from '../componentes/Graficos';
+import { AlternarTabela, Comparativo, Contador, Medidor, ProvedorDica, Revelar, type ItemComparativo } from '../componentes/Graficos';
 import { IconeProgresso } from '../icones';
 
 const fmtInt = (n: number) => Math.round(n).toLocaleString('pt-BR');
@@ -37,14 +37,64 @@ export function TelaAcompanhamento() {
         ) : tabela ? (
           <TabelaAcompanhamento linhas={linhas} />
         ) : (
-          <div class="grade-acompanhamento">
-            {linhas.map((l, i) => (
-              <CartaoDisciplina key={l.disciplina.id} l={l} atraso={(i % 3) * 90} />
-            ))}
-          </div>
+          <>
+            <Comparativos linhas={linhas} />
+            <h2 class="secao-titulo">Por disciplina</h2>
+            <div class="grade-acompanhamento">
+              {linhas.map((l, i) => (
+                <CartaoDisciplina key={l.disciplina.id} l={l} atraso={(i % 3) * 90} />
+              ))}
+            </div>
+          </>
         )}
       </div>
     </ProvedorDica>
+  );
+}
+
+/** Comparativo entre disciplinas: só entram as que têm o material (ou questões) em cada quesito. */
+function Comparativos({ linhas }: { linhas: LinhaAcompanhamento[] }) {
+  const item = (l: LinhaAcompanhamento, percentual: number | null, detalhe: string): ItemComparativo => ({
+    chave: l.disciplina.id,
+    rotulo: l.disciplina.nome,
+    cor: l.disciplina.cor,
+    percentual,
+    detalhe,
+  });
+  const quadros: { titulo: string; itens: ItemComparativo[]; vazio: string }[] = [
+    {
+      titulo: 'Vídeo assistido (% do total)',
+      itens: linhas.filter((l) => l.totalHorasVideo !== null).map((l) => item(l, l.percentualVideo, `${fmtHoras(l.horasVideo)} de ${fmtHoras(l.totalHorasVideo!)}`)),
+      vazio: 'Nenhuma disciplina com total de horas de vídeo.',
+    },
+    {
+      titulo: 'PDF lido (% das páginas)',
+      itens: linhas.filter((l) => l.totalPaginas !== null).map((l) => item(l, l.percentualPaginas, `${fmtInt(l.paginasLidas)} de ${fmtInt(l.totalPaginas!)} páginas`)),
+      vazio: 'Nenhuma disciplina com total de páginas.',
+    },
+    {
+      titulo: 'Acerto nas questões',
+      itens: linhas.filter((l) => l.questoes > 0).map((l) => item(l, l.percentualAcerto, `${fmtInt(l.acertos)} acertos em ${fmtInt(l.questoes)} questões`)),
+      vazio: 'Nenhuma questão respondida ainda.',
+    },
+    {
+      titulo: 'Lei seca (% dos artigos)',
+      itens: linhas.filter((l) => l.totalArtigos !== null).map((l) => item(l, l.percentualLeiSeca, `${fmtInt(l.artigosLidos)} de ${fmtInt(l.totalArtigos!)} artigos`)),
+      vazio: 'Nenhuma disciplina com leis cadastradas (com total de artigos).',
+    },
+  ];
+  return (
+    <>
+      <h2 class="secao-titulo">Comparativo entre disciplinas</h2>
+      <div class="grade-comparativos">
+        {quadros.map((q, i) => (
+          <Revelar key={q.titulo} class="cartao" atraso={(i % 2) * 120}>
+            <h2>{q.titulo}</h2>
+            {q.itens.length ? <Comparativo itens={q.itens} /> : <p class="dica">{q.vazio}</p>}
+          </Revelar>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -85,6 +135,19 @@ function CartaoDisciplina({ l, atraso }: { l: LinhaAcompanhamento; atraso: numbe
           <strong>{fmtMin(l.minutosPorQuestao)}</strong>
         </div>
       </div>
+      {(l.paginasRestantes || l.horasVideoRestantes) ? (
+        <p class="faltam">
+          Faltam:{' '}
+          {[
+            l.paginasRestantes
+              ? `${fmtInt(l.paginasRestantes)} páginas${l.horasEstimadasPdf !== null ? ` (~${fmtHoras(l.horasEstimadasPdf)} no seu ritmo)` : ''}`
+              : null,
+            l.horasVideoRestantes ? `${fmtHoras(l.horasVideoRestantes)} de vídeo` : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+        </p>
+      ) : null}
     </Revelar>
   );
 }

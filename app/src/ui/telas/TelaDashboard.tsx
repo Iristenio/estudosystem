@@ -4,12 +4,13 @@ import { useState } from 'preact/hooks';
 import type { Disciplina } from '../../dominio/tipos';
 import { ordenarDisciplinas } from '../../dominio/disciplinas';
 import { FILTRO_PADRAO, filtrarSessoes, intervaloDoPeriodo, ROTULO_PERIODO, type Filtro, type Periodo } from '../../dominio/historico';
-import { indicadores, primeiroDia, serieDoPeriodo, tempoPorDisciplina, tempoPorTipo, horasPorMes } from '../../dominio/painel';
+import { constancia, horasPorMes, indicadores, primeiroDia, questoesPorDisciplina, serieDoPeriodo, tempoPorDiaDaSemana, tempoPorDisciplina, tempoPorTipo } from '../../dominio/painel';
 import { duracaoSegundos, formatarDuracaoCurta, ROTULO_TIPO } from '../../dominio/sessoes';
 import { deDataISO, hojeISO } from '../../dominio/datas';
 import { useEntidade } from '../../dados/ganchos';
 import {
   AlternarTabela,
+  BarrasEmpilhadas,
   BarrasHorizontais,
   ContextoAnimar,
   Contador,
@@ -34,6 +35,12 @@ const fmtMesCurto = new Intl.DateTimeFormat('pt-BR', { month: 'short' });
 const fmtMesLongo = new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' });
 const fmtDataHora = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 const COR_SERIE = 'var(--primaria)';
+const DIAS_SEMANA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+/** Valor curto em cima da coluna: 45 min → "45m", 80 min → "1h20". */
+function fmtCompacto(segundos: number): string {
+  const min = Math.round(segundos / 60);
+  return min < 60 ? `${min}m` : `${Math.floor(min / 60)}h${String(min % 60).padStart(2, '0')}`;
+}
 
 export function TelaDashboard() {
   const sessoes = useEntidade('sessoes');
@@ -57,7 +64,10 @@ export function TelaDashboard() {
   const meses = horasPorMes(doAno, `${hoje.slice(0, 4)}-01-01`, `${hoje.slice(0, 4)}-12-31`);
   const porDisciplina = tempoPorDisciplina(lista, disciplinas);
   const porTipo = tempoPorTipo(lista);
-  const diasComEstudo = serie.granularidade === 'dia' ? serie.pontos.filter((p) => p.segundos > 0).length : null;
+  const todasDaDisciplina = filtrarSessoes(sessoes, { ...FILTRO_PADRAO, periodo: 'tudo', disciplina_id: filtro.disciplina_id });
+  const cons = constancia(lista, todasDaDisciplina, de, intervalo.ate ?? hoje, hoje);
+  const questoes = questoesPorDisciplina(lista, disciplinas);
+  const semana = tempoPorDiaDaSemana(lista);
 
   return (
     <ProvedorDica>
@@ -93,11 +103,22 @@ export function TelaDashboard() {
                 <Contador valor={ind.segundos / 3600} formatar={fmtHoras} />
               </strong>
               <small>
-                {fmtInt(ind.sessoes)} {ind.sessoes === 1 ? 'sessão' : 'sessões'}
-                {diasComEstudo !== null && ` · ${diasComEstudo} ${diasComEstudo === 1 ? 'dia' : 'dias'} com estudo`}
+                {fmtInt(ind.sessoes)} {ind.sessoes === 1 ? 'sessão' : 'sessões'} · {cons.diasEstudados} de {cons.diasNoPeriodo}{' '}
+                {cons.diasNoPeriodo === 1 ? 'dia' : 'dias'} com estudo
               </small>
             </div>
-            <Kpi rotulo="Média por sessão" valor={ind.mediaSegundos / 60} formatar={(n) => `${fmtInt(n)} min`} />
+            <Kpi
+              rotulo="Sequência atual"
+              valor={cons.sequenciaAtual}
+              formatar={(n) => `${fmtInt(n)} ${Math.round(n) === 1 ? 'dia' : 'dias'}`}
+              extra={`maior no período: ${cons.maiorSequencia} ${cons.maiorSequencia === 1 ? 'dia' : 'dias'} seguidos`}
+            />
+            <Kpi
+              rotulo="Média por dia estudado"
+              valor={cons.mediaPorDiaEstudado / 3600}
+              formatar={fmtHoras}
+              extra={`${fmtInt(ind.mediaSegundos / 60)} min por sessão`}
+            />
             <Kpi rotulo="Páginas lidas" valor={ind.paginas} formatar={fmtInt} extra={ind.minutosPorPagina !== null ? `${fmtDec2(ind.minutosPorPagina)} min por página` : undefined} />
             <Kpi
               rotulo="Questões"
@@ -157,6 +178,60 @@ export function TelaDashboard() {
                           texto: formatarDuracaoCurta(x.segundos),
                           cor: COR_SERIE,
                           dica: { titulo: ROTULO_TIPO[x.tipo], linhas: [{ valor: formatarDuracaoCurta(x.segundos), rotulo: `${fmtDec((x.segundos / ind.segundos) * 100)}% do tempo` }] },
+                        }))}
+                      />
+                    )
+                  }
+                </CartaoGrafico>
+              </div>
+
+              <div class="grade-painel">
+                <CartaoGrafico titulo="Questões por disciplina" atraso={0}>
+                  {(tabela) =>
+                    questoes.length === 0 ? (
+                      <p class="dica">Nenhuma sessão de questões no período.</p>
+                    ) : tabela ? (
+                      <Tabela
+                        cabecalho={['Disciplina', 'Questões', 'Acertos', 'Erros', '% acerto']}
+                        linhas={questoes.map((x) => [x.disciplina?.nome ?? 'Disciplina removida', fmtInt(x.questoes), fmtInt(x.acertos), fmtInt(x.erros), `${fmtDec(x.percentual)}%`])}
+                      />
+                    ) : (
+                      <BarrasEmpilhadas
+                        legenda={['Acertos', 'Erros']}
+                        barras={questoes.map((x) => ({
+                          chave: x.id,
+                          rotulo: x.disciplina?.nome ?? 'Disciplina removida',
+                          cor: x.disciplina?.cor ?? 'var(--borda)',
+                          partes: [x.acertos, x.erros],
+                          texto: `${fmtDec(x.percentual)}%`,
+                          dica: {
+                            titulo: x.disciplina?.nome ?? 'Disciplina removida',
+                            linhas: [
+                              { valor: `${fmtDec(x.percentual)}%`, rotulo: 'de acerto' },
+                              { valor: fmtInt(x.acertos), rotulo: 'acertos', cor: 'var(--primaria)' },
+                              { valor: fmtInt(x.erros), rotulo: 'erros', cor: 'color-mix(in srgb, var(--texto-2) 38%, var(--superficie))' },
+                              { valor: fmtInt(x.questoes), rotulo: 'questões' },
+                            ],
+                          },
+                        }))}
+                      />
+                    )
+                  }
+                </CartaoGrafico>
+                <CartaoGrafico titulo="Tempo por dia da semana" atraso={120}>
+                  {(tabela) =>
+                    tabela ? (
+                      <Tabela cabecalho={['Dia', 'Tempo']} linhas={semana.map((seg, i) => [DIAS_SEMANA[i], formatarDuracaoCurta(seg)])} />
+                    ) : (
+                      <GraficoColunas
+                        descricao="Tempo de estudo por dia da semana"
+                        formatarEixo={fmtEixoHoras}
+                        colunas={semana.map((seg, i) => ({
+                          chave: String(i),
+                          rotulo: DIAS_SEMANA[i].slice(0, 3),
+                          valor: seg / 3600,
+                          texto: seg ? fmtCompacto(seg) : '',
+                          dica: { titulo: DIAS_SEMANA[i], linhas: [{ valor: seg ? formatarDuracaoCurta(seg) : 'sem estudo', cor: seg ? COR_SERIE : undefined }] },
                         }))}
                       />
                     )
@@ -261,6 +336,7 @@ function colunasDe(pontos: { chave: string; segundos: number }[], granularidade:
       chave: p.chave,
       rotulo: mostrar ? curto : '',
       valor: p.segundos / 3600,
+      texto: p.segundos ? fmtCompacto(p.segundos) : '',
       dica: { titulo: rotuloLongo(p.chave, granularidade), linhas: [{ valor: p.segundos ? formatarDuracaoCurta(p.segundos) : 'sem estudo', cor: p.segundos ? COR_SERIE : undefined }] },
     };
   });
