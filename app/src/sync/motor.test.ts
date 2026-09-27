@@ -4,7 +4,7 @@ import 'fake-indexeddb/auto';
 import { createRequire } from 'node:module';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { abrirBanco, fecharBanco, NOME_BANCO } from '../dados/db';
-import { buscar, listarFila, salvar, salvarInterno } from '../dados/repositorio';
+import { buscar, garantirDadosIniciais, listarFila, salvar, salvarInterno } from '../dados/repositorio';
 import { novaDisciplina } from '../dominio/disciplinas';
 import { finalizar, iniciarSessao } from '../dominio/sessoes';
 import { baixarTudo, decodificarCodigo, lerEstadoSync, sincronizar } from './motor';
@@ -110,5 +110,21 @@ describe('sincronização', () => {
     await (await abrirBanco()).clear('disciplinas');
     await baixarTudo();
     expect((await buscar('disciplinas', 'i1'))?.nome).toBe('a');
+  });
+});
+
+describe('dados iniciais num aparelho novo', () => {
+  it('não sobrescrevem edições reais já na planilha (a planilha vence e o aparelho recebe a versão editada)', async () => {
+    // Outro aparelho já editou o peso de D01 (edição real, mas ANTERIOR à instalação do aparelho novo)
+    const editada = { ...novaDisciplina({ id: 'D01', nome: 'DIREITO CONSTITUCIONAL', peso: 3 }), atualizado_em: '2026-09-26T12:00:00.000Z' }; // antes da instalação do aparelho novo
+    outroAparelhoEnvia('disciplinas', editada);
+    // Aparelho novo: cria os dados iniciais (peso 2, data fixa antiga) e sincroniza
+    await garantirDadosIniciais();
+    expect((await buscar('disciplinas', 'D01'))?.atualizado_em).toBe('2026-09-26T00:00:00.000Z');
+    await sincronizar();
+    expect((await buscar('disciplinas', 'D01'))?.peso).toBe(3);
+    const linhaD01 = tabelas.disciplinas.linhas().find((l: string[]) => l[0] === 'D01');
+    expect(linhaD01[5]).toBe('3'); // coluna "peso" continua com a edição
+    expect(await listarFila()).toHaveLength(0);
   });
 });

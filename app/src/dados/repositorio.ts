@@ -214,21 +214,27 @@ export async function salvarConfig(parcial: Partial<Config>) {
  * Executado ao abrir o app. Use para criar registros padrão (com ids FIXOS, para não duplicar
  * ao restaurar da planilha) ou migrar dados antigos uma única vez (guardando uma marca com salvarInterno).
  */
-export async function garantirDadosIniciais(agora = new Date()) {
+/** Data fixa e antiga dos dados iniciais: qualquer edição real (sempre mais nova) vence na sincronização. */
+export const CARIMBO_INICIAL = new Date('2026-09-26T00:00:00.000Z');
+
+export async function garantirDadosIniciais(agora = CARIMBO_INICIAL) {
   // Uma única vez por aparelho: as disciplinas e a lei da planilha antiga (ids fixos → sem duplicar entre aparelhos)
   if (!(await lerInterno('_cadastros_iniciais'))) {
     const existentes = await listarTodos('disciplinas');
     if (!existentes.length) {
-      await gravar([
-        ...disciplinasIniciais(agora).map((registro) => ({ entidade: 'disciplinas' as const, registro })),
-        ...leisIniciais(agora).map((registro) => ({ entidade: 'leis' as const, registro })),
-      ]);
+      await gravar(
+        [
+          ...disciplinasIniciais(agora).map((registro) => ({ entidade: 'disciplinas' as const, registro })),
+          ...leisIniciais(agora).map((registro) => ({ entidade: 'leis' as const, registro })),
+        ],
+        agora, // data fixa antiga (CARIMBO_INICIAL) — ver acima
+      );
     }
     await salvarInterno('_cadastros_iniciais', true);
   }
   // Etapa 4: o ciclo da planilha (30 h, ponteiro 4F4), também uma única vez
   if (!(await lerInterno('_ciclo_inicial'))) {
-    if (!(await buscar('ciclo', ID_CICLO))) await salvar('ciclo', cicloInicial(agora));
+    if (!(await buscar('ciclo', ID_CICLO))) await gravar([{ entidade: 'ciclo', registro: cicloInicial(agora) }], agora);
     await salvarInterno('_ciclo_inicial', true);
   }
 }
