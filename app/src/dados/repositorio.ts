@@ -2,12 +2,14 @@
 // Regras: nada é apagado de verdade (exclusão lógica via status); toda gravação carimba
 // atualizado_em e entra na fila, que o motor de sincronização envia quando houver internet.
 import { abrirBanco } from './db';
-import type { Config, Entidade, Item, ItemFila, Registro } from '../dominio/tipos';
+import type { Config, Disciplina, Entidade, ItemFila, Lei, Registro } from '../dominio/tipos';
 import { CONFIG_PADRAO, ENTIDADES } from '../dominio/tipos';
+import { disciplinasIniciais, leisIniciais } from '../dominio/dadosIniciais';
 
 /** ► Nova entidade: acrescente aqui o tipo correspondente. */
 export type MapaEntidades = {
-  itens: Item;
+  disciplinas: Disciplina;
+  leis: Lei;
 };
 
 export const novoId = (): string => crypto.randomUUID();
@@ -210,9 +212,17 @@ export async function salvarConfig(parcial: Partial<Config>) {
  * Executado ao abrir o app. Use para criar registros padrão (com ids FIXOS, para não duplicar
  * ao restaurar da planilha) ou migrar dados antigos uma única vez (guardando uma marca com salvarInterno).
  */
-export async function garantirDadosIniciais(_agora = new Date()) {
-  // Exemplo:
-  // if (!(await buscar('itens', 'boas-vindas'))) await salvar('itens', { id: 'boas-vindas', ... });
+export async function garantirDadosIniciais(agora = new Date()) {
+  // Uma única vez por aparelho: as disciplinas e a lei da planilha antiga (ids fixos → sem duplicar entre aparelhos)
+  if (await lerInterno('_cadastros_iniciais')) return;
+  const existentes = await listarTodos('disciplinas');
+  if (!existentes.length) {
+    await gravar([
+      ...disciplinasIniciais(agora).map((registro) => ({ entidade: 'disciplinas' as const, registro })),
+      ...leisIniciais(agora).map((registro) => ({ entidade: 'leis' as const, registro })),
+    ]);
+  }
+  await salvarInterno('_cadastros_iniciais', true);
 }
 
 /** RS09 — pede ao navegador para não apagar os dados locais. */

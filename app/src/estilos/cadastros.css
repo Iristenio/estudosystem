@@ -1,0 +1,74 @@
+/* ============ Cadastros (disciplinas e leis) e campos de formulário com rótulo ============ */
+
+/* Campo com rótulo em cima */
+.rotulo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--texto-2);
+}
+.rotulo .campo { font-weight: 400; }
+.rotulo small.dica { font-weight: 400; font-size: 13.5px; }
+.rotulo.em-linha { flex-direction: row; align-items: center; gap: 10px; }
+
+.grade-2 { display: grid; grid-template-columns: minmax(0, 1fr) 130px; gap: 12px; }
+.campo-numero { width: 96px !important; text-align: right; font-variant-numeric: tabular-nums; }
+select.campo.campo-largo { width: 100%; }
+
+.material {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--toque);
+}
+.material .rotulo.em-linha { white-space: nowrap; }
+
+/* Cor livre: o seletor do sistema fica invisível por cima da bolinha "+" */
+.cor-livre {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+}
+.cor-livre[aria-pressed='true'] { outline-color: var(--texto); }
+.cor-livre input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+.espaco-abaixo { margin-bottom: 12px; }
+
+/* Linha da lista de disciplinas: faixa de cor, posição, texto e botões de ordem */
+.linha-cadastro { position: relative; overflow: hidden; padding-left: 18px; gap: 12px; }
+.faixa-cor { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; }
+.posicao {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--superficie-2);
+  color: var(--texto-2);
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.ordenar { display: flex; gap: 2px; flex: none; }
+.botao-icone:disabled { opacity: 0.25; cursor: default; }
+.botao-icone.pequeno { width: 36px; height: 36px; margin-left: auto; }
+.botao-icone.pequeno svg { width: 20px; height: 20px; }
+
+.linha-item.inativa .linha-item-texto strong { color: var(--texto-2); }
+.linha-item.inativa .faixa-cor { opacity: 0.35; }
+.linha-item-texto strong .etiqueta { margin-left: 8px; vertical-align: 2px; }
+.etiqueta.neutra { background: var(--superficie-2); color: var(--texto-2); font-size: 12px; padding: 1px 10px; }
+
+.grupos-leis { display: flex; flex-direction: column; gap: 16px; }
+.grupos-leis .linha-item { min-height: 56px; }

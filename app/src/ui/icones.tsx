@@ -172,3 +172,15 @@ export const IconeMenu = (p: Props) => (
     <path d="M4 6h16M4 12h16M4 18h16" />
   </Base>
 );
+
+export const IconeSetaCima = (p: Props) => (
+  <Base {...p}>
+    <path d="M6 15l6-6 6 6" />
+  </Base>
+);
+
+export const IconeSetaBaixo = (p: Props) => (
+  <Base {...p}>
+    <path d="M6 9l6 6 6-6" />
+  </Base>
+);

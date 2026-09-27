@@ -12,21 +12,40 @@ export interface Registro {
   atualizado_em: string;
 }
 
-/* ---------------- Entidade de exemplo: Item ----------------
-   Serve de modelo. Renomeie/adapte ou apague quando criar as entidades do seu projeto. */
+/** Exclusão lógica: nada é apagado de verdade (a sincronização precisa avisar os outros aparelhos). */
+export type StatusRegistro = 'ativo' | 'excluido';
 
-export type StatusItem = 'ativo' | 'concluido' | 'excluido';
+/* ---------------- Disciplina (antiga aba Config_Disciplinas) ---------------- */
 
-export interface Item extends Registro {
-  titulo: string;
+export interface Disciplina extends Registro {
+  nome: string;
+  categoria: string;
+  /** Inativa: some do ciclo e dos painéis, mas o histórico continua guardado. */
+  ativa: boolean;
+  ordem: number;
+  peso: number;
+  possui_pdf: boolean;
+  total_paginas: number | null;
+  possui_video: boolean;
+  total_horas_video: number | null;
+  cor: string; // #rrggbb
+  observacoes: string;
+  status: StatusRegistro;
+}
+
+/* ---------------- Lei seca (antiga aba Leis) ---------------- */
+
+export interface Lei extends Registro {
+  disciplina_id: Id;
+  nome: string;
+  total_artigos: number | null;
+  ativa: boolean;
   descricao: string;
-  data: string | null; // AAAA-MM-DD
-  hora: string | null; // HH:mm
-  status: StatusItem;
+  status: StatusRegistro;
 }
 
 /** Nomes das entidades sincronizadas (cada uma vira uma loja local e uma aba na planilha). */
-export const ENTIDADES = ['itens'] as const;
+export const ENTIDADES = ['disciplinas', 'leis'] as const;
 export type Entidade = (typeof ENTIDADES)[number];
 
 /* ---------------- Infraestrutura ---------------- */

@@ -6,6 +6,7 @@ import { iniciarSincronizacao } from './sync/motor';
 import './estilos/global.css';
 import './estilos/formularios.css';
 import './estilos/itens.css';
+import './estilos/cadastros.css';
 import './estilos/ajustes.css';
 
 // Perfil de dispositivos (app.config.ts) → classes que ajustam o layout (ver global.css)

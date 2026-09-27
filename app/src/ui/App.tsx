@@ -11,14 +11,15 @@ import { Dialogo } from './componentes/Dialogo';
 import { ProvedorEstado, useEstado, type Painel } from './estado';
 import { TelaEmConstrucao } from './telas/TelaEmConstrucao';
 import { TelaAjustes } from './telas/TelaAjustes';
-import { FormItem } from './paineis/FormItem';
+import { TelaDisciplinas } from './telas/TelaDisciplinas';
+import { TelaLeis } from './telas/TelaLeis';
+import { FormDisciplina } from './paineis/FormDisciplina';
+import { FormLei } from './paineis/FormLei';
 import {
-  IconeBalanca,
   IconeCiclo,
   IconeCronometro,
   IconeGrafico,
   IconeLista,
-  IconeLivro,
   IconeMenu,
   IconeProgresso,
 } from './icones';
@@ -65,39 +66,27 @@ const TELA: Record<Tela, () => JSX.Element> = {
       descricao="Sequência do ciclo por pesos, posição atual (ex.: 4F4) e a sugestão da próxima disciplina."
     />
   ),
-  disciplinas: () => (
-    <TelaEmConstrucao
-      titulo="Disciplinas"
-      sub="Cadastros"
-      etapa={1}
-      Icone={IconeLivro}
-      descricao="Cadastro das disciplinas: peso, ordem, cor e totais de páginas e de horas de vídeo."
-    />
-  ),
-  leis: () => (
-    <TelaEmConstrucao
-      titulo="Leis secas"
-      sub="Cadastros"
-      etapa={1}
-      Icone={IconeBalanca}
-      descricao="Cadastro das leis de cada disciplina, com o total de artigos."
-    />
-  ),
+  disciplinas: TelaDisciplinas,
+  leis: TelaLeis,
   config: TelaAjustes,
 };
 
 /** ► Novo painel: título e conteúdo de cada tipo declarado em estado.tsx. */
 function tituloPainel(p: Painel): string {
   switch (p.tipo) {
-    case 'item':
-      return p.id ? 'Item' : 'Novo item';
+    case 'disciplina':
+      return p.id ? 'Disciplina' : 'Nova disciplina';
+    case 'lei':
+      return p.id ? 'Lei seca' : 'Nova lei seca';
   }
 }
 
 function ConteudoPainel({ painel }: { painel: Painel }) {
   switch (painel.tipo) {
-    case 'item':
-      return <FormItem id={painel.id} />;
+    case 'disciplina':
+      return <FormDisciplina id={painel.id} />;
+    case 'lei':
+      return <FormLei id={painel.id} disciplinaId={painel.disciplinaId} />;
   }
 }
 

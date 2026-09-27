@@ -7,15 +7,24 @@
 
 var VERSAO_API = 1;
 
-// Tipos: s = texto, s? = texto ou vazio (null), n = número, b = sim/não, j = lista/objeto (JSON)
+// Tipos: s = texto, s? = texto ou vazio (null), n = número, n? = número ou vazio (null), b = sim/não, j = lista/objeto (JSON)
 // Campos novos entram SEMPRE no fim da lista (antes de _recebido_em), com migração em garantirEstrutura().
 var ESQUEMA = {
   // ► Nova entidade: acrescente aqui (mesmos campos do tipo em app/src/dominio/tipos.ts).
-  itens: {
-    aba: 'ITENS',
+  disciplinas: {
+    aba: 'DISCIPLINAS',
     campos: [
-      ['id', 's'], ['titulo', 's'], ['descricao', 's'], ['data', 's?'], ['hora', 's?'], ['status', 's'],
+      ['id', 's'], ['nome', 's'], ['categoria', 's'], ['ativa', 'b'], ['ordem', 'n'], ['peso', 'n'],
+      ['possui_pdf', 'b'], ['total_paginas', 'n?'], ['possui_video', 'b'], ['total_horas_video', 'n?'],
+      ['cor', 's'], ['observacoes', 's'], ['status', 's'],
       ['criado_em', 's'], ['atualizado_em', 's'],
+    ],
+  },
+  leis: {
+    aba: 'LEIS',
+    campos: [
+      ['id', 's'], ['disciplina_id', 's'], ['nome', 's'], ['total_artigos', 'n?'], ['ativa', 'b'], ['descricao', 's'],
+      ['status', 's'], ['criado_em', 's'], ['atualizado_em', 's'],
     ],
   },
 };
@@ -55,6 +64,7 @@ function linhaParaRegistro(entidade, linha) {
     switch (c[1]) {
       case 's?': registro[c[0]] = texto === '' ? null : texto; break;
       case 'n': registro[c[0]] = texto === '' ? 0 : Number(texto); break;
+      case 'n?': registro[c[0]] = texto === '' ? null : Number(texto); break;
       case 'b': registro[c[0]] = texto === 'SIM' || texto === 'TRUE' || texto === 'true' || bruto === true; break;
       case 'j':
         try { registro[c[0]] = texto ? JSON.parse(texto) : []; } catch (e) { registro[c[0]] = []; }
