@@ -23,18 +23,32 @@ export function Revelar({ children, atraso = 0, class: classe = '' }: { children
   const [entrou, setEntrou] = useState(!animar || escondida() || typeof IntersectionObserver === 'undefined');
 
   useEffect(() => {
-    if (entrou || !ref.current) return;
+    const el = ref.current;
+    if (entrou || !el) return;
     const obs = new IntersectionObserver(
       (entradas) => {
-        if (entradas.some((e) => e.isIntersecting)) {
-          setEntrou(true);
-          obs.disconnect();
-        }
+        if (entradas.some((e) => e.isIntersecting)) setEntrou(true);
       },
       { threshold: 0.06 },
     );
-    obs.observe(ref.current);
-    return () => obs.disconnect();
+    obs.observe(el);
+    // Plano B: se o navegador não avisar (aconteceu em alguns aparelhos), o próprio bloco confere
+    // se está na tela logo depois de aparecer e a cada rolagem — o conteúdo nunca fica invisível.
+    const naTela = () => {
+      const r = el.getBoundingClientRect();
+      const altura = window.innerHeight || document.documentElement.clientHeight;
+      if (altura > 0 && r.top < altura && r.bottom > 0) setEntrou(true);
+    };
+    const timer = setTimeout(naTela, 600);
+    const rolagem = el.closest('.conteudo');
+    rolagem?.addEventListener('scroll', naTela, { passive: true });
+    window.addEventListener('resize', naTela);
+    return () => {
+      obs.disconnect();
+      clearTimeout(timer);
+      rolagem?.removeEventListener('scroll', naTela);
+      window.removeEventListener('resize', naTela);
+    };
   }, [entrou]);
 
   return (
