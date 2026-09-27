@@ -1,5 +1,9 @@
 // Tela Ajustes: conexão com o Google, importação da planilha antiga e informações do aparelho.
 import { useEffect, useState } from 'preact/hooks';
+import type { Tema } from '../../dominio/tipos';
+import { salvarConfig } from '../../dados/repositorio';
+import { useConfig } from '../../dados/ganchos';
+import { aplicarTema } from '../tema';
 import { baixarTudo, conectar, desconectar, ErroApi, sincronizar } from '../../sync/motor';
 import { APP } from '../../app.config';
 import { descreverUltimaSync, ROTULO_STATUS, useSync } from '../../sync/ganchos';
@@ -15,6 +19,7 @@ export function TelaAjustes() {
       <div class="conteudo ajustes">
         <CartaoGoogle />
         <CartaoImportar />
+        <CartaoAparencia />
         <CartaoAparelho />
       </div>
     </>
@@ -128,6 +133,40 @@ function CartaoGoogle() {
           </p>
         </div>
       )}
+    </section>
+  );
+}
+
+/* ---------------- Aparência ---------------- */
+
+const TEMAS: { valor: Tema; rotulo: string }[] = [
+  { valor: 'sistema', rotulo: 'Sistema' },
+  { valor: 'claro', rotulo: 'Claro' },
+  { valor: 'escuro', rotulo: 'Escuro' },
+];
+
+function CartaoAparencia() {
+  const config = useConfig();
+  const escolher = (tema: Tema) => {
+    aplicarTema(tema);
+    salvarConfig({ tema });
+  };
+  return (
+    <section class="cartao">
+      <h2>Aparência</h2>
+      <div class="preferencias">
+        <label>
+          <span>Tema</span>
+          <div class="segmentado pequeno" role="radiogroup" aria-label="Tema">
+            {TEMAS.map((t) => (
+              <button key={t.valor} type="button" role="radio" aria-checked={config.tema === t.valor} onClick={() => escolher(t.valor)}>
+                {t.rotulo}
+              </button>
+            ))}
+          </div>
+        </label>
+      </div>
+      <p class="dica">“Sistema” acompanha o modo claro/escuro do aparelho. A escolha vale só para este aparelho.</p>
     </section>
   );
 }
