@@ -59,6 +59,8 @@ export function TelaDashboard() {
   const intervalo = intervaloDoPeriodo(filtro);
   const de = intervalo.de ?? primeiroDia(lista) ?? hoje;
   const serie = serieDoPeriodo(lista, de, intervalo.ate ?? hoje);
+  // No gráfico do período, o mais recente vem primeiro (à esquerda): lê-se de hoje para trás
+  const recentePrimeiro = [...serie.pontos].reverse();
   // "Horas por mês" mostra sempre o ano atual (só o filtro de disciplina vale)
   const doAno = filtrarSessoes(sessoes, { ...FILTRO_PADRAO, periodo: 'ano', disciplina_id: filtro.disciplina_id });
   const meses = horasPorMes(doAno, `${hoje.slice(0, 4)}-01-01`, `${hoje.slice(0, 4)}-12-31`);
@@ -143,13 +145,13 @@ export function TelaDashboard() {
                   tabela ? (
                     <Tabela
                       cabecalho={[serie.granularidade === 'dia' ? 'Dia' : 'Mês', 'Tempo']}
-                      linhas={serie.pontos.map((p) => [rotuloLongo(p.chave, serie.granularidade), formatarDuracaoCurta(p.segundos)])}
+                      linhas={recentePrimeiro.map((p) => [rotuloLongo(p.chave, serie.granularidade), formatarDuracaoCurta(p.segundos)])}
                     />
                   ) : (
                     <GraficoColunas
                       descricao="Horas estudadas no período"
                       formatarEixo={fmtEixoHoras}
-                      colunas={colunasDe(serie.pontos, serie.granularidade)}
+                      colunas={colunasDe(recentePrimeiro, serie.granularidade, true)}
                     />
                   )
                 }
@@ -326,12 +328,13 @@ function rotuloLongo(chave: string, granularidade: 'dia' | 'mes'): string {
 }
 
 /** Colunas com rótulos espaçados no eixo X (não mais que ~10 rótulos). */
-function colunasDe(pontos: { chave: string; segundos: number }[], granularidade: 'dia' | 'mes'): Coluna[] {
+function colunasDe(pontos: { chave: string; segundos: number }[], granularidade: 'dia' | 'mes', recentePrimeiro = false): Coluna[] {
   const cada = Math.max(1, Math.ceil(pontos.length / 10));
   return pontos.map((p, i) => {
     const data = deDataISO(granularidade === 'dia' ? p.chave : `${p.chave}-01`);
     const curto = granularidade === 'dia' ? fmtDiaCurto.format(data) : fmtMesCurto.format(data).replace('.', '');
-    const mostrar = (pontos.length - 1 - i) % cada === 0; // sempre rotula o mais recente
+    // sempre rotula o mais recente (o primeiro, se a ordem for do mais recente para o mais antigo)
+    const mostrar = (recentePrimeiro ? i : pontos.length - 1 - i) % cada === 0;
     return {
       chave: p.chave,
       rotulo: mostrar ? curto : '',
