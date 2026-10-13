@@ -94,3 +94,50 @@ export function artigosLidosDaLei(lei: Pick<Lei, 'id' | 'total_artigos'>, conclu
 export function artigosDiferentesLidos(leis: Pick<Lei, 'id' | 'total_artigos'>[], concluidas: Sessao[]): number {
   return leis.reduce((soma, l) => soma + artigosLidosDaLei(l, concluidas).size, 0);
 }
+
+/* ============================ Mapa da lei ============================ */
+
+export interface ArtigoNoMapa {
+  numero: number;
+  /** Em quantas sessões o artigo foi lido. */
+  vezes: number;
+  /** Início da sessão mais recente em que foi lido (ISO), ou null. */
+  ultima: string | null;
+}
+
+/** Um item por artigo da lei (1 até o total), com as leituras das sessões com faixas (R29). */
+export function mapaDaLei(lei: Pick<Lei, 'id' | 'total_artigos'>, concluidas: Sessao[]): ArtigoNoMapa[] {
+  const total = lei.total_artigos ?? 0;
+  const mapa: ArtigoNoMapa[] = Array.from({ length: total }, (_, i) => ({ numero: i + 1, vezes: 0, ultima: null }));
+  for (const s of concluidas) {
+    if (s.tipo !== 'Lei Seca' || s.lei_id !== lei.id) continue;
+    for (const n of artigosDaSessao(s)) {
+      const a = mapa[n - 1];
+      if (!a) continue;
+      a.vezes++;
+      if (!a.ultima || s.inicio > a.ultima) a.ultima = s.inicio;
+    }
+  }
+  return mapa;
+}
+
+/** Primeiro trecho seguido de artigos nunca lidos (ex.: 13 a 29), ou null se a lei foi toda lida. */
+export function proximoTrechoNaoLido(mapa: ArtigoNoMapa[]): { de: number; ate: number } | null {
+  const i = mapa.findIndex((a) => a.vezes === 0);
+  if (i < 0) return null;
+  let f = i;
+  while (f + 1 < mapa.length && mapa[f + 1].vezes === 0) f++;
+  return { de: mapa[i].numero, ate: mapa[f].numero };
+}
+
+/** Totais do mapa: lidos (ao menos 1 vez), relidos (2 ou mais) e nunca lidos. */
+export function resumoDoMapa(mapa: ArtigoNoMapa[]) {
+  const lidos = mapa.filter((a) => a.vezes > 0).length;
+  return {
+    total: mapa.length,
+    lidos,
+    relidos: mapa.filter((a) => a.vezes > 1).length,
+    naoLidos: mapa.length - lidos,
+    percentual: mapa.length ? Math.round((lidos / mapa.length) * 1000) / 10 : 0,
+  };
+}

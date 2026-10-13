@@ -167,11 +167,13 @@ Consideram apenas as **sessões concluídas**.
     aumenta o percentual (R29: só sessões com faixas);
   - questões, acertos e % de acerto;
   - tempo total, minutos por página e minutos por questão.
-- **Mapa da lei** (aberto pelo cadastro de cada lei):
+- **Mapa da lei** (botão ao lado de cada lei em Cadastros → Leis secas, ou "Mapa da lei" no cadastro dela):
   - um quadradinho por artigo: cinza = nunca lido; verde-claro = lido 1 vez; verde-escuro = 2 vezes
     ou mais;
   - tocar num artigo mostra quantas vezes e a data da última leitura;
-  - no topo: artigos diferentes lidos / total (%) e o **próximo trecho ainda não lido**.
+  - no topo: artigos diferentes lidos / total (%), relidos, nunca lidos e o **próximo trecho ainda
+    não lido** (o primeiro trecho seguido de artigos nunca lidos);
+  - a lista de leis também mostra quantos artigos de cada uma já foram lidos.
 - **Ciclo:** a sequência da volta atual, com a posição do ponteiro destacada e as horas feitas em
   cada posição.
 

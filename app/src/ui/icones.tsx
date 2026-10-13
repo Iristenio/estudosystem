@@ -167,6 +167,15 @@ export const IconeBalanca = (p: Props) => (
   </Base>
 );
 
+export const IconeGrade = (p: Props) => (
+  <Base {...p}>
+    <rect x="4" y="4" width="6" height="6" rx="1.2" />
+    <rect x="14" y="4" width="6" height="6" rx="1.2" />
+    <rect x="4" y="14" width="6" height="6" rx="1.2" />
+    <rect x="14" y="14" width="6" height="6" rx="1.2" />
+  </Base>
+);
+
 export const IconeMenu = (p: Props) => (
   <Base {...p}>
     <path d="M4 6h16M4 12h16M4 18h16" />

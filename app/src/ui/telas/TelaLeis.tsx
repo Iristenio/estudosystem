@@ -1,16 +1,24 @@
 // Cadastro de leis secas, agrupadas por disciplina.
 import { ordenarDisciplinas } from '../../dominio/disciplinas';
 import { leisPorDisciplina } from '../../dominio/leis';
+import { artigosLidosDaLei } from '../../dominio/artigos';
 import { useEntidade } from '../../dados/ganchos';
 import { useEstado } from '../estado';
 import { BotaoNovo } from '../layout/BotaoNovo';
-import { IconeBalanca, IconeMais } from '../icones';
+import { IconeBalanca, IconeGrade, IconeMais } from '../icones';
+import { irPara } from '../rotas';
 
 export function TelaLeis() {
   const { abrirPainel } = useEstado();
   const disciplinas = ordenarDisciplinas(useEntidade('disciplinas'));
   const grupos = leisPorDisciplina(useEntidade('leis'), disciplinas);
   const total = grupos.reduce((s, g) => s + g.leis.length, 0);
+  const concluidas = useEntidade('sessoes').filter((s) => s.status !== 'excluido' && s.situacao === 'concluida');
+  const lidos = (l: (typeof grupos)[number]['leis'][number]) => {
+    if (!l.total_artigos) return '';
+    const n = artigosLidosDaLei(l, concluidas).size;
+    return ` · ${n.toLocaleString('pt-BR')} lidos (${Math.round((n / l.total_artigos) * 100)}%)`;
+  };
 
   return (
     <>
@@ -45,7 +53,7 @@ export function TelaLeis() {
                 </h2>
                 <ul class="lista-itens compacta">
                   {leis.map((l) => (
-                    <li key={l.id}>
+                    <li key={l.id} class="linha-com-acao">
                       <button class={`linha-item${l.ativa ? '' : ' inativa'}`} onClick={() => abrirPainel({ tipo: 'lei', id: l.id })}>
                         <span class="linha-item-texto">
                           <strong>
@@ -53,10 +61,18 @@ export function TelaLeis() {
                             {!l.ativa && <span class="etiqueta neutra">Inativa</span>}
                           </strong>
                           <small>
-                            {l.total_artigos ? `${l.total_artigos.toLocaleString('pt-BR')} artigos` : 'Total de artigos não informado'}
+                            {l.total_artigos ? `${l.total_artigos.toLocaleString('pt-BR')} artigos${lidos(l)}` : 'Total de artigos não informado'}
                             {l.descricao && ` · ${l.descricao}`}
                           </small>
                         </span>
+                      </button>
+                      <button
+                        class="botao-icone"
+                        aria-label={`Mapa da lei ${l.nome}`}
+                        title="Mapa da lei"
+                        onClick={() => irPara('mapa', l.id)}
+                      >
+                        <IconeGrade />
                       </button>
                     </li>
                   ))}

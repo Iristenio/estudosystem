@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Sessao } from './tipos';
-import { artigosDiferentesLidos, artigosLidosDaLei, formatarFaixas, lerFaixas } from './artigos';
+import { artigosDiferentesLidos, artigosLidosDaLei, formatarFaixas, lerFaixas, mapaDaLei, proximoTrechoNaoLido, resumoDoMapa } from './artigos';
 import { concluir, corrigirArtigos, finalizar, iniciarSessao, resumoProducao, validarDadosFinais } from './sessoes';
 
 describe('lerFaixas (R25/R26)', () => {
@@ -47,9 +47,9 @@ describe('formatarFaixas', () => {
 /* ---------------- Sessões ---------------- */
 
 const inicio = new Date('2026-10-13T08:00:00Z');
-function sessaoLei(id: string, faixas: string, leiId = 'L1', minutos = 30): Sessao {
-  const s = iniciarSessao(id, { disciplina_id: 'D1', tipo: 'Lei Seca', aula: '', lei_id: leiId }, inicio);
-  return concluir(finalizar(s, new Date(inicio.getTime() + minutos * 60_000)), {
+function sessaoLei(id: string, faixas: string, leiId = 'L1', minutos = 30, quando = inicio): Sessao {
+  const s = iniciarSessao(id, { disciplina_id: 'D1', tipo: 'Lei Seca', aula: '', lei_id: leiId }, quando);
+  return concluir(finalizar(s, new Date(quando.getTime() + minutos * 60_000)), {
     paginas: null,
     artigos_lidos: faixas,
     questoes: null,
@@ -98,5 +98,34 @@ describe('artigos diferentes lidos (R29)', () => {
 
   it('soma por lei', () => {
     expect(artigosDiferentesLidos([{ id: 'L1', total_artigos: 70 }, { id: 'L2', total_artigos: 20 }], sessoes)).toBe(15);
+  });
+});
+
+describe('mapa da lei', () => {
+  const ontem = new Date('2026-10-12T08:00:00Z');
+  const sessoes = [
+    sessaoLei('a', '1-3', 'L1', 30, ontem),
+    sessaoLei('b', '2-4, 7', 'L1', 30, inicio),
+    sessaoLei('c', '5', 'L2'),
+    { ...sessaoLei('velha', '1'), artigos: 9, artigos_lidos: '' },
+  ];
+  const mapa = mapaDaLei({ id: 'L1', total_artigos: 8 }, sessoes);
+
+  it('um item por artigo, com vezes e a data mais recente', () => {
+    expect(mapa.map((a) => a.vezes)).toEqual([1, 2, 2, 1, 0, 0, 1, 0]);
+    expect(mapa[0].ultima).toBe(ontem.toISOString());
+    expect(mapa[1].ultima).toBe(inicio.toISOString());
+    expect(mapa[4].ultima).toBeNull();
+  });
+
+  it('artigos além do total ficam de fora; sem total, mapa vazio', () => {
+    expect(mapaDaLei({ id: 'L1', total_artigos: 3 }, sessoes).map((a) => a.vezes)).toEqual([1, 2, 2]);
+    expect(mapaDaLei({ id: 'L1', total_artigos: null }, sessoes)).toEqual([]);
+  });
+
+  it('próximo trecho não lido e resumo', () => {
+    expect(proximoTrechoNaoLido(mapa)).toEqual({ de: 5, ate: 6 });
+    expect(proximoTrechoNaoLido(mapaDaLei({ id: 'L1', total_artigos: 4 }, sessoes))).toBeNull();
+    expect(resumoDoMapa(mapa)).toEqual({ total: 8, lidos: 5, relidos: 2, naoLidos: 3, percentual: 62.5 });
   });
 });

@@ -17,7 +17,7 @@ o Google vem depois. A planilha antiga continua sendo usada normalmente até a t
 | 8 | Conferência e troca | Conferir os totais e passar a usar só o app | ✅ 27/09 |
 | 9 | (futuro) Metas | A combinar | — |
 | 10 | Artigos lidos | Registrar quais artigos leu e ver o % real da lei | ✅ 13/10 |
-| 11 | Mapa da lei | Ver na grade os artigos lidos e o próximo trecho | a fazer |
+| 11 | Mapa da lei | Ver na grade os artigos lidos e o próximo trecho | ✅ 13/10 |
 
 ---
 

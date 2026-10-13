@@ -21,6 +21,7 @@ export const TELAS = [
   'ciclo',
   'disciplinas',
   'leis',
+  'mapa', // Mapa da lei: "#/mapa/<id da lei>" (fora do menu; aberto a partir de Leis secas)
   'config',
 ] as const;
 export type Tela = (typeof TELAS)[number];
@@ -54,13 +55,27 @@ export const MENU: (ItemMenu | GrupoMenu)[] = [
 
 export const ehGrupo = (m: ItemMenu | GrupoMenu): m is GrupoMenu => 'grupo' in m;
 
+const partesDoEndereco = () => location.hash.replace(/^#\/?/, '').split('/');
+
 function lerTela(): Tela {
-  const nome = location.hash.replace(/^#\/?/, '') as Tela;
+  const nome = partesDoEndereco()[0] as Tela;
   return TELAS.includes(nome) ? nome : TELAS[0];
 }
 
-export function irPara(tela: Tela) {
-  location.hash = `/${tela}`;
+export function irPara(tela: Tela, parametro?: string) {
+  location.hash = parametro ? `/${tela}/${encodeURIComponent(parametro)}` : `/${tela}`;
+}
+
+/** Segunda parte do endereço (ex.: o id da lei em "#/mapa/L01"), atualizada a cada mudança. */
+export function useParametroRota(): string | null {
+  const ler = () => (partesDoEndereco()[1] ? decodeURIComponent(partesDoEndereco()[1]) : null);
+  const [valor, setValor] = useState(ler);
+  useEffect(() => {
+    const aoMudar = () => setValor(ler());
+    window.addEventListener('hashchange', aoMudar);
+    return () => window.removeEventListener('hashchange', aoMudar);
+  }, []);
+  return valor;
 }
 
 export function useTela(): Tela {

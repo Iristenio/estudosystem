@@ -8,6 +8,8 @@ import { buscar, novoId } from '../../dados/repositorio';
 import { useEntidade } from '../../dados/ganchos';
 import { excluirLei, salvarLei } from '../acoes/cadastros';
 import { useEstado } from '../estado';
+import { irPara } from '../rotas';
+import { IconeGrade } from '../icones';
 
 export function FormLei({ id, disciplinaId }: { id?: string; disciplinaId?: string }) {
   const { fecharPainel, avisar, perguntar } = useEstado();
@@ -124,6 +126,18 @@ export function FormLei({ id, disciplinaId }: { id?: string; disciplinaId?: stri
         <button type="submit" class="botao primario">
           {nova ? 'Incluir' : 'Salvar'}
         </button>
+        {!nova && l.total_artigos && (
+          <button
+            type="button"
+            class="botao"
+            onClick={() => {
+              fecharPainel();
+              irPara('mapa', l.id);
+            }}
+          >
+            <IconeGrade /> Mapa da lei
+          </button>
+        )}
         {!nova && podeExcluir && (
           <button type="button" class="botao perigo" onClick={excluir}>
             Excluir
