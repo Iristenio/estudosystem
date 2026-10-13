@@ -19,7 +19,7 @@ o Google vem depois. A planilha antiga continua sendo usada normalmente até a t
 | 10 | Artigos lidos | Registrar quais artigos leu e ver o % real da lei | ✅ 13/10 |
 | 11 | Mapa da lei | Ver na grade os artigos lidos e o próximo trecho | ✅ 13/10 |
 | 12 | Material em lançamentos | Lançar PDFs e vídeos aos poucos, por curso, com totais somados | ✅ 13/10 |
-| 13 | Mapa do material | Marcar o PDF/vídeo estudado em cada sessão e ver o mapa do curso | a fazer |
+| 13 | Mapa do material | Marcar o PDF/vídeo estudado em cada sessão e ver o mapa do curso | ✅ 13/10 |
 
 ---
 

@@ -5,6 +5,11 @@ import {
   aplicarMaterial,
   cursosDoTipo,
   formatarMinutos,
+  itensEscolhiveis,
+  mapaDoMaterial,
+  proximoItem,
+  resumoDoMapaMaterial,
+  tipoMaterialDaSessao,
   formatarTamanho,
   itensDaDisciplina,
   lancarItens,
@@ -15,6 +20,7 @@ import {
   totaisDoMaterial,
   validarItem,
 } from './material';
+import { concluir, corrigirMateriais, finalizar, iniciarSessao } from './sessoes';
 
 let seq = 0;
 const gerarId = () => `m${++seq}`;
@@ -144,5 +150,51 @@ describe('edição de item', () => {
     expect(formatarMinutos(80)).toBe('1h20');
     expect(formatarMinutos(32.25)).toBe('32 min');
     expect(formatarTamanho({ tipo: 'PDF', tamanho: 1 })).toBe('1 pág.');
+  });
+});
+
+describe('sessões e mapa do material (R36, R37)', () => {
+  const p1 = item({ id: 'p1', numero: 1, curso: 'TCU' });
+  const p2 = item({ id: 'p2', numero: 2, curso: 'TCU' });
+  const p3 = item({ id: 'p3', numero: 3, curso: 'TCU' });
+  const pFora = item({ id: 'pf', numero: 4, curso: 'TCU', fora: true });
+  const velho = item({ id: 'v1', numero: 1, curso: 'TJCE' });
+  const v = item({ id: 'vid', tipo: 'Video', numero: 1 });
+  const itens = [p3, p1, p2, pFora, velho, v];
+  const inicio = new Date('2026-10-13T08:00:00Z');
+  const sessao = (id: string, tipo: 'PDF' | 'VideoAula' | 'Revisão', ids: string[], horas = 0) => {
+    const quando = new Date(inicio.getTime() + horas * 3600e3);
+    const s = iniciarSessao(id, { disciplina_id: 'D1', tipo, aula: '', lei_id: null }, quando);
+    return concluir(finalizar(s, new Date(quando.getTime() + 600e3)), { paginas: 5, artigos_lidos: '', questoes: null, acertos: null, materiais_estudados: ids });
+  };
+
+  it('concluir guarda os itens só em PDF e VideoAula, sem repetir; corrigir troca a lista', () => {
+    expect(sessao('a', 'PDF', ['p1', 'p1', 'p2']).materiais_estudados).toEqual(['p1', 'p2']);
+    expect(sessao('b', 'Revisão', ['p1']).materiais_estudados).toEqual([]);
+    expect(corrigirMateriais(sessao('c', 'PDF', ['p1']), ['p3']).materiais_estudados).toEqual(['p3']);
+    expect(tipoMaterialDaSessao('VideoAula')).toBe('Video');
+    expect(tipoMaterialDaSessao('Lei Seca')).toBeNull();
+  });
+
+  it('escolhíveis: só o que conta, em ordem, mais os já escolhidos; sem o "Total anterior"', () => {
+    expect(itensEscolhiveis(itens, ['TJCE'], 'PDF').map((i) => i.id)).toEqual(['p1', 'p2', 'p3']);
+    expect(itensEscolhiveis([...itens, item({ id: 'ant', numero: 0 })], ['TJCE'], 'PDF').map((i) => i.id)).toEqual(['p1', 'p2', 'p3']);
+    expect(itensEscolhiveis(itens, ['TJCE'], 'PDF', ['v1']).map((i) => i.id)).toEqual(['p1', 'p2', 'p3', 'v1']);
+  });
+
+  it('mapa conta sessões por item e guarda a mais recente', () => {
+    const sessoes = [sessao('a', 'PDF', ['p1']), sessao('b', 'PDF', ['p1', 'p2'], 5), { ...sessao('c', 'PDF', []), materiais_estudados: undefined } as never];
+    const mapa = mapaDoMaterial(itens.filter((i) => i.tipo === 'PDF'), sessoes);
+    expect(mapa.map((m) => `${m.item.id}:${m.vezes}`)).toEqual(['p1:2', 'p2:1', 'p3:0', 'pf:0', 'v1:0']);
+    expect(mapa[0].ultima).toBe(new Date(inicio.getTime() + 5 * 3600e3).toISOString());
+    expect(resumoDoMapaMaterial(mapa, ['TJCE'])).toEqual({ total: 3, estudados: 2, revistos: 1, nunca: 1, percentual: 66.7 });
+  });
+
+  it('próximo item: depois do último marcado; no fim, o primeiro nunca estudado', () => {
+    expect(proximoItem(itens, ['TJCE'], 'PDF', [])?.id).toBe('p1');
+    expect(proximoItem(itens, ['TJCE'], 'PDF', [sessao('a', 'PDF', ['p1', 'p2'])])?.id).toBe('p3');
+    expect(proximoItem(itens, ['TJCE'], 'PDF', [sessao('a', 'PDF', ['p2'], 1), sessao('b', 'PDF', ['p3'], 2)])?.id).toBe('p1');
+    expect(proximoItem(itens, ['TJCE'], 'PDF', [sessao('a', 'PDF', ['p1', 'p2', 'p3'])])).toBeNull();
+    expect(proximoItem([], [], 'Video', [])).toBeNull();
   });
 });

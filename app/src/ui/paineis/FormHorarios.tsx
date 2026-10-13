@@ -15,12 +15,14 @@ import {
 } from '../../dominio/sessoes';
 import { paraDataISO, paraHora } from '../../dominio/datas';
 import { artigosLidosDaLei, lerFaixas } from '../../dominio/artigos';
+import { tipoMaterialDaSessao } from '../../dominio/material';
 import { buscar } from '../../dados/repositorio';
 import { useAgora, useEntidade } from '../../dados/ganchos';
 import { corrigir } from '../acoes/sessoes';
 import { useEstado } from '../estado';
 import { CampoHora } from '../componentes/CampoHora';
 import { CampoArtigos } from '../componentes/CampoArtigos';
+import { EscolhaMaterial } from '../componentes/EscolhaMaterial';
 
 interface Momento {
   data: string;
@@ -49,6 +51,7 @@ export function FormHorarios({ id }: { id: string }) {
   const [fim, setFim] = useState<Momento | null>(null);
   const [aula, setAula] = useState('');
   const [faixas, setFaixas] = useState('');
+  const [estudados, setEstudados] = useState<string[]>([]);
 
   useEffect(() => {
     buscar('sessoes', id).then((atual) => {
@@ -59,6 +62,7 @@ export function FormHorarios({ id }: { id: string }) {
       setFim(f ? momento(f) : null);
       setAula(atual.aula);
       setFaixas(atual.artigos_lidos ?? '');
+      setEstudados(atual.materiais_estudados ?? []);
     });
   }, [id]);
 
@@ -68,6 +72,10 @@ export function FormHorarios({ id }: { id: string }) {
   // R28 — numa Lei Seca concluída, as faixas também podem ser corrigidas
   const lei = s.lei_id ? leis.find((l) => l.id === s.lei_id) : undefined;
   const editaArtigos = s.tipo === 'Lei Seca' && s.situacao === 'concluida';
+  // R36 — numa sessão de PDF/VideoAula concluída, o material estudado pode ser corrigido
+  const tipoMaterial = s.situacao === 'concluida' ? tipoMaterialDaSessao(s.tipo) : null;
+  const disciplina = disciplinas.find((d) => d.id === s.disciplina_id);
+  const editaMaterial = !!(tipoMaterial && disciplina);
   const errosArtigos = !editaArtigos
     ? []
     : faixas.trim()
@@ -84,7 +92,7 @@ export function FormHorarios({ id }: { id: string }) {
   async function salvar(e: Event) {
     e.preventDefault();
     if (problemas.length || errosArtigos.length) return;
-    await corrigir(s!, novoInicio, novoFim, aula, editaArtigos ? faixas : null);
+    await corrigir(s!, novoInicio, novoFim, aula, editaArtigos ? faixas : null, editaMaterial ? estudados : null);
     fecharPainel();
     avisar({ texto: 'Sessão corrigida' });
   }
@@ -99,7 +107,7 @@ export function FormHorarios({ id }: { id: string }) {
           </span>
           <small>
             Depois de concluída, a sessão só permite corrigir os horários, a descrição da aula
-            {s.tipo === 'Lei Seca' ? ' e os artigos lidos' : ''}.
+            {s.tipo === 'Lei Seca' ? ' e os artigos lidos' : s.tipo === 'PDF' || s.tipo === 'VideoAula' ? ' e o material estudado' : ''}.
           </small>
         </div>
       )}
@@ -167,6 +175,17 @@ export function FormHorarios({ id }: { id: string }) {
             </p>
           )}
         </>
+      )}
+
+      {editaMaterial && (
+        <EscolhaMaterial
+          disciplina={disciplina!}
+          tipo={tipoMaterial!}
+          escolhidos={estudados}
+          aoMudar={setEstudados}
+          outrasSessoes={todas.filter((o) => o.id !== s.id && o.status !== 'excluido' && o.situacao === 'concluida' && o.disciplina_id === s.disciplina_id)}
+          podeLancar={false}
+        />
       )}
 
       <div class="acoes-form">

@@ -38,8 +38,10 @@ export async function cancelar(s: Sessao) {
   await gravar([{ entidade: 'sessoes', registro: { ...s, status: 'excluido' }, operacao: 'excluir' }]);
 }
 
-/** R10–R12 e R28 — horários corrigidos (já validados), descrição da aula e, na Lei Seca, as faixas de artigos. */
-export function corrigir(s: Sessao, inicio: Date, fim: Date | null, aula: string, faixas: string | null = null) {
-  const r = { ...regra.aplicarHorarios(s, inicio, fim), aula: aula.trim() };
-  return salvar('sessoes', faixas?.trim() ? regra.corrigirArtigos(r, faixas) : r);
+/** R10–R12, R28 e R36 — horários (já validados), aula, faixas de artigos (Lei Seca) e material estudado (PDF/VideoAula). */
+export function corrigir(s: Sessao, inicio: Date, fim: Date | null, aula: string, faixas: string | null = null, materiais: string[] | null = null) {
+  let r = { ...regra.aplicarHorarios(s, inicio, fim), aula: aula.trim() };
+  if (faixas?.trim()) r = regra.corrigirArtigos(r, faixas);
+  if (materiais) r = regra.corrigirMateriais(r, materiais);
+  return salvar('sessoes', r);
 }

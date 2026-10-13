@@ -22,6 +22,7 @@ export const TELAS = [
   'disciplinas',
   'leis',
   'mapa', // Mapa da lei: "#/mapa/<id da lei>" (fora do menu; aberto a partir de Leis secas)
+  'material', // Mapa do material: "#/material/<id da disciplina>" (fora do menu; aberto a partir de Disciplinas)
   'config',
 ] as const;
 export type Tela = (typeof TELAS)[number];

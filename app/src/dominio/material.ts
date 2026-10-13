@@ -2,7 +2,7 @@
 //
 // Cada PDF ou vídeo é um item (número, nome opcional, curso, tamanho). O total de páginas e de horas
 // de vídeo da disciplina é a soma dos itens que contam: não estão "fora do total" e o curso está ligado.
-import type { Disciplina, Id, ItemMaterial, TipoMaterial } from './tipos';
+import type { Disciplina, Id, ItemMaterial, Sessao, TipoMaterial } from './tipos';
 
 export const ROTULO_MATERIAL: Record<TipoMaterial, string> = { PDF: 'PDF', Video: 'Vídeo' };
 
@@ -213,4 +213,74 @@ export function resumoDoTipo(itens: ItemMaterial[], fora: string[], tipo: TipoMa
   if (!n) return `${tamanho} (total anterior)`;
   const nome = tipo === 'PDF' ? `PDF${n === 1 ? '' : 's'}` : `vídeo${n === 1 ? '' : 's'}`;
   return `${tamanho} em ${n} ${nome}${anterior ? ' + total anterior' : ''}`;
+}
+
+/* ============================ Sessões e mapa do material (R36, R37) ============================ */
+
+/** Tipo de material de cada tipo de sessão (só PDF e VideoAula usam material). */
+export function tipoMaterialDaSessao(tipo: Sessao['tipo']): TipoMaterial | null {
+  return tipo === 'PDF' ? 'PDF' : tipo === 'VideoAula' ? 'Video' : null;
+}
+
+/**
+ * Itens que aparecem para escolher numa sessão e no mapa: os que contam no total, na ordem, mais os
+ * já escolhidos. O "Total anterior" (número 0) não é um PDF/vídeo de verdade e fica de fora.
+ */
+export function itensEscolhiveis(itens: ItemMaterial[], fora: string[], tipo: TipoMaterial, escolhidos: Id[] = []): ItemMaterial[] {
+  return ordenarItens(
+    itens.filter((i) => i.tipo === tipo && (escolhidos.includes(i.id) || (i.numero > 0 && contaNoTotal(i, fora)))),
+  );
+}
+
+export interface ItemNoMapa {
+  item: ItemMaterial;
+  /** Em quantas sessões o item foi marcado. */
+  vezes: number;
+  /** Início da sessão mais recente em que foi marcado (ISO), ou null. */
+  ultima: string | null;
+}
+
+/** R37 — leituras de cada item, a partir das sessões concluídas da disciplina que marcaram itens. */
+export function mapaDoMaterial(itens: ItemMaterial[], concluidas: Sessao[]): ItemNoMapa[] {
+  const mapa = new Map(ordenarItens(itens).map((item) => [item.id, { item, vezes: 0, ultima: null as string | null }]));
+  for (const s of concluidas) {
+    for (const id of s.materiais_estudados ?? []) {
+      const m = mapa.get(id);
+      if (!m) continue;
+      m.vezes++;
+      if (!m.ultima || s.inicio > m.ultima) m.ultima = s.inicio;
+    }
+  }
+  return [...mapa.values()];
+}
+
+/**
+ * R36 — próximo item sugerido: o seguinte (na ordem dos que contam) ao último item marcado na
+ * sessão mais recente; sem marcações (ou no fim da lista), o primeiro nunca estudado.
+ */
+export function proximoItem(itens: ItemMaterial[], fora: string[], tipo: TipoMaterial, concluidas: Sessao[]): ItemMaterial | null {
+  const lista = itensEscolhiveis(itens, fora, tipo);
+  if (!lista.length) return null;
+  const posicao = new Map(lista.map((i, n) => [i.id, n]));
+  const comItens = concluidas
+    .filter((s) => (s.materiais_estudados ?? []).some((id) => posicao.has(id)))
+    .sort((a, b) => b.inicio.localeCompare(a.inicio));
+  const mapa = mapaDoMaterial(lista, concluidas);
+  const nuncaEstudado = mapa.find((m) => m.vezes === 0)?.item ?? null;
+  if (!comItens.length) return nuncaEstudado;
+  const ultimo = Math.max(...comItens[0].materiais_estudados.filter((id) => posicao.has(id)).map((id) => posicao.get(id)!));
+  return lista[ultimo + 1] ?? nuncaEstudado;
+}
+
+/** Totais do mapa de um tipo (só itens que contam). */
+export function resumoDoMapaMaterial(mapa: ItemNoMapa[], fora: string[]) {
+  const contam = mapa.filter((m) => contaNoTotal(m.item, fora));
+  const estudados = contam.filter((m) => m.vezes > 0).length;
+  return {
+    total: contam.length,
+    estudados,
+    revistos: contam.filter((m) => m.vezes > 1).length,
+    nunca: contam.length - estudados,
+    percentual: contam.length ? Math.round((estudados / contam.length) * 1000) / 10 : 0,
+  };
 }

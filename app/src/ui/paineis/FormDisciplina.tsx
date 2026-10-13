@@ -16,6 +16,7 @@ import { buscar, novoId } from '../../dados/repositorio';
 import { useEntidade } from '../../dados/ganchos';
 import { excluirDisciplina, salvarDisciplina } from '../acoes/cadastros';
 import { useEstado } from '../estado';
+import { irPara } from '../rotas';
 
 export function FormDisciplina({ id }: { id?: string }) {
   const { fecharPainel, avisar, perguntar, abrirPainel } = useEstado();
@@ -152,9 +153,23 @@ export function FormDisciplina({ id }: { id?: string }) {
           </label>
           {d.possui_video && <span class="resumo-material">{resumoDoTipo(itensDaDisciplina(d), cursosFora(d), 'Video') ?? 'nenhum vídeo lançado'}</span>}
         </div>
-        <button type="button" class="botao" onClick={lancarMaterial}>
-          Lançar material
-        </button>
+        <div class="botoes-material">
+          <button type="button" class="botao" onClick={lancarMaterial}>
+            Lançar material
+          </button>
+          {!nova && (
+            <button
+              type="button"
+              class="botao"
+              onClick={() => {
+                fecharPainel();
+                irPara('material', d.id);
+              }}
+            >
+              Mapa do material
+            </button>
+          )}
+        </div>
         <p class="dica">Lance os PDFs e vídeos aos poucos: os totais são a soma. Eles são necessários para iniciar sessões e medir o progresso.</p>
       </fieldset>
 

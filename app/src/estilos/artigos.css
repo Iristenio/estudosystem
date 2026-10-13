@@ -64,3 +64,32 @@
 @media (max-width: 900px) {
   .mapa-resumo { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---------------- Material: escolha na sessão (EscolhaMaterial.tsx) e mapa (TelaMapaMaterial.tsx) ---------------- */
+/* fieldset tem largura mínima = conteúdo: sem min-width 0, um nome longo estica o painel */
+.escolha-material { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.chips-material { max-height: 260px; overflow-y: auto; overscroll-behavior: contain; padding: 2px; }
+.chip-material { position: relative; max-width: 100%; min-width: 0; }
+.chip-material-texto { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip-material .marca-sugerida { flex: none; }
+.chip-material-texto small { color: var(--texto-2); font-size: 12.5px; }
+.chip-material.ja-estudado::after {
+  content: ''; position: absolute; top: 5px; right: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--primaria);
+}
+.botoes-material { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.mapa-proximo { font-size: 16px !important; overflow-wrap: anywhere; }
+.mapa-curso { display: flex; flex-direction: column; gap: 8px; }
+.mapa-curso h3 { display: flex; align-items: center; gap: 8px; margin: 6px 0 0; font-size: 15px; }
+.mapa-curso.desligado .grade-material { opacity: 0.55; }
+.grade-material { display: grid; gap: 6px; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
+.item-mapa {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
+  min-height: 64px; padding: 8px 10px; text-align: left;
+}
+.item-mapa strong { font-size: 17px; line-height: 1.1; }
+.item-mapa-nome {
+  font-size: 13px; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;
+}
+.item-mapa small { font-size: 12px; opacity: 0.8; }
+.item-mapa.fora { border-style: dotted; }

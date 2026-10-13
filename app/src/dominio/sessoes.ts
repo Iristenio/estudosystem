@@ -154,6 +154,8 @@ export interface DadosFinais {
   paginas: number | null;
   /** Lei Seca: faixas digitadas ("1-10, 15") — a quantidade é calculada (R25). */
   artigos_lidos: string;
+  /** PDF/VideoAula: itens do material estudados (R36; opcional). */
+  materiais_estudados?: Id[];
   questoes: number | null;
   acertos: number | null;
 }
@@ -186,6 +188,7 @@ export function concluir(s: Sessao, dados: DadosFinais): Sessao {
     paginas: soTipo('PDF', dados.paginas),
     artigos: artigos.length,
     artigos_lidos: formatarFaixas(artigos),
+    materiais_estudados: s.tipo === 'PDF' || s.tipo === 'VideoAula' ? [...new Set(dados.materiais_estudados ?? [])] : [],
     questoes: soTipo('Questões', dados.questoes),
     acertos: soTipo('Questões', dados.acertos),
   };
@@ -196,6 +199,12 @@ export function corrigirArtigos(s: Sessao, faixas: string): Sessao {
   if (s.tipo !== 'Lei Seca') return s;
   const artigos = lerFaixas(faixas).artigos;
   return { ...s, artigos: artigos.length, artigos_lidos: formatarFaixas(artigos) };
+}
+
+/** R36 — corrige os itens do material marcados numa sessão de PDF ou VideoAula. */
+export function corrigirMateriais(s: Sessao, ids: Id[]): Sessao {
+  if (s.tipo !== 'PDF' && s.tipo !== 'VideoAula') return s;
+  return { ...s, materiais_estudados: [...new Set(ids)] };
 }
 
 export const erros = (s: Pick<Sessao, 'questoes' | 'acertos'>) => s.questoes - s.acertos;

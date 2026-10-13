@@ -7,7 +7,7 @@ import { disciplinaSugerida, posicaoAtual } from '../../dominio/ciclo';
 import { ordenarDisciplinas } from '../../dominio/disciplinas';
 import { lerNumero } from '../../dominio/numeros';
 import { artigosLidosDaLei } from '../../dominio/artigos';
-import { cursosFora, itensDaDisciplina, resumoDoTipo } from '../../dominio/material';
+import { cursosFora, itensDaDisciplina, resumoDoTipo, tipoMaterialDaSessao } from '../../dominio/material';
 import {
   concluidasDoDia,
   duracaoSegundos,
@@ -28,6 +28,7 @@ import { useEstado } from '../estado';
 import { irPara } from '../rotas';
 import { IconeCiclo, IconeCronometro, IconeLapis, IconeMais } from '../icones';
 import { CampoArtigos } from '../componentes/CampoArtigos';
+import { EscolhaMaterial } from '../componentes/EscolhaMaterial';
 
 const fmtHora = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
 const fmtDataLonga = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -296,11 +297,15 @@ function Finalizar({ s, disciplinas, leis, sessoes }: { s: Sessao; disciplinas: 
   const { abrirPainel, perguntar, avisar } = useEstado();
   const [textos, setTextos] = useState({ paginas: '', artigos: '', questoes: '', acertos: '' });
   const [erros, setErros] = useState<string[]>([]);
+  const [estudados, setEstudados] = useState<string[]>([]);
   const lei = s.lei_id ? leis.find((l) => l.id === s.lei_id) : undefined;
+  const disciplina = disciplinas.find((d) => d.id === s.disciplina_id);
+  const tipoMaterial = tipoMaterialDaSessao(s.tipo);
   const concluidas = sessoes.filter((x) => x.status !== 'excluido' && x.situacao === 'concluida');
   const dados = {
     paginas: lerNumero(textos.paginas),
     artigos_lidos: textos.artigos,
+    materiais_estudados: estudados,
     questoes: lerNumero(textos.questoes),
     acertos: lerNumero(textos.acertos),
   };
@@ -359,6 +364,15 @@ function Finalizar({ s, disciplinas, leis, sessoes }: { s: Sessao; disciplinas: 
       </button>
 
       {s.tipo === 'PDF' && <div class="linha">{campo('paginas', 'Páginas lidas')}</div>}
+      {tipoMaterial && disciplina && (
+        <EscolhaMaterial
+          disciplina={disciplina}
+          tipo={tipoMaterial}
+          escolhidos={estudados}
+          aoMudar={setEstudados}
+          outrasSessoes={concluidas.filter((x) => x.disciplina_id === disciplina.id)}
+        />
+      )}
       {s.tipo === 'Lei Seca' && (
         <CampoArtigos
           valor={textos.artigos}

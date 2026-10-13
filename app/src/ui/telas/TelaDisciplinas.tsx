@@ -6,7 +6,8 @@ import { useEntidade } from '../../dados/ganchos';
 import { moverDisciplinaNaOrdem } from '../acoes/cadastros';
 import { useEstado } from '../estado';
 import { BotaoNovo } from '../layout/BotaoNovo';
-import { IconeLivro, IconeSetaBaixo, IconeSetaCima } from '../icones';
+import { IconeGrade, IconeLivro, IconeSetaBaixo, IconeSetaCima } from '../icones';
+import { irPara } from '../rotas';
 
 function detalhes(d: Disciplina, leis: Lei[]): string {
   const partes = [d.categoria || 'Sem categoria', `peso ${d.peso}`];
@@ -70,6 +71,19 @@ export function TelaDisciplinas() {
                       <small>{detalhes(d, leis)}</small>
                     </span>
                     <span class="ordenar">
+                      {(d.possui_pdf || d.possui_video) && (
+                        <button
+                          class="botao-icone"
+                          aria-label={`Mapa do material de ${d.nome}`}
+                          title="Mapa do material"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            irPara('material', d.id);
+                          }}
+                        >
+                          <IconeGrade />
+                        </button>
+                      )}
                       <button class="botao-icone" aria-label="Subir" disabled={i === 0} onClick={(e) => mover(e, d.id, -1)}>
                         <IconeSetaCima />
                       </button>

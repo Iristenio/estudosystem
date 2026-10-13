@@ -13,6 +13,7 @@ import { TelaAjustes } from './telas/TelaAjustes';
 import { TelaDisciplinas } from './telas/TelaDisciplinas';
 import { TelaLeis } from './telas/TelaLeis';
 import { TelaMapaLei } from './telas/TelaMapaLei';
+import { TelaMapaMaterial } from './telas/TelaMapaMaterial';
 import { FormDisciplina } from './paineis/FormDisciplina';
 import { FormLei } from './paineis/FormLei';
 import { FormHorarios } from './paineis/FormHorarios';
@@ -36,6 +37,7 @@ const TELA: Record<Tela, () => JSX.Element> = {
   disciplinas: TelaDisciplinas,
   leis: TelaLeis,
   mapa: TelaMapaLei,
+  material: TelaMapaMaterial,
   config: TelaAjustes,
 };
 
@@ -80,7 +82,7 @@ function Estrutura() {
 
   return (
     <div class="estrutura">
-      <MenuLateral atual={tela === 'mapa' ? 'leis' : tela} aberto={menuAberto} aoFechar={() => setMenuAberto(false)} />
+      <MenuLateral atual={tela === 'mapa' ? 'leis' : tela === 'material' ? 'disciplinas' : tela} aberto={menuAberto} aoFechar={() => setMenuAberto(false)} />
       <main class="principal">
         {/* Só aparece em telas estreitas (tablet em retrato), onde o menu vira gaveta */}
         <div class="barra-topo">
