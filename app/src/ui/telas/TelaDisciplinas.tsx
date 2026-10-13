@@ -1,18 +1,18 @@
 // Cadastro de disciplinas: lista na ordem do ciclo, com botões para reordenar (R24).
 import type { Disciplina, Lei } from '../../dominio/tipos';
 import { ordenarDisciplinas } from '../../dominio/disciplinas';
+import { cursosFora, itensDaDisciplina, resumoDoTipo } from '../../dominio/material';
 import { useEntidade } from '../../dados/ganchos';
 import { moverDisciplinaNaOrdem } from '../acoes/cadastros';
 import { useEstado } from '../estado';
 import { BotaoNovo } from '../layout/BotaoNovo';
 import { IconeLivro, IconeSetaBaixo, IconeSetaCima } from '../icones';
 
-const fmt = (n: number) => n.toLocaleString('pt-BR');
-
 function detalhes(d: Disciplina, leis: Lei[]): string {
   const partes = [d.categoria || 'Sem categoria', `peso ${d.peso}`];
-  if (d.possui_pdf) partes.push(d.total_paginas ? `${fmt(d.total_paginas)} págs.` : 'PDF sem total');
-  if (d.possui_video) partes.push(d.total_horas_video ? `${fmt(d.total_horas_video)} h de vídeo` : 'vídeo sem total');
+  const itens = itensDaDisciplina(d);
+  if (d.possui_pdf) partes.push(resumoDoTipo(itens, cursosFora(d), 'PDF') ?? 'nenhum PDF lançado');
+  if (d.possui_video) partes.push(resumoDoTipo(itens, cursosFora(d), 'Video') ?? 'nenhum vídeo lançado');
   const qtdLeis = leis.filter((l) => l.disciplina_id === d.id && l.status !== 'excluido').length;
   if (qtdLeis) partes.push(qtdLeis === 1 ? '1 lei' : `${qtdLeis} leis`);
   return partes.join(' · ');

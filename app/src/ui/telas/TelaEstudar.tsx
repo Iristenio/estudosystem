@@ -1,12 +1,13 @@
 // Tela Estudar: iniciar sessão → cronômetro (pausar/continuar) → finalizar (campos finais) → concluída.
 // Ao lado, as sessões de hoje.
 import { useEffect, useState } from 'preact/hooks';
-import type { Ciclo, Disciplina, Lei, Sessao, TipoSessao } from '../../dominio/tipos';
+import type { Ciclo, Disciplina, Lei, Sessao, TipoMaterial, TipoSessao } from '../../dominio/tipos';
 import { ID_CICLO, TIPOS_SESSAO } from '../../dominio/tipos';
 import { disciplinaSugerida, posicaoAtual } from '../../dominio/ciclo';
 import { ordenarDisciplinas } from '../../dominio/disciplinas';
 import { lerNumero } from '../../dominio/numeros';
 import { artigosLidosDaLei } from '../../dominio/artigos';
+import { cursosFora, itensDaDisciplina, resumoDoTipo } from '../../dominio/material';
 import {
   concluidasDoDia,
   duracaoSegundos,
@@ -25,7 +26,7 @@ import { useAgora, useEntidade } from '../../dados/ganchos';
 import * as acoes from '../acoes/sessoes';
 import { useEstado } from '../estado';
 import { irPara } from '../rotas';
-import { IconeCiclo, IconeCronometro, IconeLapis } from '../icones';
+import { IconeCiclo, IconeCronometro, IconeLapis, IconeMais } from '../icones';
 import { CampoArtigos } from '../componentes/CampoArtigos';
 
 const fmtHora = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -79,6 +80,7 @@ function Identificacao({ s, disciplinas, leis }: { s: Sessao; disciplinas: Disci
 /* ---------------- 1. Nova sessão ---------------- */
 
 function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Disciplina[]; leis: Lei[]; sessoes: Sessao[]; ciclo: Ciclo | null }) {
+  const { abrirPainel } = useEstado();
   const [disciplinaId, setDisciplinaId] = useState('');
   const [escolheu, setEscolheu] = useState(false);
   const sugerida = disciplinaSugerida(ciclo);
@@ -170,6 +172,10 @@ function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Discip
         </div>
       </fieldset>
 
+      {(tipo === 'PDF' || tipo === 'VideoAula') && disciplinaId && (
+        <AtalhoMaterial disciplina={disciplinas.find((d) => d.id === disciplinaId)} tipo={tipo === 'PDF' ? 'PDF' : 'Video'} aoAbrir={(p) => abrirPainel(p)} />
+      )}
+
       {tipo === 'Lei Seca' && (
         <label class="rotulo">
           Lei
@@ -205,6 +211,28 @@ function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Discip
         ▶ Iniciar
       </button>
     </form>
+  );
+}
+
+/** R35 — atalho para lançar o material da disciplina sem sair da tela Estudar. */
+function AtalhoMaterial({
+  disciplina,
+  tipo,
+  aoAbrir,
+}: {
+  disciplina: Disciplina | undefined;
+  tipo: TipoMaterial;
+  aoAbrir: (p: { tipo: 'material'; disciplinaId: string; tipoMaterial: TipoMaterial }) => void;
+}) {
+  if (!disciplina) return null;
+  const resumo = resumoDoTipo(itensDaDisciplina(disciplina), cursosFora(disciplina), tipo);
+  return (
+    <p class="atalho-material">
+      <span>{resumo ?? (tipo === 'PDF' ? 'Nenhum PDF lançado' : 'Nenhum vídeo lançado')}</span>
+      <button type="button" class="link link-inline" onClick={() => aoAbrir({ tipo: 'material', disciplinaId: disciplina.id, tipoMaterial: tipo })}>
+        <IconeMais /> Lançar material
+      </button>
+    </p>
   );
 }
 

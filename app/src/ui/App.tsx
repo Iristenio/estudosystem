@@ -16,6 +16,7 @@ import { TelaMapaLei } from './telas/TelaMapaLei';
 import { FormDisciplina } from './paineis/FormDisciplina';
 import { FormLei } from './paineis/FormLei';
 import { FormHorarios } from './paineis/FormHorarios';
+import { FormMaterial } from './paineis/FormMaterial';
 import { TelaEstudar } from './telas/TelaEstudar';
 import { TelaSessoes } from './telas/TelaSessoes';
 import { TelaCiclo } from './telas/TelaCiclo';
@@ -47,6 +48,8 @@ function tituloPainel(p: Painel): string {
       return p.id ? 'Lei seca' : 'Nova lei seca';
     case 'horarios':
       return 'Corrigir sessão';
+    case 'material':
+      return 'Material da disciplina';
   }
 }
 
@@ -58,6 +61,8 @@ function ConteudoPainel({ painel }: { painel: Painel }) {
       return <FormLei id={painel.id} disciplinaId={painel.disciplinaId} />;
     case 'horarios':
       return <FormHorarios id={painel.id} />;
+    case 'material':
+      return <FormMaterial disciplinaId={painel.disciplinaId} tipoMaterial={painel.tipoMaterial} />;
   }
 }
 

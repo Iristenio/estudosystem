@@ -1,12 +1,14 @@
 // Estado global da interface: painel lateral aberto, aviso "Desfazer" e diálogos de escolha.
 import { createContext, type ComponentChildren } from 'preact';
+import type { TipoMaterial } from '../dominio/tipos';
 import { useCallback, useContext, useMemo, useRef, useState } from 'preact/hooks';
 
 /** ► Novo formulário/painel: acrescente um tipo aqui e trate em App.tsx (título e conteúdo). */
 export type Painel =
   | { tipo: 'disciplina'; id?: string }
   | { tipo: 'lei'; id?: string; disciplinaId?: string }
-  | { tipo: 'horarios'; id: string };
+  | { tipo: 'horarios'; id: string }
+  | { tipo: 'material'; disciplinaId: string; tipoMaterial?: TipoMaterial };
 
 export interface Aviso {
   texto: string;

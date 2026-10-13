@@ -18,6 +18,7 @@ var ESQUEMA = {
       ['possui_pdf', 'b'], ['total_paginas', 'n?'], ['possui_video', 'b'], ['total_horas_video', 'n?'],
       ['cor', 's'], ['observacoes', 's'], ['status', 's'],
       ['criado_em', 's'], ['atualizado_em', 's'],
+      ['materiais', 'j'], ['cursos_fora', 'j'], // 13/10/2026 — material lançado aos poucos
     ],
   },
   leis: {
@@ -36,6 +37,7 @@ var ESQUEMA = {
       ['situacao', 's'], ['posicao_ciclo', 's?'], ['status', 's'],
       ['criado_em', 's'], ['atualizado_em', 's'],
       ['artigos_lidos', 's'], // 13/10/2026 — faixas de artigos da lei seca ("1-10, 15")
+      ['materiais_estudados', 'j'], // 13/10/2026 — itens do material estudados na sessão
     ],
   },
   ciclo: {

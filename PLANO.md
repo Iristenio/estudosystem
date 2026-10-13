@@ -18,6 +18,8 @@ o Google vem depois. A planilha antiga continua sendo usada normalmente até a t
 | 9 | (futuro) Metas | A combinar | — |
 | 10 | Artigos lidos | Registrar quais artigos leu e ver o % real da lei | ✅ 13/10 |
 | 11 | Mapa da lei | Ver na grade os artigos lidos e o próximo trecho | ✅ 13/10 |
+| 12 | Material em lançamentos | Lançar PDFs e vídeos aos poucos, por curso, com totais somados | ✅ 13/10 |
+| 13 | Mapa do material | Marcar o PDF/vídeo estudado em cada sessão e ver o mapa do curso | a fazer |
 
 ---
 
@@ -111,6 +113,21 @@ o Google vem depois. A planilha antiga continua sendo usada normalmente até a t
 - Grade com um quadradinho por artigo, colorido pelo número de leituras.
 - Tocar num artigo: quantas vezes foi lido e quando foi a última vez.
 - No topo: % da lei e o **próximo trecho não lido** (ex.: "próximo: arts. 41 a 58").
+
+## Etapa 12 — Material em lançamentos (R30–R35)
+- No cadastro da disciplina, os campos de total viram um resumo ("412 págs. em 11 PDFs") e o botão
+  **Lançar material**.
+- Painel do material: PDF e vídeo; lançar rápido (`2x30, 40`), nome opcional, curso; lista por curso
+  com a chave "conta no total"; corrigir, tirar do total ou apagar cada item.
+- O total anterior vira o item "Total anterior".
+- Tela Estudar: com PDF ou Videoaula escolhidos, atalho **Lançar material** da disciplina.
+- Planilha: colunas novas na aba DISCIPLINAS, criadas sozinhas.
+
+## Etapa 13 — Mapa do material (R36, R37)
+- Ao finalizar uma sessão de PDF ou Videoaula: escolher quais itens estudou (com o próximo destacado);
+  corrigir depois em Sessões.
+- Tela **Mapa do material** de cada disciplina, como o Mapa da lei.
+- Planilha: coluna nova na aba SESSOES.
 
 ---
 

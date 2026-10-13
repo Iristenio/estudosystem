@@ -35,8 +35,8 @@ disciplina: páginas, vídeo, lei seca e questões.
 | Ativa | Sim/não. As inativas somem do ciclo e dos painéis, mas o histórico é mantido |
 | Ordem | Posição na lista e na montagem do ciclo |
 | Peso | Número inteiro ≥ 1 |
-| Possui PDF / Total de páginas | O total é obrigatório para iniciar uma sessão de PDF |
-| Possui vídeo / Total de horas de vídeo | O total é obrigatório para iniciar uma sessão de VideoAula |
+| Possui PDF / Total de páginas | O total é obrigatório para iniciar uma sessão de PDF. **Calculado** pelo material lançado (3.5) |
+| Possui vídeo / Total de horas de vídeo | O total é obrigatório para iniciar uma sessão de VideoAula. **Calculado** pelo material lançado (3.5) |
 | Cor | Usada em gráficos e etiquetas |
 | Observações | Texto livre (curso, código do material etc.) |
 
@@ -61,6 +61,7 @@ disciplina: páginas, vídeo, lei seca e questões.
 | Faixas de artigos | Só na Lei Seca (a partir de 13/10/2026). Quais artigos foram lidos, ex.: `1-10, 15, 37-40` (R25) |
 | Situação | Em andamento · Pausada · Finalizando · Concluída |
 | Posição no ciclo | O antigo CRON_ID (ex.: 3F2). Preenchido automaticamente ao concluir |
+| Material estudado | Só em PDF e VideoAula (a partir de 13/10/2026). Quais PDFs ou vídeos do material (3.5) foram estudados (R36) |
 
 Dia da semana e mês são **derivados da data** e não precisam ser guardados.
 
@@ -68,6 +69,20 @@ Dia da semana e mês são **derivados da data** e não precisam ser guardados.
 - **Horas totais do ciclo** (ex.: 30 h).
 - **Sequência:** lista ordenada de disciplinas, cada posição com a duração prevista.
 - **Ponteiro:** volta e posição da próxima disciplina sugerida (ex.: volta 4, posição 4 = "4F4").
+
+### 3.5 Material da disciplina (novidade de 13/10/2026)
+O material é lançado **aos poucos**, item por item, em vez de um total único.
+
+| Campo | Observação |
+|---|---|
+| Tipo | PDF ou Vídeo |
+| Número | Sequencial dentro do tipo e do curso (PDF 1, PDF 2…). Pode ser corrigido |
+| Nome | Opcional (ex.: "Controle de constitucionalidade"). Sem nome, vale o número |
+| Curso | Opcional (ex.: TJCE, TCU) |
+| Tamanho | Páginas (PDF) ou duração (vídeo) |
+| Fora do total | Sim/não, para tirar um item da conta sem apagá-lo |
+
+Cada **curso** da disciplina tem a chave **"conta no total"**.
 
 ## 4. Regras de negócio
 
@@ -151,6 +166,27 @@ Dia da semana e mês são **derivados da data** e não precisam ser guardados.
   continuam no histórico e nas horas, mas **não entram no mapa nem no percentual da lei** (vale só a
   partir de agora).
 
+### Material da disciplina (novidade de 13/10/2026)
+- **R30.** O **total de páginas** e o **total de horas de vídeo** da disciplina passam a ser a **soma
+  do material lançado** que conta no total: item que não está "fora do total", de um curso ligado.
+  Sem nenhum item que conte, o total fica vazio (e não dá para iniciar sessão daquele tipo).
+- **R31.** **Lançar rápido:** um campo aceita vários tamanhos de uma vez:
+  - PDF: `35, 42, 28` (páginas);
+  - vídeo: `2x30, 40, 1h20, 32:15` (2 vídeos de 30 min, um de 40 min, um de 1h20 e um de 32 min 15 s);
+  - cada valor vira um item, numerado na sequência do curso. Com um **nome**, lança-se um item só.
+- **R32.** **Troca de curso:** desligar "conta no total" de um curso tira todos os itens dele da soma,
+  sem apagar nada. Um item também pode ser tirado sozinho ("fora do total").
+- **R33.** Um item ligado a sessões não pode ser apagado, só tirado do total.
+- **R34.** O **total anterior** de cada disciplina vira um primeiro item chamado "Total anterior",
+  para nada mudar no dia da atualização. Ele pode ser apagado ou tirado do total depois.
+- **R35.** O material é lançado no cadastro da disciplina e também por um **atalho na tela Estudar**,
+  ao escolher PDF ou Videoaula (inclusive na hora de finalizar, se o item ainda não existe).
+- **R36.** Ao finalizar uma sessão de PDF ou VideoAula, você pode escolher **quais itens** estudou
+  (opcional). O app destaca o próximo item, logo depois do último estudado. Numa sessão concluída, a
+  escolha pode ser corrigida.
+- **R37.** As sessões anteriores a esta novidade não têm itens marcados e não aparecem no mapa do
+  material.
+
 ## 5. Painéis (calculados; nada é digitado)
 
 Consideram apenas as **sessões concluídas**.
@@ -174,6 +210,11 @@ Consideram apenas as **sessões concluídas**.
   - no topo: artigos diferentes lidos / total (%), relidos, nunca lidos e o **próximo trecho ainda
     não lido** (o primeiro trecho seguido de artigos nunca lidos);
   - a lista de leis também mostra quantos artigos de cada uma já foram lidos.
+- **Mapa do material** (botão ao lado de cada disciplina em Cadastros → Disciplinas):
+  - PDF e vídeo separados; itens agrupados por curso, com número, nome e tamanho;
+  - cor pelo número de sessões em que o item foi estudado (nunca, 1 vez, 2 ou mais);
+  - tocar num item mostra em quantas sessões e quando foi estudado pela última vez;
+  - no topo: itens estudados / total (%) e o próximo item ainda não estudado.
 - **Ciclo:** a sequência da volta atual, com a posição do ponteiro destacada e as horas feitas em
   cada posição.
 

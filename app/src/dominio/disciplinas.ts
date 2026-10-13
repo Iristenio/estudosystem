@@ -23,6 +23,8 @@ export function novaDisciplina(campos: Partial<Disciplina> & { id: Id }, agora =
     cor: CORES_DISCIPLINA[0],
     observacoes: '',
     status: 'ativo',
+    materiais: [],
+    cursos_fora: [],
     criado_em: carimbo,
     atualizado_em: carimbo,
     ...campos,

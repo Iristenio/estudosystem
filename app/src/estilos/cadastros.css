@@ -72,3 +72,23 @@ select.campo.campo-largo { width: 100%; }
 
 .grupos-leis { display: flex; flex-direction: column; gap: 16px; }
 .grupos-leis .linha-item { min-height: 56px; }
+
+/* ---- Material da disciplina (FormMaterial.tsx, R30–R35) ---- */
+.resumo-material { color: var(--texto-2); font-size: 15px; text-align: right; }
+.material-total { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin: 0; padding: 12px 14px; border-radius: var(--raio); background: var(--primaria-suave); }
+.material-total span { font-size: 14px; font-weight: 650; color: var(--texto-2); }
+.material-total strong { font-size: 17px; text-align: right; }
+.cartao-lancar { display: flex; flex-direction: column; gap: 12px; padding: 14px; border: 1px solid var(--borda); border-radius: var(--raio); }
+.cartao-lancar h3 { margin: 0; font-size: 16px; }
+.cartao-lancar .botao { align-self: flex-start; }
+.grade-lancar, .grade-item { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.dica.com-erro { color: var(--perigo); }
+.curso-material { display: flex; flex-direction: column; gap: 8px; }
+.curso-material header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.curso-material-nome { display: flex; flex-direction: column; min-width: 0; }
+.curso-material-nome small { color: var(--texto-2); font-size: 13.5px; }
+.curso-material.desligado .lista-itens { opacity: 0.55; }
+.linha-item.inativa .linha-item-texto strong { color: var(--texto-2); }
+.editar-item-material { display: flex; flex-direction: column; gap: 12px; padding: 14px; border: 2px solid var(--primaria); border-radius: var(--raio); }
+.atalho-material { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; margin: 0; color: var(--texto-2); font-size: 15px; }
+.atalho-material .link-inline svg { width: 18px; height: 18px; }

@@ -1,7 +1,8 @@
 // Ações da interface sobre disciplinas e leis: gravam localmente e devolvem a função "Desfazer".
-import type { Disciplina, Lei } from '../../dominio/tipos';
+import type { Disciplina, ItemMaterial, Lei } from '../../dominio/tipos';
 import { moverDisciplina } from '../../dominio/disciplinas';
-import { gravar, type Alteracao } from '../../dados/repositorio';
+import { aplicarMaterial, cursosFora, itensDaDisciplina } from '../../dominio/material';
+import { buscar, gravar, type Alteracao } from '../../dados/repositorio';
 
 export type Desfazer = () => Promise<void>;
 
@@ -40,3 +41,20 @@ export function excluirDisciplina(d: Disciplina, leisDaDisciplina: Lei[]): Promi
 
 export const excluirLei = (l: Lei) =>
   gravarComDesfazer([{ entidade: 'leis', registro: { ...l, status: 'excluido' }, operacao: 'excluir' }]);
+
+/**
+ * R30–R35 — altera o material da disciplina a partir da versão GRAVADA mais recente (o painel do material
+ * e o cadastro não se atropelam) e recalcula os totais. Lançar PDF/vídeo marca "possui PDF/vídeo".
+ */
+export async function alterarMaterial(
+  disciplinaId: string,
+  mudar: (itens: ItemMaterial[], fora: string[]) => { itens: ItemMaterial[]; fora: string[] },
+): Promise<Desfazer | null> {
+  const atual = await buscar('disciplinas', disciplinaId);
+  if (!atual) return null;
+  const r = mudar(itensDaDisciplina(atual), cursosFora(atual));
+  const d = aplicarMaterial(atual, r.itens, r.fora);
+  if (r.itens.some((i) => i.tipo === 'PDF')) d.possui_pdf = true;
+  if (r.itens.some((i) => i.tipo === 'Video')) d.possui_video = true;
+  return gravarComDesfazer([{ entidade: 'disciplinas', registro: d }]);
+}

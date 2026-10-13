@@ -11,19 +11,20 @@ import {
   validarDisciplina,
 } from '../../dominio/disciplinas';
 import { lerNumero, mostrarNumero } from '../../dominio/numeros';
+import { aplicarMaterial, cursosFora, itensDaDisciplina, resumoDoTipo } from '../../dominio/material';
 import { buscar, novoId } from '../../dados/repositorio';
 import { useEntidade } from '../../dados/ganchos';
 import { excluirDisciplina, salvarDisciplina } from '../acoes/cadastros';
 import { useEstado } from '../estado';
 
 export function FormDisciplina({ id }: { id?: string }) {
-  const { fecharPainel, avisar, perguntar } = useEstado();
+  const { fecharPainel, avisar, perguntar, abrirPainel } = useEstado();
   const todas = useEntidade('disciplinas');
   const leis = useEntidade('leis');
   const sessoes = useEntidade('sessoes');
   const [d, setD] = useState<Disciplina | null>(null);
   // Números ficam como texto enquanto o usuário digita (para aceitar "36," no meio da digitação)
-  const [textos, setTextos] = useState({ peso: '', paginas: '', horas: '' });
+  const [textos, setTextos] = useState({ peso: '' });
   const [erros, setErros] = useState<string[]>([]);
   const campoNome = useRef<HTMLInputElement>(null);
   const nova = !id;
@@ -33,11 +34,7 @@ export function FormDisciplina({ id }: { id?: string }) {
       const existente = id ? await buscar('disciplinas', id) : undefined;
       const inicial = existente ?? novaDisciplina({ id: novoId() });
       setD(inicial);
-      setTextos({
-        peso: mostrarNumero(inicial.peso),
-        paginas: mostrarNumero(inicial.total_paginas),
-        horas: mostrarNumero(inicial.total_horas_video),
-      });
+      setTextos({ peso: mostrarNumero(inicial.peso) });
       setErros([]);
       if (!existente) setTimeout(() => campoNome.current?.focus(), 50);
     })();
@@ -48,22 +45,32 @@ export function FormDisciplina({ id }: { id?: string }) {
   const leisDaDisciplina = leis.filter((l) => l.disciplina_id === d.id && l.status !== 'excluido');
   const podeExcluir = podeExcluirDisciplina(d.id, sessoes.filter((s) => s.status !== 'excluido'));
 
-  async function salvar(e: Event) {
-    e.preventDefault();
+  /** Grava o formulário; devolve o "Desfazer" ou null se há erros. */
+  async function gravarFormulario() {
     const peso = lerNumero(textos.peso);
-    const final = normalizarDisciplina({
-      ...d!,
-      peso: peso ?? NaN,
-      total_paginas: lerNumero(textos.paginas),
-      total_horas_video: lerNumero(textos.horas),
-      ordem: nova ? proximaOrdem(todas) : d!.ordem,
-    });
+    // O material é alterado em outro painel: vale sempre o gravado (R30 — totais = soma do material)
+    const gravada = nova ? undefined : await buscar('disciplinas', d!.id);
+    const base = { ...d!, materiais: gravada?.materiais ?? d!.materiais, cursos_fora: gravada?.cursos_fora ?? d!.cursos_fora };
+    const comTotais = base.materiais?.length ? aplicarMaterial(base, base.materiais, cursosFora(base)) : { ...base, total_paginas: gravada?.total_paginas ?? base.total_paginas, total_horas_video: gravada?.total_horas_video ?? base.total_horas_video };
+    const final = normalizarDisciplina({ ...comTotais, peso: peso ?? NaN, ordem: nova ? proximaOrdem(todas) : d!.ordem });
     const problemas = validarDisciplina(final, todas);
     setErros(problemas);
-    if (problemas.length) return;
-    const desfazer = await salvarDisciplina(final);
+    if (problemas.length) return null;
+    return salvarDisciplina(final);
+  }
+
+  async function salvar(e: Event) {
+    e.preventDefault();
+    const desfazer = await gravarFormulario();
+    if (!desfazer) return;
     fecharPainel();
     avisar({ texto: nova ? 'Disciplina incluída' : 'Disciplina salva', desfazer });
+  }
+
+  /** R35 — o material é lançado num painel próprio; antes, grava o que foi mudado aqui. */
+  async function lancarMaterial() {
+    if (!(await gravarFormulario())) return;
+    abrirPainel({ tipo: 'material', disciplinaId: d!.id });
   }
 
   async function excluir() {
@@ -136,38 +143,19 @@ export function FormDisciplina({ id }: { id?: string }) {
             <input type="checkbox" checked={d.possui_pdf} onChange={(e) => mudar({ possui_pdf: e.currentTarget.checked })} />
             PDF
           </label>
-          {d.possui_pdf && (
-            <label class="rotulo em-linha">
-              Total de páginas
-              <input
-                class="campo campo-numero"
-                inputMode="numeric"
-                placeholder="—"
-                value={textos.paginas}
-                onInput={(e) => setTextos({ ...textos, paginas: e.currentTarget.value })}
-              />
-            </label>
-          )}
+          {d.possui_pdf && <span class="resumo-material">{resumoDoTipo(itensDaDisciplina(d), cursosFora(d), 'PDF') ?? 'nenhum PDF lançado'}</span>}
         </div>
         <div class="material">
           <label class="interruptor">
             <input type="checkbox" checked={d.possui_video} onChange={(e) => mudar({ possui_video: e.currentTarget.checked })} />
             Videoaulas
           </label>
-          {d.possui_video && (
-            <label class="rotulo em-linha">
-              Total de horas
-              <input
-                class="campo campo-numero"
-                inputMode="decimal"
-                placeholder="—"
-                value={textos.horas}
-                onInput={(e) => setTextos({ ...textos, horas: e.currentTarget.value })}
-              />
-            </label>
-          )}
+          {d.possui_video && <span class="resumo-material">{resumoDoTipo(itensDaDisciplina(d), cursosFora(d), 'Video') ?? 'nenhum vídeo lançado'}</span>}
         </div>
-        <p class="dica">Os totais são necessários para iniciar sessões de PDF ou videoaula e para medir o progresso.</p>
+        <button type="button" class="botao" onClick={lancarMaterial}>
+          Lançar material
+        </button>
+        <p class="dica">Lance os PDFs e vídeos aos poucos: os totais são a soma. Eles são necessários para iniciar sessões e medir o progresso.</p>
       </fieldset>
 
       <fieldset>

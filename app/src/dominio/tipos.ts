@@ -31,6 +31,26 @@ export interface Disciplina extends Registro {
   cor: string; // #rrggbb
   observacoes: string;
   status: StatusRegistro;
+  /** Material lançado aos poucos (R30–R35); os totais acima são a soma do que conta. */
+  materiais: ItemMaterial[];
+  /** Cursos com "conta no total" desligado (R32). */
+  cursos_fora: string[];
+}
+
+export type TipoMaterial = 'PDF' | 'Video';
+
+/** Um PDF ou vídeo do material da disciplina (guardado dentro da disciplina). */
+export interface ItemMaterial {
+  id: Id;
+  tipo: TipoMaterial;
+  /** Sequencial dentro do tipo e do curso; 0 = "Total anterior" (R34). */
+  numero: number;
+  nome: string;
+  curso: string;
+  /** Páginas (PDF) ou minutos (vídeo; com fração quando há segundos). */
+  tamanho: number;
+  /** Tirado do total sem ser apagado (R32). */
+  fora: boolean;
 }
 
 /* ---------------- Lei seca (antiga aba Leis) ---------------- */
@@ -72,6 +92,8 @@ export interface Sessao extends Registro {
   questoes: number;
   acertos: number;
   situacao: SituacaoSessao;
+  /** PDF/VideoAula: ids dos itens do material estudados nesta sessão (R36). */
+  materiais_estudados: Id[];
   /** Posição do ciclo cumprida (ex.: "3F2") — preenchida a partir da etapa 4. */
   posicao_ciclo: string | null;
   /** Cancelar = "excluido": some do app e não conta em nada (a sincronização precisa do registro). */

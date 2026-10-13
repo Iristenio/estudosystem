@@ -78,9 +78,9 @@ export function validarInicio(dados: DadosInicio, disciplinas: Disciplina[], lei
     return erros;
   }
   if (dados.tipo === 'PDF' && !d.total_paginas)
-    erros.push('Esta disciplina ainda não tem o total de páginas. Preencha em Cadastros → Disciplinas.');
+    erros.push('Esta disciplina ainda não tem PDF lançado. Use "Lançar material" abaixo.');
   if (dados.tipo === 'VideoAula' && !d.total_horas_video)
-    erros.push('Esta disciplina ainda não tem o total de horas de vídeo. Preencha em Cadastros → Disciplinas.');
+    erros.push('Esta disciplina ainda não tem vídeo lançado. Use "Lançar material" abaixo.');
   if (dados.tipo === 'Lei Seca') {
     const lei = leis.find((l) => l.id === dados.lei_id && l.disciplina_id === d.id && l.status !== 'excluido');
     if (!lei) erros.push('Escolha a lei que será estudada.');
@@ -112,6 +112,7 @@ export function iniciarSessao(id: Id, dados: DadosInicio, agora = new Date()): S
     paginas: 0,
     artigos: 0,
     artigos_lidos: '',
+    materiais_estudados: [],
     questoes: 0,
     acertos: 0,
     situacao: 'andamento',
