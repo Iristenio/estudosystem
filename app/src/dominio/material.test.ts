@@ -8,6 +8,8 @@ import {
   itensEscolhiveis,
   mapaDoMaterial,
   proximoItem,
+  marcarEstudados,
+  itensEntre,
   recentesPrimeiro,
   resumoDoMapaMaterial,
   tipoMaterialDaSessao,
@@ -194,6 +196,25 @@ describe('sessões e mapa do material (R36, R37)', () => {
     expect(mapa.map((m) => `${m.item.id}:${m.vezes}`)).toEqual(['p1:2', 'p2:1', 'p3:0', 'pf:0', 'v1:0']);
     expect(mapa[0].ultima).toBe(new Date(inicio.getTime() + 5 * 3600e3).toISOString());
     expect(resumoDoMapaMaterial(mapa, ['TJCE'])).toEqual({ total: 3, estudados: 2, revistos: 1, nunca: 1, percentual: 66.7 });
+  });
+
+  it('R38 — marcado à mão conta no mapa e no próximo, sem sessão', () => {
+    const lista = [p1, p2, p3];
+    const ids = itensEntre(lista, 'p2', 'p1');
+    expect(ids).toEqual(['p1', 'p2']);
+    const marcados = marcarEstudados(itens, ids, true);
+    const mapa = mapaDoMaterial(marcados.filter((i) => i.tipo === 'PDF'), []);
+    expect(mapa.slice(0, 3).map((m) => [m.item.id, m.vezes, m.manual, m.estudado])).toEqual([
+      ['p1', 0, true, true],
+      ['p2', 0, true, true],
+      ['p3', 0, false, false],
+    ]);
+    expect(resumoDoMapaMaterial(mapa, ['TJCE']).estudados).toBe(2);
+    expect(proximoItem(marcados, ['TJCE'], 'PDF', [])?.id).toBe('p3');
+    // sessão mais recente revisou o p1, mas o mais adiante estudado é o p2 (à mão)
+    expect(proximoItem(marcados, ['TJCE'], 'PDF', [sessao('r', 'PDF', ['p1'])])?.id).toBe('p3');
+    // desmarcar volta ao normal
+    expect(proximoItem(marcarEstudados(marcados, ['p1', 'p2'], false), ['TJCE'], 'PDF', [])?.id).toBe('p1');
   });
 
   it('próximo item: depois do último marcado; no fim, o primeiro nunca estudado', () => {

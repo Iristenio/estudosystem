@@ -21,7 +21,7 @@ export function EscolhaMaterial({ disciplina, tipo, escolhidos, aoMudar, outrasS
   const itens = itensDaDisciplina(disciplina);
   const fora = cursosFora(disciplina);
   const lista = recentesPrimeiro(itensEscolhiveis(itens, fora, tipo, escolhidos)); // o último lançado primeiro
-  const lidos = new Map(mapaDoMaterial(lista, outrasSessoes).map((m) => [m.item.id, m.vezes]));
+  const lidos = new Map(mapaDoMaterial(lista, outrasSessoes).map((m) => [m.item.id, m.estudado ? 1 : 0]));
   const proximo = proximoItem(itens, fora, tipo, outrasSessoes);
   const variosCursos = new Set(lista.map((i) => i.curso)).size > 1;
   const nome = tipo === 'PDF' ? 'PDF' : 'vídeo';

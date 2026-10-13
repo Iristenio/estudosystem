@@ -51,6 +51,8 @@ export interface ItemMaterial {
   tamanho: number;
   /** Tirado do total sem ser apagado (R32). */
   fora: boolean;
+  /** Marcado à mão como já estudado: conta só no mapa, sem sessão (R38). */
+  estudado_manual?: boolean;
 }
 
 /* ---------------- Lei seca (antiga aba Leis) ---------------- */

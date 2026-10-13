@@ -178,6 +178,7 @@ export function FormMaterial({ disciplinaId, tipoMaterial }: { disciplinaId: str
                         <small>
                           {formatarTamanho(i)}
                           {i.fora && ' · fora do total'}
+                          {i.estudado_manual && ' · ✓ já estudado'}
                         </small>
                       </span>
                     </button>
@@ -213,6 +214,7 @@ function EditarItem({
   const [curso, setCurso] = useState(item.curso);
   const [tamanho, setTamanho] = useState(tamanhoParaTexto(item));
   const [foraDoTotal, setForaDoTotal] = useState(item.fora);
+  const [jaEstudado, setJaEstudado] = useState(!!item.estudado_manual);
   const leitura = lerTamanhos(tamanho, item.tipo);
   const final: ItemMaterial = {
     ...item,
@@ -221,6 +223,7 @@ function EditarItem({
     curso: curso.trim(),
     tamanho: leitura.valores.length === 1 ? leitura.valores[0] : NaN,
     fora: foraDoTotal,
+    estudado_manual: jaEstudado,
   };
   const errosTamanho = leitura.valores.length > 1 ? ['Informe um tamanho só.'] : leitura.erros;
   const erros = errosTamanho.length ? errosTamanho : validarItem(final, itens);
@@ -265,6 +268,14 @@ function EditarItem({
       <label class="interruptor">
         <input type="checkbox" checked={foraDoTotal} onChange={(e) => setForaDoTotal(e.currentTarget.checked)} />
         Fora do total
+      </label>
+      <label class="interruptor">
+        <input type="checkbox" checked={jaEstudado} onChange={(e) => setJaEstudado(e.currentTarget.checked)} />
+        <span>
+          Já estudado (marcado à mão)
+          <br />
+          <small>Só muda o mapa: não cria sessão nem soma horas.</small>
+        </span>
       </label>
       {erros.length > 0 && (
         <ul class="erros" role="alert">

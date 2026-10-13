@@ -8,7 +8,9 @@ import {
   cursosFora,
   formatarTamanho,
   itensDaDisciplina,
+  itensEntre,
   mapaDoMaterial,
+  marcarEstudados,
   ordenarItens,
   proximoItem,
   resumoDoMapaMaterial,
@@ -18,22 +20,27 @@ import {
 } from '../../dominio/material';
 import { useEntidade } from '../../dados/ganchos';
 import { useEstado } from '../estado';
+import { alterarMaterial } from '../acoes/cadastros';
 import { irPara, useParametroRota } from '../rotas';
 import { IconeGrade, IconeLivro, IconeMais } from '../icones';
 
 const fmtData = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const fmtPct = (n: number) => `${n.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
-const nivel = (m: ItemNoMapa) => (m.vezes === 0 ? 0 : m.vezes === 1 ? 1 : 2);
+// Marcado à mão sem sessão vale como "1 vez" na cor (R38)
+const nivel = (m: ItemNoMapa) => (m.vezes >= 2 ? 2 : m.estudado ? 1 : 0);
 
 function descrever(m: ItemNoMapa): string {
   const base = `${rotuloItem(m.item)} (${formatarTamanho(m.item)})`;
-  if (!m.vezes) return `${base}: ainda não estudado.`;
+  const manual = m.manual ? 'marcado à mão como já estudado' : '';
+  if (!m.vezes) return `${base}: ${manual || 'ainda não estudado'}.`;
   const vezes = m.vezes === 1 ? 'estudado em 1 sessão' : `estudado em ${m.vezes} sessões`;
-  return `${base}: ${vezes} · última em ${fmtData.format(new Date(m.ultima!))}.`;
+  return `${base}: ${vezes} · última em ${fmtData.format(new Date(m.ultima!))}${manual ? ` · ${manual}` : ''}.`;
 }
 
 export function TelaMapaMaterial() {
-  const { abrirPainel } = useEstado();
+  const { abrirPainel, avisar } = useEstado();
+  const [varios, setVarios] = useState(false);
+  const [inicioVarios, setInicioVarios] = useState<string | null>(null);
   const disciplinaId = useParametroRota();
   const opcoes = ordenarDisciplinas(useEntidade('disciplinas')).filter((d) => d.possui_pdf || d.possui_video);
   const sessoes = useEntidade('sessoes');
@@ -59,7 +66,31 @@ export function TelaMapaMaterial() {
   function trocarDisciplina(id: string) {
     setEscolhido(null);
     setEscolha(null);
+    setInicioVarios(null);
     irPara('material', id);
+  }
+
+  /** R38 — marca/desmarca à mão (sem sessão: só o mapa muda). */
+  async function marcar(ids: string[], estudado: boolean) {
+    if (!d || !ids.length) return;
+    const desfazer = await alterarMaterial(d.id, (lista, f) => ({ itens: marcarEstudados(lista, ids, estudado), fora: f }));
+    const qtd = ids.length === 1 ? rotuloItem(doTipo.find((i) => i.id === ids[0])!) : `${ids.length} ${nome}s`;
+    const varios = ids.length > 1;
+    const texto = estudado ? (varios ? 'marcados como já estudados' : 'marcado como já estudado') : varios ? 'marcações removidas' : 'marcação removida';
+    avisar({ texto: `${qtd}: ${texto}`, desfazer: desfazer ?? undefined });
+  }
+
+  function tocar(id: string) {
+    if (!varios) {
+      setEscolhido(escolhido === id ? null : id);
+      return;
+    }
+    if (!inicioVarios) {
+      setInicioVarios(id);
+      return;
+    }
+    marcar(itensEntre(doTipo, inicioVarios, id), true);
+    setInicioVarios(null);
   }
 
   return (
@@ -156,10 +187,38 @@ export function TelaMapaMaterial() {
                     <span><i class="artigo-amostra nivel-0" /> Nunca estudado</span>
                     <span><i class="artigo-amostra nivel-1" /> 1 sessão</span>
                     <span><i class="artigo-amostra nivel-2" /> 2 ou mais</span>
+                    <span>✓ marcado à mão</span>
                   </div>
-                  <p class="mapa-detalhe" aria-live="polite">
-                    {detalhe ? descrever(detalhe) : `Toque num ${nome} para ver quando foi estudado.`}
-                  </p>
+                  <div class="mapa-marcar">
+                    <label class="interruptor">
+                      <input
+                        type="checkbox"
+                        checked={varios}
+                        onChange={(e) => {
+                          setVarios(e.currentTarget.checked);
+                          setInicioVarios(null);
+                          setEscolhido(null);
+                        }}
+                      />
+                      Marcar vários como já estudados
+                    </label>
+                  </div>
+                  {varios ? (
+                    <p class="mapa-detalhe" aria-live="polite">
+                      {inicioVarios
+                        ? `Do ${rotuloItem(doTipo.find((i) => i.id === inicioVarios)!)} até… toque no último.`
+                        : `Toque no primeiro ${nome} e depois no último: todos no meio ficam marcados. Não cria sessão nem soma horas.`}
+                    </p>
+                  ) : (
+                    <div class="mapa-detalhe-linha" aria-live="polite">
+                      <p class="mapa-detalhe">{detalhe ? descrever(detalhe) : `Toque num ${nome} para ver quando foi estudado ou marcá-lo.`}</p>
+                      {detalhe && (
+                        <button type="button" class="botao" onClick={() => marcar([detalhe.item.id], !detalhe.manual)}>
+                          {detalhe.manual ? 'Desmarcar' : 'Marcar como já estudado'}
+                        </button>
+                      )}
+                    </div>
+                  )}
                   {cursos.map((c) => {
                     const doCurso = mapa.filter((m) => m.item.curso === c);
                     return (
@@ -175,10 +234,10 @@ export function TelaMapaMaterial() {
                             <button
                               key={m.item.id}
                               type="button"
-                              class={`item-mapa artigo nivel-${nivel(m)}${escolhido === m.item.id ? ' escolhido' : ''}${contaNoTotal(m.item, fora) ? '' : ' fora'}`}
+                              class={`item-mapa artigo nivel-${nivel(m)}${escolhido === m.item.id || inicioVarios === m.item.id ? ' escolhido' : ''}${contaNoTotal(m.item, fora) ? '' : ' fora'}${m.manual ? ' manual' : ''}`}
                               aria-label={descrever(m)}
                               aria-pressed={escolhido === m.item.id}
-                              onClick={() => setEscolhido(escolhido === m.item.id ? null : m.item.id)}
+                              onClick={() => tocar(m.item.id)}
                             >
                               <strong>{m.item.numero}</strong>
                               {m.item.nome && <span class="item-mapa-nome">{m.item.nome}</span>}

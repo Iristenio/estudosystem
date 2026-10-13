@@ -186,6 +186,10 @@ Cada **curso** da disciplina tem a chave **"conta no total"**.
   escolha pode ser corrigida.
 - **R37.** As sessões anteriores a esta novidade não têm itens marcados e não aparecem no mapa do
   material.
+- **R38.** Um item pode ser marcado **à mão como já estudado** (um por um, ou vários de uma vez do
+  primeiro ao último tocado), no Mapa do material ou na correção do item. A marcação muda **só o
+  mapa** (cor, % estudado e próximo sugerido): não cria sessão nem soma horas, páginas ou vídeo.
+  O próximo sugerido passa a ser o item seguinte ao último estudado, em sessão ou marcado à mão.
 
 ## 5. Painéis (calculados; nada é digitado)
 
@@ -213,7 +217,8 @@ Consideram apenas as **sessões concluídas**.
 - **Mapa do material** (botão ao lado de cada disciplina em Cadastros → Disciplinas):
   - PDF e vídeo separados; itens agrupados por curso, com número, nome e tamanho;
   - cor pelo número de sessões em que o item foi estudado (nunca, 1 vez, 2 ou mais);
-  - tocar num item mostra em quantas sessões e quando foi estudado pela última vez;
+  - tocar num item mostra em quantas sessões e quando foi estudado pela última vez, e permite
+    marcá-lo à mão como já estudado (R38; o item ganha um ✓);
   - no topo: itens estudados / total (%) e o próximo item ainda não estudado.
 - **Ciclo:** a sequência da volta atual, com a posição do ponteiro destacada e as horas feitas em
   cada posição.

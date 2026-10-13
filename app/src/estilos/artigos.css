@@ -93,3 +93,7 @@
 }
 .item-mapa small { font-size: 12px; opacity: 0.8; }
 .item-mapa.fora { border-style: dotted; }
+.item-mapa.manual::after { content: '\2713'; position: absolute; top: 4px; right: 7px; font-size: 13px; font-weight: 800; }
+.mapa-marcar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.mapa-detalhe-linha { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.mapa-detalhe-linha .mapa-detalhe { flex: 1 1 260px; }

@@ -245,18 +245,26 @@ export interface ItemNoMapa {
   item: ItemMaterial;
   /** Em quantas sessões o item foi marcado. */
   vezes: number;
+  /** R38 — marcado à mão como já estudado (sem sessão). */
+  manual: boolean;
+  /** Estudado em sessão ou marcado à mão. */
+  estudado: boolean;
   /** Início da sessão mais recente em que foi marcado (ISO), ou null. */
   ultima: string | null;
 }
 
 /** R37 — leituras de cada item, a partir das sessões concluídas da disciplina que marcaram itens. */
 export function mapaDoMaterial(itens: ItemMaterial[], concluidas: Sessao[]): ItemNoMapa[] {
-  const mapa = new Map(ordenarItens(itens).map((item) => [item.id, { item, vezes: 0, ultima: null as string | null }]));
+  const manual = (item: ItemMaterial) => !!item.estudado_manual;
+  const mapa = new Map(
+    ordenarItens(itens).map((item) => [item.id, { item, vezes: 0, manual: manual(item), estudado: manual(item), ultima: null as string | null }]),
+  );
   for (const s of concluidas) {
     for (const id of s.materiais_estudados ?? []) {
       const m = mapa.get(id);
       if (!m) continue;
       m.vezes++;
+      m.estudado = true;
       if (!m.ultima || s.inicio > m.ultima) m.ultima = s.inicio;
     }
   }
@@ -264,8 +272,9 @@ export function mapaDoMaterial(itens: ItemMaterial[], concluidas: Sessao[]): Ite
 }
 
 /**
- * R36 — próximo item sugerido: o seguinte (na ordem dos que contam) ao último item marcado na
- * sessão mais recente; sem marcações (ou no fim da lista), o primeiro nunca estudado.
+ * R36/R38 — próximo item sugerido: o seguinte (na ordem dos que contam) ao último estudado — o mais
+ * adiante entre os itens da sessão mais recente e os marcados à mão. Sem nada estudado (ou no fim
+ * da lista), o primeiro nunca estudado.
  */
 export function proximoItem(itens: ItemMaterial[], fora: string[], tipo: TipoMaterial, concluidas: Sessao[]): ItemMaterial | null {
   const lista = itensEscolhiveis(itens, fora, tipo);
@@ -275,16 +284,34 @@ export function proximoItem(itens: ItemMaterial[], fora: string[], tipo: TipoMat
     .filter((s) => (s.materiais_estudados ?? []).some((id) => posicao.has(id)))
     .sort((a, b) => b.inicio.localeCompare(a.inicio));
   const mapa = mapaDoMaterial(lista, concluidas);
-  const nuncaEstudado = mapa.find((m) => m.vezes === 0)?.item ?? null;
-  if (!comItens.length) return nuncaEstudado;
-  const ultimo = Math.max(...comItens[0].materiais_estudados.filter((id) => posicao.has(id)).map((id) => posicao.get(id)!));
-  return lista[ultimo + 1] ?? nuncaEstudado;
+  const nuncaEstudado = mapa.find((m) => !m.estudado)?.item ?? null;
+  const posicoes = [
+    ...(comItens[0]?.materiais_estudados.filter((id) => posicao.has(id)).map((id) => posicao.get(id)!) ?? []),
+    ...lista.flatMap((i, n) => (i.estudado_manual ? [n] : [])),
+  ];
+  if (!posicoes.length) return nuncaEstudado;
+  return lista[Math.max(...posicoes) + 1] ?? nuncaEstudado;
+}
+
+/** R38 — marca (ou desmarca) à mão os itens como já estudados. */
+export function marcarEstudados(itens: ItemMaterial[], ids: Id[], estudado: boolean): ItemMaterial[] {
+  const alvo = new Set(ids);
+  return itens.map((i) => (alvo.has(i.id) ? { ...i, estudado_manual: estudado } : i));
+}
+
+/** Itens do primeiro ao último tocado (na ordem da lista), para marcar vários de uma vez. */
+export function itensEntre(lista: ItemMaterial[], idA: Id, idB: Id): Id[] {
+  const a = lista.findIndex((i) => i.id === idA);
+  const b = lista.findIndex((i) => i.id === idB);
+  if (a < 0 || b < 0) return [];
+  const [de, ate] = a <= b ? [a, b] : [b, a];
+  return lista.slice(de, ate + 1).map((i) => i.id);
 }
 
 /** Totais do mapa de um tipo (só itens que contam). */
 export function resumoDoMapaMaterial(mapa: ItemNoMapa[], fora: string[]) {
   const contam = mapa.filter((m) => contaNoTotal(m.item, fora));
-  const estudados = contam.filter((m) => m.vezes > 0).length;
+  const estudados = contam.filter((m) => m.estudado).length;
   return {
     total: contam.length,
     estudados,
