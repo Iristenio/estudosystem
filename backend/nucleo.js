@@ -35,6 +35,7 @@ var ESQUEMA = {
       ['paginas', 'n'], ['artigos', 'n'], ['questoes', 'n'], ['acertos', 'n'],
       ['situacao', 's'], ['posicao_ciclo', 's?'], ['status', 's'],
       ['criado_em', 's'], ['atualizado_em', 's'],
+      ['artigos_lidos', 's'], // 13/10/2026 — faixas de artigos da lei seca ("1-10, 15")
     ],
   },
   ciclo: {
@@ -57,6 +58,21 @@ function colunaDe(entidade, campo) {
 
 function cabecalho(entidade) {
   return ESQUEMA[entidade].campos.map(function (c) { return c[0]; }).concat([COLUNA_RECEBIDO]);
+}
+
+/**
+ * Campos novos no fim do ESQUEMA: compara o cabeçalho atual da aba com o esperado e diz quantas
+ * colunas inserir antes de _recebido_em. null = já está certo. Erro = cabeçalho desconhecido.
+ */
+function colunasFaltando(entidade, cabecalhoAtual) {
+  var esperado = cabecalho(entidade);
+  var atual = cabecalhoAtual.map(String).filter(function (c) { return c !== ''; });
+  if (atual.join('|') === esperado.join('|')) return null;
+  var pos = atual.indexOf(COLUNA_RECEBIDO);
+  var prefixoOk = pos > 0 && pos < esperado.length - 1 && atual.length === pos + 1 &&
+    atual.slice(0, pos).join('|') === esperado.slice(0, pos).join('|');
+  if (!prefixoOk) throw new Error('A aba ' + ESQUEMA[entidade].aba + ' tem colunas diferentes do esperado.');
+  return { posicao: pos, quantidade: esperado.length - 1 - pos };
 }
 
 /** Registro do app → linha da planilha (tudo como texto, para a planilha não "converter" datas). */
@@ -184,6 +200,7 @@ if (typeof module !== 'undefined') {
     VERSAO_API: VERSAO_API,
     ESQUEMA: ESQUEMA,
     cabecalho: cabecalho,
+    colunasFaltando: colunasFaltando,
     registroParaLinha: registroParaLinha,
     linhaParaRegistro: linhaParaRegistro,
     aplicarOperacoes: aplicarOperacoes,

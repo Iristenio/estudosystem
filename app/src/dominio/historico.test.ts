@@ -10,7 +10,7 @@ function concluida(dia: string, hora: string, minutos: number, campos: Partial<S
   const s = iniciarSessao(`s${++seq}`, { disciplina_id: 'D01', tipo: 'PDF', aula: '', lei_id: null }, inicio);
   const c = concluir(finalizar({ ...s, ...campos }, new Date(inicio.getTime() + minutos * 60_000)), {
     paginas: campos.paginas ?? 0,
-    artigos: campos.artigos ?? 0,
+    artigos_lidos: campos.artigos_lidos ?? '',
     questoes: campos.questoes ?? 0,
     acertos: campos.acertos ?? 0,
   });

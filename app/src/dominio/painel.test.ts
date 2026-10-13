@@ -11,7 +11,7 @@ function sessao(dia: string, minutos: number, campos: Partial<Sessao> = {}): Ses
   const s = { ...iniciarSessao(`s${++seq}`, { disciplina_id: 'D01', tipo: 'Revisão', aula: '', lei_id: null }, inicio), ...campos };
   return concluir(finalizar(s, new Date(inicio.getTime() + minutos * 60_000)), {
     paginas: campos.paginas ?? null,
-    artigos: campos.artigos ?? null,
+    artigos_lidos: campos.artigos_lidos ?? '',
     questoes: campos.questoes ?? null,
     acertos: campos.acertos ?? null,
   });
@@ -21,7 +21,7 @@ const pdf = sessao('2026-09-20', 60, { tipo: 'PDF', paginas: 30 }); // 2 min/pá
 const pdf2 = sessao('2026-09-21', 30, { tipo: 'PDF', paginas: 10, disciplina_id: 'D02' }); // total: 90 min / 40 págs = 2,25
 const q = sessao('2026-09-21', 15, { tipo: 'Questões', questoes: 20, acertos: 13 }); // 0,75 min/questão
 const video = sessao('2026-08-10', 90, { tipo: 'VideoAula', disciplina_id: 'D02' });
-const lei = sessao('2026-09-22', 40, { tipo: 'Lei Seca', disciplina_id: 'D03', lei_id: 'L01', artigos: 14 });
+const lei = sessao('2026-09-22', 40, { tipo: 'Lei Seca', disciplina_id: 'D03', lei_id: 'L01', artigos_lidos: '1-14' });
 const todas = [pdf, pdf2, q, video, lei];
 
 describe('indicadores gerais', () => {
@@ -105,6 +105,14 @@ describe('acompanhamento por disciplina', () => {
     expect(d02.percentualVideo).toBe(3.75); // 1,5 / 40
     const d03 = linhas[2];
     expect([d03.artigosLidos, d03.totalArtigos, d03.percentualLeiSeca]).toEqual([14, 70, 20]);
+  });
+
+  it('lei seca: só artigos diferentes contam; releitura e sessões antigas (sem faixas) não somam', () => {
+    const releitura = sessao('2026-10-13', 20, { tipo: 'Lei Seca', disciplina_id: 'D03', lei_id: 'L01', artigos_lidos: '10-20' });
+    const antiga = { ...sessao('2026-08-01', 20, { tipo: 'Lei Seca', disciplina_id: 'D03', lei_id: 'L01', artigos_lidos: '1' }), artigos: 30, artigos_lidos: '' };
+    const d03 = acompanhamento(ds, leisIniciais(), [...todas, releitura, antiga])[2];
+    expect([d03.artigosLidos, d03.percentualLeiSeca]).toEqual([20, 28.57]); // 1-20 de 70
+    expect(indicadores([lei, releitura, antiga]).artigos).toBe(14 + 11 + 30); // o Dashboard soma tudo
   });
 
   it('lei ativa sem total de artigos deixa o total "—"; inativas ficam de fora', () => {

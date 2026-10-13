@@ -3,6 +3,7 @@
 //
 // Recebem sessões JÁ CONCLUÍDAS e filtradas (ver historico.ts → filtrarSessoes).
 import type { Disciplina, Id, Lei, Sessao, TipoSessao } from './tipos';
+import { artigosDiferentesLidos } from './artigos';
 import { TIPOS_SESSAO } from './tipos';
 import { duracaoSegundos } from './sessoes';
 import { diaDaSessao } from './historico';
@@ -208,6 +209,7 @@ export interface LinhaAcompanhamento {
   horasVideo: number;
   totalHorasVideo: number | null;
   percentualVideo: number | null;
+  /** Artigos DIFERENTES já lidos das leis ativas, só das sessões com faixas (R29). */
   artigosLidos: number;
   /** Soma dos artigos das leis ativas; null se não há leis, ou alguma lei ativa está sem total ("—" na planilha). */
   totalArtigos: number | null;
@@ -236,10 +238,7 @@ export function acompanhamento(disciplinasOrdenadas: Disciplina[], leis: Lei[], 
       const daDisciplina = concluidas.filter((s) => s.disciplina_id === d.id);
       const ind = indicadores(daDisciplina);
       const leisAtivas = leis.filter((l) => l.disciplina_id === d.id && l.ativa && l.status !== 'excluido');
-      const idsLeis = new Set(leisAtivas.map((l) => l.id));
-      const artigosLidos = doTipo(daDisciplina, 'Lei Seca')
-        .filter((s) => s.lei_id && idsLeis.has(s.lei_id))
-        .reduce((s, x) => s + x.artigos, 0);
+      const artigosLidos = artigosDiferentesLidos(leisAtivas, daDisciplina);
       const totalArtigos =
         leisAtivas.length && leisAtivas.every((l) => l.total_artigos) ? leisAtivas.reduce((s, l) => s + (l.total_artigos ?? 0), 0) : null;
       const totalPaginas = d.possui_pdf ? d.total_paginas : null;

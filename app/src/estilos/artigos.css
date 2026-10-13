@@ -1,0 +1,31 @@
+/* Artigos lidos da lei seca: campo com faixas + grade para marcar tocando (CampoArtigos.tsx). */
+.campo-artigos { display: flex; flex-direction: column; gap: 8px; }
+.artigos-contagem { font-size: 14px; }
+.artigos-contagem.com-erro { color: var(--perigo); }
+
+.grade-artigos-bloco {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px; border: 1px solid var(--borda); border-radius: var(--raio); background: var(--superficie-2);
+}
+.grade-artigos-barra { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.grade-artigos-barra .dica { font-size: 13.5px; }
+
+.grade-artigos {
+  display: grid; gap: 4px;
+  grid-template-columns: repeat(auto-fill, minmax(var(--toque), 1fr));
+  max-height: 420px; overflow-y: auto; overscroll-behavior: contain;
+}
+.artigo {
+  position: relative; min-height: var(--toque); padding: 0;
+  border: 1px solid var(--borda); border-radius: 8px;
+  background: var(--superficie); color: var(--texto);
+  font: inherit; font-size: 14px; font-variant-numeric: tabular-nums; cursor: pointer;
+}
+.artigo.ja-lido::after {
+  content: ''; position: absolute; top: 5px; right: 5px;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--primaria);
+}
+.artigo.marcado { background: var(--primaria); border-color: var(--primaria); color: var(--primaria-texto); font-weight: 650; }
+.artigo.marcado.ja-lido::after { background: var(--primaria-texto); }
+.artigo.inicio-faixa { outline: 3px solid var(--aviso); outline-offset: -3px; }
+@media (hover: hover) { .artigo:hover:not(.marcado) { border-color: var(--primaria); } }

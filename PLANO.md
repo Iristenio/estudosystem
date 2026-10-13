@@ -16,6 +16,8 @@ o Google vem depois. A planilha antiga continua sendo usada normalmente até a t
 | 7 | Importação | Trazer todo o histórico da planilha antiga | ✅ 27/09 |
 | 8 | Conferência e troca | Conferir os totais e passar a usar só o app | ✅ 27/09 |
 | 9 | (futuro) Metas | A combinar | — |
+| 10 | Artigos lidos | Registrar quais artigos leu e ver o % real da lei | ✅ 13/10 |
+| 11 | Mapa da lei | Ver na grade os artigos lidos e o próximo trecho | a fazer |
 
 ---
 
@@ -91,6 +93,23 @@ o Google vem depois. A planilha antiga continua sendo usada normalmente até a t
 
 ## Etapa 9 — Metas (futuro)
 - Combinar os detalhes: diária ou semanal, em horas, páginas ou questões, por disciplina ou geral.
+
+## Etapa 10 — Artigos lidos (R25–R29)
+- Ao finalizar uma sessão de Lei Seca, o campo "Artigos lidos" passa a receber as **faixas**
+  (`1-10, 15, 37-40`), e a quantidade aparece calculada logo abaixo.
+- Botão **marcar na grade** para escolher os artigos tocando, como alternativa a digitar.
+- Na edição de uma sessão concluída, as faixas podem ser corrigidas.
+- Acompanhamento: o % da lei seca passa a contar **artigos diferentes**, só das sessões com faixas.
+  Atenção: como as sessões antigas não entram, **o percentual vai recomeçar perto de zero**.
+- O Dashboard continua mostrando o total de artigos lidos (incluindo releituras e sessões antigas),
+  que mede o volume de estudo.
+- Planilha do Google: uma coluna nova nas sessões, com as faixas em texto.
+
+## Etapa 11 — Mapa da lei
+- No cadastro de cada lei, botão **Mapa da lei**.
+- Grade com um quadradinho por artigo, colorido pelo número de leituras.
+- Tocar num artigo: quantas vezes foi lido e quando foi a última vez.
+- No topo: % da lei e o **próximo trecho não lido** (ex.: "próximo: arts. 41 a 58").
 
 ---
 

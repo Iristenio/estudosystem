@@ -6,6 +6,7 @@ import { ID_CICLO, TIPOS_SESSAO } from '../../dominio/tipos';
 import { disciplinaSugerida, posicaoAtual } from '../../dominio/ciclo';
 import { ordenarDisciplinas } from '../../dominio/disciplinas';
 import { lerNumero } from '../../dominio/numeros';
+import { artigosLidosDaLei } from '../../dominio/artigos';
 import {
   concluidasDoDia,
   duracaoSegundos,
@@ -25,6 +26,7 @@ import * as acoes from '../acoes/sessoes';
 import { useEstado } from '../estado';
 import { irPara } from '../rotas';
 import { IconeCiclo, IconeCronometro, IconeLapis } from '../icones';
+import { CampoArtigos } from '../componentes/CampoArtigos';
 
 const fmtHora = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
 const fmtDataLonga = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -46,7 +48,7 @@ export function TelaEstudar() {
         <div class="grade-estudar">
           {!aberta && <NovaSessao disciplinas={disciplinas} leis={leis} sessoes={sessoes} ciclo={ciclo} />}
           {aberta && aberta.situacao !== 'finalizando' && <Cronometro s={aberta} disciplinas={disciplinas} leis={leis} />}
-          {aberta && aberta.situacao === 'finalizando' && <Finalizar s={aberta} disciplinas={disciplinas} leis={leis} />}
+          {aberta && aberta.situacao === 'finalizando' && <Finalizar s={aberta} disciplinas={disciplinas} leis={leis} sessoes={sessoes} />}
           <Hoje sessoes={sessoes} disciplinas={disciplinas} />
         </div>
       </div>
@@ -262,13 +264,15 @@ function Cronometro({ s, disciplinas, leis }: { s: Sessao; disciplinas: Discipli
 
 /* ---------------- 3. Finalizar (relógio congelado) ---------------- */
 
-function Finalizar({ s, disciplinas, leis }: { s: Sessao; disciplinas: Disciplina[]; leis: Lei[] }) {
+function Finalizar({ s, disciplinas, leis, sessoes }: { s: Sessao; disciplinas: Disciplina[]; leis: Lei[]; sessoes: Sessao[] }) {
   const { abrirPainel, perguntar, avisar } = useEstado();
   const [textos, setTextos] = useState({ paginas: '', artigos: '', questoes: '', acertos: '' });
   const [erros, setErros] = useState<string[]>([]);
+  const lei = s.lei_id ? leis.find((l) => l.id === s.lei_id) : undefined;
+  const concluidas = sessoes.filter((x) => x.status !== 'excluido' && x.situacao === 'concluida');
   const dados = {
     paginas: lerNumero(textos.paginas),
-    artigos: lerNumero(textos.artigos),
+    artigos_lidos: textos.artigos,
     questoes: lerNumero(textos.questoes),
     acertos: lerNumero(textos.acertos),
   };
@@ -289,7 +293,7 @@ function Finalizar({ s, disciplinas, leis }: { s: Sessao; disciplinas: Disciplin
 
   async function concluir(e: Event) {
     e.preventDefault();
-    const problemas = validarDadosFinais(s.tipo, dados);
+    const problemas = validarDadosFinais(s.tipo, dados, lei?.total_artigos ?? null);
     setErros(problemas);
     if (problemas.length) return;
     const r = await acoes.concluir(s, dados);
@@ -327,7 +331,14 @@ function Finalizar({ s, disciplinas, leis }: { s: Sessao; disciplinas: Disciplin
       </button>
 
       {s.tipo === 'PDF' && <div class="linha">{campo('paginas', 'Páginas lidas')}</div>}
-      {s.tipo === 'Lei Seca' && <div class="linha">{campo('artigos', 'Artigos lidos')}</div>}
+      {s.tipo === 'Lei Seca' && (
+        <CampoArtigos
+          valor={textos.artigos}
+          aoMudar={(v) => setTextos({ ...textos, artigos: v })}
+          total={lei?.total_artigos ?? null}
+          jaLidos={lei ? artigosLidosDaLei(lei, concluidas) : undefined}
+        />
+      )}
       {s.tipo === 'Questões' && (
         <div class="linha campos-questoes">
           {campo('questoes', 'Questões')}

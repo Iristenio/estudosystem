@@ -71,6 +71,7 @@ function tabelasDaPlanilha(planilha) {
   Object.keys(ESQUEMA).forEach(function (entidade) {
     var aba = planilha.getSheetByName(ESQUEMA[entidade].aba);
     if (!aba) throw new Error('Aba ' + ESQUEMA[entidade].aba + ' não existe — execute configurar() de novo.');
+    garantirEstrutura(aba, entidade);
     var colunas = cabecalho(entidade).length;
     var cache = null;
     var ler = function () {
@@ -93,6 +94,17 @@ function tabelasDaPlanilha(planilha) {
     };
   });
   return tabelas;
+}
+
+/** Campo novo no ESQUEMA: insere a coluna antes de _recebido_em (as linhas existentes ficam vazias nela). */
+function garantirEstrutura(aba, entidade) {
+  var largura = Math.max(1, aba.getLastColumn());
+  var falta = colunasFaltando(entidade, aba.getRange(1, 1, 1, largura).getValues()[0]);
+  if (!falta) return;
+  aba.insertColumnsBefore(falta.posicao + 1, falta.quantidade);
+  var colunas = cabecalho(entidade);
+  aba.getRange(1, 1, 1, colunas.length).setValues([colunas]).setFontWeight('bold').setBackground('#e3ecfd');
+  aba.getRange(1, falta.posicao + 1, aba.getMaxRows(), falta.quantidade).setNumberFormat('@');
 }
 
 function registrarLog(planilha, linhas) {

@@ -186,6 +186,7 @@ export function converterPlanilhaAntiga(abas: AbasLidas, titulo = 'Planilha', ag
       pausado_desde: null,
       paginas: tipo === 'PDF' ? inteiro(l['PÁGINAS']) : 0,
       artigos: tipo === 'Lei Seca' ? inteiro(l.ARTIGOS_LIDOS) : 0,
+      artigos_lidos: '', // a planilha antiga só tinha a quantidade (R29)
       questoes,
       acertos: tipo === 'Questões' ? Math.min(questoes, inteiro(l['ACERT.'])) : 0,
       situacao: 'concluida',

@@ -38,6 +38,8 @@ export async function cancelar(s: Sessao) {
   await gravar([{ entidade: 'sessoes', registro: { ...s, status: 'excluido' }, operacao: 'excluir' }]);
 }
 
-/** R10–R12 — horários corrigidos (já validados) e descrição da aula. */
-export const corrigir = (s: Sessao, inicio: Date, fim: Date | null, aula: string) =>
-  salvar('sessoes', { ...regra.aplicarHorarios(s, inicio, fim), aula: aula.trim() });
+/** R10–R12 e R28 — horários corrigidos (já validados), descrição da aula e, na Lei Seca, as faixas de artigos. */
+export function corrigir(s: Sessao, inicio: Date, fim: Date | null, aula: string, faixas: string | null = null) {
+  const r = { ...regra.aplicarHorarios(s, inicio, fim), aula: aula.trim() };
+  return salvar('sessoes', faixas?.trim() ? regra.corrigirArtigos(r, faixas) : r);
+}

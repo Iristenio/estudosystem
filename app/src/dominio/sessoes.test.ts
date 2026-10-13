@@ -70,7 +70,7 @@ describe('cronômetro', () => {
   it('R5: finalizar congela o relógio — o tempo preenchendo os campos não conta', () => {
     const s = finalizar(sessao(), em('06:10:10'));
     expect(duracaoSegundos(s, em('06:20:00'))).toBe(3600);
-    const c = concluir(s, { paginas: 30, artigos: 5, questoes: 3, acertos: 1 });
+    const c = concluir(s, { paginas: 30, artigos_lidos: '1-5', questoes: 3, acertos: 1 });
     expect(c.fim).toBe(s.pausado_desde);
     expect(c.pausado_desde).toBeNull();
     expect(c.situacao).toBe('concluida');
@@ -95,12 +95,12 @@ describe('cronômetro', () => {
     expect(pausar(concluida)).toBe(concluida);
     expect(continuar(sessao())).toEqual(sessao());
     expect(finalizar(concluida)).toBe(concluida);
-    expect(concluir(sessao(), { paginas: 1, artigos: null, questoes: null, acertos: null }).situacao).toBe('andamento');
+    expect(concluir(sessao(), { paginas: 1, artigos_lidos: '', questoes: null, acertos: null }).situacao).toBe('andamento');
   });
 
   it('R6: grava só os números do tipo da sessão', () => {
     const q = finalizar(sessao({ tipo: 'Questões' }), em('06:00:00'));
-    const c = concluir(q, { paginas: 30, artigos: 2, questoes: 20, acertos: 13 });
+    const c = concluir(q, { paginas: 30, artigos_lidos: '1-2', questoes: 20, acertos: 13 });
     expect([c.paginas, c.artigos, c.questoes, c.acertos]).toEqual([0, 0, 20, 13]);
     expect(erros(c)).toBe(7);
     expect(percentualAcerto(c)).toBe(65);
@@ -109,11 +109,11 @@ describe('cronômetro', () => {
   });
 
   it('R6: acertos ≤ questões e números inteiros', () => {
-    expect(validarDadosFinais('Questões', { paginas: null, artigos: null, questoes: 10, acertos: 11 })).toHaveLength(1);
-    expect(validarDadosFinais('Questões', { paginas: null, artigos: null, questoes: 10, acertos: 10 })).toEqual([]);
-    expect(validarDadosFinais('PDF', { paginas: 2.5, artigos: null, questoes: null, acertos: null })).toHaveLength(1);
-    expect(validarDadosFinais('PDF', { paginas: null, artigos: null, questoes: null, acertos: null })).toEqual([]);
-    expect(validarDadosFinais('VideoAula', { paginas: NaN, artigos: null, questoes: null, acertos: null })).toEqual([]);
+    expect(validarDadosFinais('Questões', { paginas: null, artigos_lidos: '', questoes: 10, acertos: 11 })).toHaveLength(1);
+    expect(validarDadosFinais('Questões', { paginas: null, artigos_lidos: '', questoes: 10, acertos: 10 })).toEqual([]);
+    expect(validarDadosFinais('PDF', { paginas: 2.5, artigos_lidos: '', questoes: null, acertos: null })).toHaveLength(1);
+    expect(validarDadosFinais('PDF', { paginas: null, artigos_lidos: '', questoes: null, acertos: null })).toEqual([]);
+    expect(validarDadosFinais('VideoAula', { paginas: NaN, artigos_lidos: '', questoes: null, acertos: null })).toEqual([]);
   });
 
   it('formatos de duração', () => {
@@ -202,7 +202,7 @@ describe('correção de horários (R10–R14)', () => {
     expect(fimAtual(f)?.getTime()).toBe(h('09:00:00'));
     const corr = aplicarHorarios(f, em('07:00:00'), em('08:00:00'));
     expect(duracaoSegundos(corr)).toBe(3600);
-    const c = concluir(corr, { paginas: 10, artigos: null, questoes: null, acertos: null });
+    const c = concluir(corr, { paginas: 10, artigos_lidos: '', questoes: null, acertos: null });
     expect(c.fim).toBe(em('08:00:00').toISOString());
     const c2 = aplicarHorarios(c, em('07:30:00'), em('08:15:00'));
     expect(duracaoSegundos(c2)).toBe(45 * 60);

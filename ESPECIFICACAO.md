@@ -58,6 +58,7 @@ disciplina: páginas, vídeo, lei seca e questões.
 | Tempo pausado | Soma de todas as pausas |
 | Duração | **Calculada:** fim − início − pausas. Nunca é digitada |
 | Páginas / Artigos lidos / Questões e acertos | Conforme o tipo. Os erros e o % de acerto são calculados |
+| Faixas de artigos | Só na Lei Seca (a partir de 13/10/2026). Quais artigos foram lidos, ex.: `1-10, 15, 37-40` (R25) |
 | Situação | Em andamento · Pausada · Finalizando · Concluída |
 | Posição no ciclo | O antigo CRON_ID (ex.: 3F2). Preenchido automaticamente ao concluir |
 
@@ -84,7 +85,7 @@ Dia da semana e mês são **derivados da data** e não precisam ser guardados.
 - **R6.** Campos finais por tipo:
   - PDF: páginas;
   - Questões: total e acertos (acertos ≤ total; erros e % são calculados);
-  - Lei Seca: artigos lidos;
+  - Lei Seca: **quais artigos** foram lidos, em faixas (R25). A quantidade é calculada sozinha;
   - VideoAula e Revisão: nada extra.
 - **R7.** O cronômetro continua certo mesmo se o app for fechado ou o aparelho desligar. Ele é
   calculado pelos horários gravados, e não por um contador rodando.
@@ -106,6 +107,7 @@ Dia da semana e mês são **derivados da data** e não precisam ser guardados.
   deixa salvar.
 - **R15.** Depois de concluída, uma sessão **só permite alterar os horários (início e fim) e a
   descrição da aula**. Disciplina, tipo, páginas, questões, acertos e artigos ficam travados.
+  Exceção: as **faixas de artigos** podem ser corrigidas (R28).
 - **R16.** Uma sessão concluída **não pode ser excluída**.
 
 ### Ciclo de estudos
@@ -131,6 +133,24 @@ Dia da semana e mês são **derivados da data** e não precisam ser guardados.
   Sem sessões, pode ser excluída.
 - **R24.** A lista de disciplinas pode ser reordenada.
 
+### Artigos lidos na lei seca (novidade de 13/10/2026)
+- **R25.** Ao finalizar uma sessão de Lei Seca, você informa **quais artigos leu**, em faixas:
+  `1-10, 15, 37-40`. Também vale escrever `1 a 10`, separar com ponto e vírgula, e marcar os artigos
+  tocando numa **grade** (botão "marcar na grade"). A quantidade de artigos da sessão é **calculada**
+  a partir das faixas (no exemplo, 15).
+- **R26.** Validações das faixas:
+  - só números de 1 até o total de artigos da lei;
+  - **artigo com letra conta como o artigo principal**: `37-A` vale como 37;
+  - faixa invertida (`10-1`) é aceita como `1-10`;
+  - artigo repetido na mesma sessão conta uma vez;
+  - pelo menos um artigo precisa ser informado.
+- **R27.** O registro é **só por artigo** (sem parágrafos e incisos).
+- **R28.** Numa sessão de Lei Seca já concluída, as faixas podem ser **corrigidas** (erro de
+  digitação), e a quantidade é recalculada.
+- **R29.** As sessões de Lei Seca **anteriores a esta novidade** guardam só a quantidade. Elas
+  continuam no histórico e nas horas, mas **não entram no mapa nem no percentual da lei** (vale só a
+  partir de agora).
+
 ## 5. Painéis (calculados; nada é digitado)
 
 Consideram apenas as **sessões concluídas**.
@@ -142,9 +162,16 @@ Consideram apenas as **sessões concluídas**.
   - horas por **mês** do ano;
   - tempo médio por sessão, última sessão e última data estudada.
 - **Acompanhamento por disciplina:**
-  - páginas lidas / total (%), horas de vídeo / total (%), artigos lidos / total das leis (%);
+  - páginas lidas / total (%), horas de vídeo / total (%);
+  - lei seca: **artigos diferentes já lidos** / total das leis (%). Ler o mesmo artigo de novo não
+    aumenta o percentual (R29: só sessões com faixas);
   - questões, acertos e % de acerto;
   - tempo total, minutos por página e minutos por questão.
+- **Mapa da lei** (aberto pelo cadastro de cada lei):
+  - um quadradinho por artigo: cinza = nunca lido; verde-claro = lido 1 vez; verde-escuro = 2 vezes
+    ou mais;
+  - tocar num artigo mostra quantas vezes e a data da última leitura;
+  - no topo: artigos diferentes lidos / total (%) e o **próximo trecho ainda não lido**.
 - **Ciclo:** a sequência da volta atual, com a posição do ponteiro destacada e as horas feitas em
   cada posição.
 
@@ -170,7 +197,7 @@ Consideram apenas as **sessões concluídas**.
    edição no painel lateral.
 4. **Acompanhamento**: progresso por disciplina.
 5. **Ciclo**: sequência, ponteiro, geração e edição.
-6. **Cadastros**: Disciplinas e Leis.
+6. **Cadastros**: Disciplinas e Leis. Cada lei tem o seu **Mapa da lei**.
 7. **Ajustes**: sincronização com o Google, importação da planilha antiga e backup.
 
 ## 7. Migração da planilha atual

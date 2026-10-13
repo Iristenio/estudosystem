@@ -14,11 +14,13 @@ import {
   validarHorarios,
 } from '../../dominio/sessoes';
 import { paraDataISO, paraHora } from '../../dominio/datas';
+import { artigosLidosDaLei, lerFaixas } from '../../dominio/artigos';
 import { buscar } from '../../dados/repositorio';
 import { useAgora, useEntidade } from '../../dados/ganchos';
 import { corrigir } from '../acoes/sessoes';
 import { useEstado } from '../estado';
 import { CampoHora } from '../componentes/CampoHora';
+import { CampoArtigos } from '../componentes/CampoArtigos';
 
 interface Momento {
   data: string;
@@ -46,6 +48,7 @@ export function FormHorarios({ id }: { id: string }) {
   const [inicio, setInicio] = useState<Momento | null>(null);
   const [fim, setFim] = useState<Momento | null>(null);
   const [aula, setAula] = useState('');
+  const [faixas, setFaixas] = useState('');
 
   useEffect(() => {
     buscar('sessoes', id).then((atual) => {
@@ -55,12 +58,23 @@ export function FormHorarios({ id }: { id: string }) {
       const f = fimAtual(atual);
       setFim(f ? momento(f) : null);
       setAula(atual.aula);
+      setFaixas(atual.artigos_lidos ?? '');
     });
   }, [id]);
 
   if (!s || !inicio) return null;
   const novoInicio = paraData(inicio);
   const novoFim = fim ? paraData(fim) : null;
+  // R28 — numa Lei Seca concluída, as faixas também podem ser corrigidas
+  const lei = s.lei_id ? leis.find((l) => l.id === s.lei_id) : undefined;
+  const editaArtigos = s.tipo === 'Lei Seca' && s.situacao === 'concluida';
+  const errosArtigos = !editaArtigos
+    ? []
+    : faixas.trim()
+      ? lerFaixas(faixas, lei?.total_artigos ?? null).erros
+      : s.artigos_lidos
+        ? ['Informe quais artigos foram lidos (ex.: 1-10, 15).']
+        : [];
   const problemas = validarHorarios(s, novoInicio, novoFim, agora);
   const previa = problemas.length ? null : duracaoSegundos(aplicarHorarios(s, novoInicio, novoFim), agora);
   const sobrepostas = problemas.length ? [] : sessoesSobrepostas(s, novoInicio, novoFim ?? agora, todas);
@@ -69,8 +83,8 @@ export function FormHorarios({ id }: { id: string }) {
 
   async function salvar(e: Event) {
     e.preventDefault();
-    if (problemas.length) return;
-    await corrigir(s!, novoInicio, novoFim, aula);
+    if (problemas.length || errosArtigos.length) return;
+    await corrigir(s!, novoInicio, novoFim, aula, editaArtigos ? faixas : null);
     fecharPainel();
     avisar({ texto: 'Sessão corrigida' });
   }
@@ -83,7 +97,10 @@ export function FormHorarios({ id }: { id: string }) {
           <span>
             {[ROTULO_TIPO[s.tipo], s.lei_id && leis.find((l) => l.id === s.lei_id)?.nome, resumoProducao(s)].filter(Boolean).join(' · ')}
           </span>
-          <small>Depois de concluída, a sessão só permite corrigir os horários e a descrição da aula.</small>
+          <small>
+            Depois de concluída, a sessão só permite corrigir os horários, a descrição da aula
+            {s.tipo === 'Lei Seca' ? ' e os artigos lidos' : ''}.
+          </small>
         </div>
       )}
 
@@ -136,8 +153,24 @@ export function FormHorarios({ id }: { id: string }) {
         <input class="campo" value={aula} placeholder="Ex.: Controle concentrado - ADI" onInput={(e) => setAula(e.currentTarget.value)} />
       </label>
 
+      {editaArtigos && (
+        <>
+          <CampoArtigos
+            valor={faixas}
+            aoMudar={setFaixas}
+            total={lei?.total_artigos ?? null}
+            jaLidos={lei ? artigosLidosDaLei(lei, todas.filter((o) => o.id !== s.id && o.status !== 'excluido' && o.situacao === 'concluida')) : undefined}
+          />
+          {!s.artigos_lidos && (
+            <p class="dica">
+              Sessão anterior ao registro por artigo: ficou guardado só o número ({s.artigos}). Se lembrar quais foram, informe acima.
+            </p>
+          )}
+        </>
+      )}
+
       <div class="acoes-form">
-        <button type="submit" class="botao primario" disabled={problemas.length > 0}>
+        <button type="submit" class="botao primario" disabled={problemas.length > 0 || errosArtigos.length > 0}>
           Salvar
         </button>
       </div>

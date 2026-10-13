@@ -9,6 +9,7 @@ import './estilos/formularios.css';
 import './estilos/itens.css';
 import './estilos/cadastros.css';
 import './estilos/estudar.css';
+import './estilos/artigos.css';
 import './estilos/sessoes.css';
 import './estilos/ciclo.css';
 import './estilos/painel.css';

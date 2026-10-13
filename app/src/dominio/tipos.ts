@@ -65,7 +65,10 @@ export interface Sessao extends Registro {
   /** Quando o relógio parou (pausa em curso ou "Finalizar"). */
   pausado_desde: string | null;
   paginas: number;
+  /** Lei Seca: quantos artigos (calculado das faixas; nas sessões antigas, o número digitado). */
   artigos: number;
+  /** Lei Seca: quais artigos, em faixas ("1-10, 15"). Vazio nas sessões anteriores a 13/10/2026 (R29). */
+  artigos_lidos: string;
   questoes: number;
   acertos: number;
   situacao: SituacaoSessao;

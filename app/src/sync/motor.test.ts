@@ -62,6 +62,21 @@ describe('núcleo do backend', () => {
     expect(nucleo.linhaParaRegistro('sessoes', nucleo.registroParaLinha('sessoes', reg, 'T'))).toEqual(reg);
   });
 
+  it('sessão de lei seca: as faixas de artigos vão e voltam da planilha', () => {
+    const s = iniciarSessao('s2', { disciplina_id: 'D03', tipo: 'Lei Seca', aula: '', lei_id: 'L01' }, new Date('2026-08-03T08:00:00Z'));
+    const reg = { ...s, artigos: 12, artigos_lidos: '1-10, 15, 37' };
+    expect(nucleo.linhaParaRegistro('sessoes', nucleo.registroParaLinha('sessoes', reg, 'T'))).toEqual(reg);
+  });
+
+  it('coluna nova: diz onde inserir na aba antiga; cabeçalho certo não muda nada', () => {
+    const certo = nucleo.cabecalho('sessoes');
+    const antigo = [...certo.slice(0, -2), '_recebido_em'];
+    expect(nucleo.colunasFaltando('sessoes', certo)).toBeNull();
+    expect(nucleo.colunasFaltando('sessoes', [...certo, '', ''])).toBeNull();
+    expect(nucleo.colunasFaltando('sessoes', antigo)).toEqual({ posicao: certo.length - 2, quantidade: 1 });
+    expect(() => nucleo.colunasFaltando('sessoes', ['id', 'outra', '_recebido_em'])).toThrow();
+  });
+
   it('linha ↔ registro preserva tipos', () => {
     const reg = { ...item('a', 'x'), total_paginas: null, total_horas_video: 36.5, ativa: false };
     expect(nucleo.linhaParaRegistro('disciplinas', nucleo.registroParaLinha('disciplinas', reg, 'T'))).toEqual(reg);

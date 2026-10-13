@@ -4,6 +4,7 @@
 // O cronômetro não é um contador rodando: a duração é sempre calculada pelos horários gravados
 // (início, pausas, instante em que o relógio parou). Por isso continua certa com o app fechado (R7).
 import type { Disciplina, Id, Lei, Sessao, TipoSessao } from './tipos';
+import { formatarFaixas, lerFaixas } from './artigos';
 
 /** Nome de cada tipo como aparece na tela. */
 export const ROTULO_TIPO: Record<TipoSessao, string> = {
@@ -110,6 +111,7 @@ export function iniciarSessao(id: Id, dados: DadosInicio, agora = new Date()): S
     pausado_desde: null,
     paginas: 0,
     artigos: 0,
+    artigos_lidos: '',
     questoes: 0,
     acertos: 0,
     situacao: 'andamento',
@@ -149,7 +151,8 @@ export function finalizar(s: Sessao, agora = new Date()): Sessao {
 
 export interface DadosFinais {
   paginas: number | null;
-  artigos: number | null;
+  /** Lei Seca: faixas digitadas ("1-10, 15") — a quantidade é calculada (R25). */
+  artigos_lidos: string;
   questoes: number | null;
   acertos: number | null;
 }
@@ -157,11 +160,11 @@ export interface DadosFinais {
 const inteiroOuZero = (n: number | null) => (n === null ? 0 : n);
 const inteiroValido = (n: number | null) => n === null || (Number.isInteger(n) && n >= 0);
 
-/** R6 — campos finais conforme o tipo. */
-export function validarDadosFinais(tipo: TipoSessao, dados: DadosFinais): string[] {
+/** R6 — campos finais conforme o tipo. `totalArtigos` = total da lei (R26: nenhum artigo além dele). */
+export function validarDadosFinais(tipo: TipoSessao, dados: DadosFinais, totalArtigos: number | null = null): string[] {
   const erros: string[] = [];
   if (tipo === 'PDF' && !inteiroValido(dados.paginas)) erros.push('Informe as páginas como um número inteiro.');
-  if (tipo === 'Lei Seca' && !inteiroValido(dados.artigos)) erros.push('Informe os artigos como um número inteiro.');
+  if (tipo === 'Lei Seca') erros.push(...lerFaixas(dados.artigos_lidos, totalArtigos).erros);
   if (tipo === 'Questões') {
     if (!inteiroValido(dados.questoes) || !inteiroValido(dados.acertos)) erros.push('Informe questões e acertos como números inteiros.');
     else if (inteiroOuZero(dados.acertos) > inteiroOuZero(dados.questoes)) erros.push('Os acertos não podem ser mais que as questões.');
@@ -173,16 +176,25 @@ export function validarDadosFinais(tipo: TipoSessao, dados: DadosFinais): string
 export function concluir(s: Sessao, dados: DadosFinais): Sessao {
   if (s.situacao !== 'finalizando' || !s.pausado_desde) return s;
   const soTipo = (t: TipoSessao, n: number | null) => (s.tipo === t ? inteiroOuZero(n) : 0);
+  const artigos = s.tipo === 'Lei Seca' ? lerFaixas(dados.artigos_lidos).artigos : [];
   return {
     ...s,
     situacao: 'concluida',
     fim: s.pausado_desde,
     pausado_desde: null,
     paginas: soTipo('PDF', dados.paginas),
-    artigos: soTipo('Lei Seca', dados.artigos),
+    artigos: artigos.length,
+    artigos_lidos: formatarFaixas(artigos),
     questoes: soTipo('Questões', dados.questoes),
     acertos: soTipo('Questões', dados.acertos),
   };
+}
+
+/** R28 — corrige as faixas de uma sessão de Lei Seca (texto já validado); a quantidade é recalculada. */
+export function corrigirArtigos(s: Sessao, faixas: string): Sessao {
+  if (s.tipo !== 'Lei Seca') return s;
+  const artigos = lerFaixas(faixas).artigos;
+  return { ...s, artigos: artigos.length, artigos_lidos: formatarFaixas(artigos) };
 }
 
 export const erros = (s: Pick<Sessao, 'questoes' | 'acertos'>) => s.questoes - s.acertos;
@@ -258,10 +270,10 @@ export function concluidasDoDia(lista: Sessao[], agora = new Date()): Sessao[] {
     .sort((a, b) => b.inicio.localeCompare(a.inicio));
 }
 
-/** Resumo de uma sessão conforme o tipo: "30 págs.", "10 questões · 70%", "12 artigos". */
+/** Resumo de uma sessão conforme o tipo: "30 págs.", "10 questões · 70%", "12 artigos (1-10, 15-16)". */
 export function resumoProducao(s: Sessao): string {
   if (s.tipo === 'PDF') return `${s.paginas} pág${s.paginas === 1 ? '.' : 's.'}`;
-  if (s.tipo === 'Lei Seca') return `${s.artigos} artigo${s.artigos === 1 ? '' : 's'}`;
+  if (s.tipo === 'Lei Seca') return `${s.artigos} artigo${s.artigos === 1 ? '' : 's'}${s.artigos_lidos ? ` (${s.artigos_lidos})` : ''}`;
   if (s.tipo === 'Questões') return `${s.questoes} questões · ${String(percentualAcerto(s)).replace('.', ',')}%`;
   return '';
 }

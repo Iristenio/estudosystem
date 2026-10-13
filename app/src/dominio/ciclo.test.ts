@@ -111,7 +111,7 @@ describe('avanço do ponteiro (R20, R21)', () => {
 function sessaoConcluida(id: string, disciplina: string, inicioIso: string, minutos: number, posicao: string | null = null): Sessao {
   const inicio = new Date(inicioIso);
   const s = iniciarSessao(id, { disciplina_id: disciplina, tipo: 'Revisão', aula: '', lei_id: null }, inicio);
-  return { ...concluir(finalizar(s, new Date(inicio.getTime() + minutos * 60_000)), { paginas: null, artigos: null, questoes: null, acertos: null }), posicao_ciclo: posicao };
+  return { ...concluir(finalizar(s, new Date(inicio.getTime() + minutos * 60_000)), { paginas: null, artigos_lidos: '', questoes: null, acertos: null }), posicao_ciclo: posicao };
 }
 
 describe('sessão anterior e horas da volta', () => {
