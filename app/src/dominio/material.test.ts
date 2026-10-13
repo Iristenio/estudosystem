@@ -8,6 +8,7 @@ import {
   itensEscolhiveis,
   mapaDoMaterial,
   proximoItem,
+  recentesPrimeiro,
   resumoDoMapaMaterial,
   tipoMaterialDaSessao,
   formatarTamanho,
@@ -91,6 +92,11 @@ describe('totais (R30, R32)', () => {
     expect(d.cursos_fora).toEqual(['TJCE']);
     expect(d.materiais.map((i) => `${i.tipo}:${i.curso}`)).toEqual(['PDF:', 'PDF:', 'Video:TCU', 'Video:TCU', 'Video:TJCE']);
     expect(aplicarMaterial(d, [], []).total_paginas).toBeNull();
+  });
+
+  it('listas: último lançado primeiro, sem misturar tipos e cursos', () => {
+    const lista = [item({ id: 'a1', numero: 1, curso: 'TCU' }), item({ id: 'b1', numero: 1, curso: 'TJCE' }), item({ id: 'a3', numero: 3, curso: 'TCU' }), item({ id: 'a2', numero: 2, curso: 'TCU' }), item({ id: 'v1', tipo: 'Video', numero: 1 })];
+    expect(recentesPrimeiro(lista).map((i) => i.id)).toEqual(['a3', 'a2', 'a1', 'b1', 'v1']);
   });
 
   it('resumos e cursos', () => {

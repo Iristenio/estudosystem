@@ -1,7 +1,7 @@
 // R36 — escolher quais PDFs/vídeos do material foram estudados na sessão (opcional).
 // O próximo item (logo depois do último estudado) vem destacado; pontinho = já estudado antes.
 import type { Disciplina, Id, Sessao, TipoMaterial } from '../../dominio/tipos';
-import { cursosFora, itensDaDisciplina, itensEscolhiveis, mapaDoMaterial, proximoItem, rotuloItem } from '../../dominio/material';
+import { cursosFora, itensDaDisciplina, itensEscolhiveis, mapaDoMaterial, proximoItem, recentesPrimeiro, rotuloItem } from '../../dominio/material';
 import { useEstado } from '../estado';
 import { IconeMais } from '../icones';
 
@@ -20,7 +20,7 @@ export function EscolhaMaterial({ disciplina, tipo, escolhidos, aoMudar, outrasS
   const { abrirPainel } = useEstado();
   const itens = itensDaDisciplina(disciplina);
   const fora = cursosFora(disciplina);
-  const lista = itensEscolhiveis(itens, fora, tipo, escolhidos);
+  const lista = recentesPrimeiro(itensEscolhiveis(itens, fora, tipo, escolhidos)); // o último lançado primeiro
   const lidos = new Map(mapaDoMaterial(lista, outrasSessoes).map((m) => [m.item.id, m.vezes]));
   const proximo = proximoItem(itens, fora, tipo, outrasSessoes);
   const variosCursos = new Set(lista.map((i) => i.curso)).size > 1;

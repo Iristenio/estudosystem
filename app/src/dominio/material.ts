@@ -71,6 +71,15 @@ export function ordenarItens(itens: ItemMaterial[]): ItemMaterial[] {
   );
 }
 
+/** Para listas: mesma ordem de tipo e curso, mas o último lançado (maior número) primeiro. */
+export function recentesPrimeiro(itens: ItemMaterial[]): ItemMaterial[] {
+  const ordem = new Map(ordenarItens(itens).map((i, n) => [i.id, n]));
+  const grupo = (i: ItemMaterial) => `${i.tipo}|${i.curso}`;
+  const inicioDoGrupo = new Map<string, number>();
+  for (const i of ordenarItens(itens)) if (!inicioDoGrupo.has(grupo(i))) inicioDoGrupo.set(grupo(i), ordem.get(i.id)!);
+  return [...itens].sort((a, b) => inicioDoGrupo.get(grupo(a))! - inicioDoGrupo.get(grupo(b))! || b.numero - a.numero);
+}
+
 /** Cursos usados num tipo de material, na ordem da lista. "" = sem curso. */
 export function cursosDoTipo(itens: ItemMaterial[], tipo: TipoMaterial): string[] {
   return [...new Set(ordenarItens(itens.filter((i) => i.tipo === tipo)).map((i) => i.curso))];

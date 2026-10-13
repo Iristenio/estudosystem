@@ -14,6 +14,7 @@ import {
   lancarItens,
   lerTamanhos,
   podeApagarItem,
+  recentesPrimeiro,
   resumoDoTipo,
   rotuloItem,
   validarItem,
@@ -148,7 +149,7 @@ export function FormMaterial({ disciplinaId, tipoMaterial }: { disciplinaId: str
       </form>
 
       {cursosDoTipo(itens, tipo).map((c) => {
-        const doCurso = doTipo.filter((i) => i.curso === c);
+        const doCurso = recentesPrimeiro(doTipo.filter((i) => i.curso === c)); // o último lançado no topo
         const conta = !fora.includes(c);
         const somaCurso = resumoDoTipo(doCurso, [], tipo);
         return (
