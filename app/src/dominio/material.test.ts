@@ -39,24 +39,32 @@ const item = (campos: Partial<ItemMaterial>): ItemMaterial => ({
 });
 
 describe('lançar rápido (R31)', () => {
-  it('PDF: páginas separadas por vírgula, espaço ou ponto e vírgula, com repetição', () => {
-    expect(lerTamanhos('35, 42; 28 2x10', 'PDF').valores).toEqual([35, 42, 28, 10, 10]);
+  it('PDF: páginas separadas por vírgula, espaço, + ou ponto e vírgula', () => {
+    expect(lerTamanhos('35, 42; 28 10+5', 'PDF').valores).toEqual([35, 42, 28, 10, 5]);
+    expect(lerTamanhos('35,42', 'PDF').valores).toEqual([35, 42]);
     expect(lerTamanhos('35 págs, 12p', 'PDF').valores).toEqual([35, 12]);
   });
 
-  it('vídeo: minutos, 1h20, mm:ss, h:mm:ss e repetição', () => {
-    expect(lerTamanhos('2x30, 40', 'Video').valores).toEqual([30, 30, 40]);
-    expect(lerTamanhos('1h20, 1h, 1 h 5', 'Video').valores).toEqual([80, 60, 65]);
-    expect(lerTamanhos('32:15; 1:05:30', 'Video').valores).toEqual([32.25, 65.5]);
-    expect(lerTamanhos('45 min, 2 x 1h, 40.5', 'Video').valores).toEqual([45, 60, 60, 40.5]);
+  it('vídeo: vírgula separa minutos de segundos (teclado numérico)', () => {
+    expect(lerTamanhos('32,45', 'Video').valores).toEqual([32.75]);
+    expect(lerTamanhos('32,5', 'Video').valores).toEqual([32.08]); // 32 min 5 s
+    expect(lerTamanhos('32.45 28,10', 'Video').valores).toEqual([32.75, 28.17]);
+    expect(lerTamanhos('32 , 45 + 40', 'Video').valores).toEqual([32.75, 40]);
+    expect(lerTamanhos('1,05,30; 1:05:30', 'Video').valores).toEqual([65.5, 65.5]);
   });
 
-  it('erros: texto estranho, zero, vazio e PDF com fração', () => {
-    expect(lerTamanhos('35, abc', 'PDF').erros).toEqual(['Não entendi "abc". Use o número de páginas, como 35, 42 ou 2x30.']);
+  it('vídeo: minutos inteiros e 1h20', () => {
+    expect(lerTamanhos('40 45min', 'Video').valores).toEqual([40, 45]);
+    expect(lerTamanhos('1h20 1h 1h05', 'Video').valores).toEqual([80, 60, 65]);
+  });
+
+  it('erros: texto estranho, segundos ≥ 60, zero, vazio, PDF com fração e o antigo 2x30', () => {
+    expect(lerTamanhos('35, abc', 'PDF').erros).toEqual(['Não entendi "abc". Use o número de páginas, como 35, 42.']);
+    expect(lerTamanhos('32,75', 'Video').erros).toEqual(['Não entendi "32,75". Use minutos,segundos (32,45), minutos (40) ou 1h20.']);
     expect(lerTamanhos('0', 'Video').erros).toEqual(['"0" precisa ser maior que zero.']);
     expect(lerTamanhos('  ', 'Video').erros).toHaveLength(1);
     expect(lerTamanhos('10.5', 'PDF').erros).toHaveLength(1);
-    expect(lerTamanhos('500x10', 'PDF').erros).toEqual(['"500x10": no máximo 300 itens de uma vez.']);
+    expect(lerTamanhos('2x30', 'Video').erros).toHaveLength(1);
   });
 
   it('numera na sequência do curso; com nome, lança um item só', () => {
@@ -156,7 +164,7 @@ describe('edição de item', () => {
     expect(rotuloItem({ tipo: 'Video', numero: 12, nome: '' })).toBe('Vídeo 12');
     expect(rotuloItem({ tipo: 'PDF', numero: 0, nome: 'Total anterior' })).toBe('Total anterior');
     expect(formatarMinutos(80)).toBe('1h20');
-    expect(formatarMinutos(32.25)).toBe('32 min');
+    expect(formatarMinutos(32.25)).toBe('32 min 15 s');
     expect(formatarTamanho({ tipo: 'PDF', tamanho: 1 })).toBe('1 pág.');
   });
 });

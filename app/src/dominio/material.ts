@@ -99,58 +99,59 @@ export interface LeituraTamanhos {
   erros: string[];
 }
 
-const MAX_REPETICAO = 300;
-
-/** "1h20" → 80 · "32:15" → 32,25 · "1:05:30" → 65,5 · "40" / "40min" → 40 (minutos). */
+/**
+ * Duração de um vídeo, em minutos. A vírgula (ou o ponto, ou os dois-pontos) separa minutos de
+ * segundos, para digitar rápido no teclado numérico: "32,45" = 32 min 45 s. Com três partes, a
+ * primeira são horas ("1,05,30" = 1h05min30s). Também: "40", "40min", "1h20".
+ */
 function lerDuracao(t: string): number | null {
   let m = /^(\d+)h(?:(\d{1,2})(?:min)?)?$/.exec(t);
-  if (m) return Number(m[1]) * 60 + Number(m[2] ?? 0);
-  m = /^(\d+):(\d{2})(?::(\d{2}))?$/.exec(t);
-  if (m) return m[3] !== undefined ? Number(m[1]) * 60 + Number(m[2]) + Number(m[3]) / 60 : Number(m[1]) + Number(m[2]) / 60;
-  m = /^(\d+(?:\.\d+)?)(?:min)?$/.exec(t);
+  if (m) return Number(m[2] ?? 0) < 60 ? Number(m[1]) * 60 + Number(m[2] ?? 0) : null;
+  m = /^(\d+)[:,.](\d{1,2})(?:[:,.](\d{1,2}))?$/.exec(t);
+  if (m) {
+    const [a, b, c] = [Number(m[1]), Number(m[2]), m[3] === undefined ? null : Number(m[3])];
+    if (c === null) return b < 60 ? a + b / 60 : null;
+    return b < 60 && c < 60 ? a * 60 + b + c / 60 : null;
+  }
+  m = /^(\d+)(?:min)?$/.exec(t);
   if (m) return Number(m[1]);
   return null;
 }
 
 /**
- * R31 — vários tamanhos de uma vez. PDF: "35, 42, 2x28" (páginas). Vídeo: "2x30, 40, 1h20, 32:15"
- * (minutos). Cada valor vira um item; "2x30" = dois itens de 30.
+ * R31 — vários tamanhos de uma vez; cada valor vira um item.
+ * PDF: "35, 42, 28" (páginas; vírgula, espaço, + ou ; separam).
+ * Vídeo: "32,45 28,10 1h20" (vírgula = minutos,segundos; espaço, + ou ; separam os vídeos).
  */
 export function lerTamanhos(texto: string, tipo: TipoMaterial): LeituraTamanhos {
   const erros: string[] = [];
   const valores: number[] = [];
   const partes = texto
     .toLowerCase()
-    .replace(/\s*[x×*]\s*/g, 'x')
-    .replace(/(\d)\s*h\s*(\d)/g, '$1h$2')
+    .replace(/(\d)\s+h\b/g, '$1h') // "1 h20" → "1h20" (o espaço depois do h separa vídeos)
     .replace(/\s*(minutos?|mins?|m)\b/g, 'min')
     .replace(/\s*(páginas?|paginas?|págs?|pags?|p)\b\.?/g, '')
-    .split(/[;,\s]+/) // a vírgula sempre separa itens (decimal, só com ponto: 40.5)
+    .replace(/\s*([:,.])\s*(?=\d)/g, tipo === 'Video' ? '$1' : ' $1') // vídeo: "32 , 45" → "32,45"
+    .split(tipo === 'Video' ? /[\s;+/]+/ : /[\s;,+/]+/)
     .filter(Boolean);
   for (const parte of partes) {
-    const m = /^(?:(\d+)x)?(.+)$/.exec(parte)!;
-    const vezes = m[1] ? Number(m[1]) : 1;
-    const valor = tipo === 'PDF' ? (/^\d+$/.test(m[2]) ? Number(m[2]) : null) : lerDuracao(m[2]);
+    const valor = tipo === 'PDF' ? (/^\d+$/.test(parte) ? Number(parte) : null) : lerDuracao(parte);
     if (valor === null) {
       erros.push(
         tipo === 'PDF'
-          ? `Não entendi "${parte}". Use o número de páginas, como 35, 42 ou 2x30.`
-          : `Não entendi "${parte}". Use minutos, como 30, 2x30, 1h20 ou 32:15.`,
+          ? `Não entendi "${parte}". Use o número de páginas, como 35, 42.`
+          : `Não entendi "${parte}". Use minutos,segundos (32,45), minutos (40) ou 1h20.`,
       );
       continue;
     }
-    if (valor <= 0 || vezes < 1) {
+    if (valor <= 0) {
       erros.push(`"${parte}" precisa ser maior que zero.`);
       continue;
     }
-    if (vezes > MAX_REPETICAO) {
-      erros.push(`"${parte}": no máximo ${MAX_REPETICAO} itens de uma vez.`);
-      continue;
-    }
-    for (let i = 0; i < vezes; i++) valores.push(Math.round(valor * 100) / 100);
+    valores.push(Math.round(valor * 100) / 100);
   }
   if (!erros.length && !valores.length)
-    erros.push(tipo === 'PDF' ? 'Informe as páginas (ex.: 35, 42).' : 'Informe a duração (ex.: 2x30, 40, 1h20).');
+    erros.push(tipo === 'PDF' ? 'Informe as páginas (ex.: 35, 42).' : 'Informe a duração (ex.: 32,45).');
   return { valores, erros };
 }
 
@@ -196,11 +197,13 @@ export function rotuloItem(i: Pick<ItemMaterial, 'tipo' | 'numero' | 'nome'>): s
   return `${ROTULO_MATERIAL[i.tipo]} ${i.numero}${i.nome ? ` · ${i.nome}` : ''}`;
 }
 
-/** 30 → "30 min" · 80 → "1h20" · 0,5 → "30 s" */
+/** 30 → "30 min" · 32,75 → "32 min 45 s" · 80 → "1h20" · 0,5 → "30 s" (acima de 1 h, sem segundos) */
 export function formatarMinutos(minutos: number): string {
-  if (minutos < 1) return `${Math.round(minutos * 60)} s`;
+  const seg = Math.round(minutos * 60);
+  if (seg < 60) return `${seg} s`;
+  if (seg < 3600) return seg % 60 ? `${Math.floor(seg / 60)} min ${seg % 60} s` : `${seg / 60} min`;
   const m = Math.round(minutos);
-  return m < 60 ? `${m} min` : `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`;
+  return `${Math.floor(m / 60)}h${String(m % 60).padStart(2, '0')}`;
 }
 
 export function formatarTamanho(i: Pick<ItemMaterial, 'tipo' | 'tamanho'>): string {

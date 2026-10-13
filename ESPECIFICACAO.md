@@ -170,9 +170,11 @@ Cada **curso** da disciplina tem a chave **"conta no total"**.
 - **R30.** O **total de páginas** e o **total de horas de vídeo** da disciplina passam a ser a **soma
   do material lançado** que conta no total: item que não está "fora do total", de um curso ligado.
   Sem nenhum item que conte, o total fica vazio (e não dá para iniciar sessão daquele tipo).
-- **R31.** **Lançar rápido:** um campo aceita vários tamanhos de uma vez:
-  - PDF: `35, 42, 28` (páginas);
-  - vídeo: `2x30, 40, 1h20, 32:15` (2 vídeos de 30 min, um de 40 min, um de 1h20 e um de 32 min 15 s);
+- **R31.** **Lançar rápido** (pensado para o teclado numérico, que só tem vírgula):
+  - PDF: `35, 42, 28` (páginas; a vírgula separa um PDF do outro);
+  - vídeo: a **vírgula separa minutos de segundos**: `32,45` = 32 min 45 s (também `32:45`, `40`,
+    `1h20`); Enter lança e o campo fica pronto para o próximo; vários de uma vez, separados por
+    espaço ou `+` (`32,45 + 28,10`);
   - cada valor vira um item, numerado na sequência do curso. Com um **nome**, lança-se um item só.
 - **R32.** **Troca de curso:** desligar "conta no total" de um curso tira todos os itens dele da soma,
   sem apagar nada. Um item também pode ser tirado sozinho ("fora do total").

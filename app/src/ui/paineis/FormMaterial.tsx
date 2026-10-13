@@ -24,11 +24,11 @@ import { useEntidade } from '../../dados/ganchos';
 import { alterarMaterial } from '../acoes/cadastros';
 import { useEstado } from '../estado';
 
-/** Tamanho como texto editável: 30 → "30"; 32,25 min → "32:15". */
+/** Tamanho como texto editável: 30 → "30"; 32,25 min → "32,15" (minutos,segundos). */
 function tamanhoParaTexto(i: ItemMaterial): string {
   if (i.tipo === 'PDF' || Number.isInteger(i.tamanho)) return String(i.tamanho);
   const seg = Math.round(i.tamanho * 60);
-  return `${Math.floor(seg / 60)}:${String(seg % 60).padStart(2, '0')}`;
+  return `${Math.floor(seg / 60)},${String(seg % 60).padStart(2, '0')}`;
 }
 
 export function FormMaterial({ disciplinaId, tipoMaterial }: { disciplinaId: string; tipoMaterial?: TipoMaterial }) {
@@ -106,15 +106,16 @@ export function FormMaterial({ disciplinaId, tipoMaterial }: { disciplinaId: str
           {tipo === 'PDF' ? 'Páginas' : 'Duração'}
           <input
             class="campo"
+            inputMode="decimal"
             value={tamanhos}
-            placeholder={tipo === 'PDF' ? 'Ex.: 35, 42, 28' : 'Ex.: 2x30, 40, 1h20, 32:15'}
+            placeholder={tipo === 'PDF' ? 'Ex.: 35, 42, 28' : 'Ex.: 32,45 (minutos,segundos)'}
             onInput={(e) => setTamanhos(e.currentTarget.value)}
           />
           <small class={`dica${errosLancar.length ? ' com-erro' : ''}`} aria-live="polite">
             {vazio
               ? tipo === 'PDF'
-                ? 'Um número por PDF. 2x30 = dois PDFs de 30 páginas.'
-                : 'Um valor por vídeo, em minutos. 2x30 = dois vídeos de 30 min.'
+                ? 'Um número por PDF; vírgula separa um PDF do outro.'
+                : 'Vírgula separa minutos de segundos (32,45). Aperte Enter para lançar e já digite o próximo; vários de uma vez, separe com espaço ou +.'
               : errosLancar.length
                 ? errosLancar[0]
                 : `${leitura.valores.length} ${tipo === 'PDF' ? 'PDF' : 'vídeo'}${leitura.valores.length === 1 ? '' : 's'}: ${leitura.valores
@@ -253,7 +254,7 @@ function EditarItem({
         </label>
         <label class="rotulo">
           {item.tipo === 'PDF' ? 'Páginas' : 'Duração'}
-          <input class="campo" value={tamanho} onInput={(e) => setTamanho(e.currentTarget.value)} />
+          <input class="campo" inputMode="decimal" value={tamanho} onInput={(e) => setTamanho(e.currentTarget.value)} />
           {item.tipo === 'Video' && leitura.valores.length === 1 && <small class="dica">{formatarMinutos(leitura.valores[0])}</small>}
         </label>
       </div>
