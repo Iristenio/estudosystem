@@ -200,9 +200,12 @@ Consideram apenas as **sessões concluídas**.
 4. **Acompanhamento**: progresso por disciplina.
 5. **Ciclo**: sequência, ponteiro, geração e edição.
 6. **Cadastros**: Disciplinas e Leis. Cada lei tem o seu **Mapa da lei**.
-7. **Ajustes**: sincronização com o Google, importação da planilha antiga e backup.
+7. **Ajustes**: sincronização com o Google, aparência e informações do aparelho.
 
 ## 7. Migração da planilha atual
+
+> Concluída e conferida em 27/09/2026. A opção "Importar da planilha antiga" foi **retirada** do app
+> em 13/10/2026, porque não é mais usada (o código continua no histórico do git, se precisar).
 
 Numa etapa própria, depois do app funcionando:
 - importar Disciplinas, Leis, Config_Ciclo/Ciclo_Atual (incluindo o ponteiro) e todas as linhas do

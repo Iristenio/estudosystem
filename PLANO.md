@@ -82,6 +82,7 @@ o Google vem depois. A planilha antiga continua sendo usada normalmente até a t
   - no app ela nunca aparece e não conta em nada, então para você continua "sem rastro".
 
 ## Etapa 7 — Importação da planilha antiga
+> Retirada do app em 13/10/2026, depois da troca (etapa 8).
 - Em Ajustes: **Importar da EstudoSystem**. O app lê a planilha antiga **sem alterá-la**.
 - Traz disciplinas, leis, ciclo (com o ponteiro) e todas as sessões do Cronograma.
 - As durações são recalculadas a partir dos horários.

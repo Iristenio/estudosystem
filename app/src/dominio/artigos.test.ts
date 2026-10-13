@@ -85,7 +85,7 @@ describe('sessão de lei seca', () => {
 });
 
 describe('artigos diferentes lidos (R29)', () => {
-  const antiga = { ...sessaoLei('velha', '1'), artigos: 40, artigos_lidos: '' }; // importada: só a quantidade
+  const antiga = { ...sessaoLei('velha', '1'), artigos: 40, artigos_lidos: '' }; // antiga: só a quantidade
   const sessoes = [sessaoLei('a', '1-10'), sessaoLei('b', '5-12'), sessaoLei('c', '1-3', 'L2'), antiga];
 
   it('reler não conta de novo; sessões sem faixas ficam de fora', () => {

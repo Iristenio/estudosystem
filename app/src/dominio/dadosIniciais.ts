@@ -1,6 +1,5 @@
 // Cadastros iniciais, copiados da planilha EstudoSystem (abas Config_Disciplinas e Leis).
-// Os ids são os MESMOS da planilha (D01…, L01…): assim a importação do histórico (etapa 7)
-// reconhece esses registros em vez de duplicá-los. Observações virão com a importação.
+// Os ids são os MESMOS da planilha antiga (D01…, L01…), usados na importação do histórico (etapa 7, já concluída).
 import type { Ciclo, Disciplina, Lei } from './tipos';
 import { novaDisciplina } from './disciplinas';
 import { novaLei } from './leis';

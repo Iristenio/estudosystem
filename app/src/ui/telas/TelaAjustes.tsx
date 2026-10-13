@@ -1,4 +1,4 @@
-// Tela Ajustes: conexão com o Google, importação da planilha antiga e informações do aparelho.
+// Tela Ajustes: conexão com o Google, aparência e informações do aparelho.
 import { useEffect, useState } from 'preact/hooks';
 import type { Tema } from '../../dominio/tipos';
 import { salvarConfig } from '../../dados/repositorio';
@@ -8,7 +8,6 @@ import { baixarTudo, conectar, desconectar, ErroApi, sincronizar } from '../../s
 import { APP } from '../../app.config';
 import { descreverUltimaSync, ROTULO_STATUS, useSync } from '../../sync/ganchos';
 import { useEstado } from '../estado';
-import { CartaoImportar } from './CartaoImportar';
 
 export function TelaAjustes() {
   return (
@@ -18,7 +17,6 @@ export function TelaAjustes() {
       </header>
       <div class="conteudo ajustes">
         <CartaoGoogle />
-        <CartaoImportar />
         <CartaoAparencia />
         <CartaoAparelho />
       </div>
