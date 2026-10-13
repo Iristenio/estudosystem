@@ -192,6 +192,13 @@ Cada **curso** da disciplina tem a chave **"conta no total"**.
   primeiro ao último tocado), no Mapa do material ou na correção do item. A marcação muda **só o
   mapa** (cor, % estudado e próximo sugerido): não cria sessão nem soma horas, páginas ou vídeo.
   O próximo sugerido passa a ser o item seguinte ao último estudado, em sessão ou marcado à mão.
+- **R39.** **Escolher a aula pelo material:** na tela Estudar, ao escolher PDF ou Videoaula de uma
+  disciplina com material lançado, abre uma janela com a lista do material daquele tipo (número e
+  nome, por curso, em ordem crescente, com as marcas do mapa e o próximo destacado; a lista já abre
+  no próximo). Tocar num item preenche a **Aula** com "Vídeo 3 · Nome" e deixa esse item **já
+  marcado** na finalização (R36). "Não é nenhum destes" ou fechar deixa a Aula livre. O botão
+  "Escolher da lista", ao lado da Aula, reabre a janela. Se a Aula for mudada à mão, o item deixa
+  de vir marcado.
 
 ## 5. Painéis (calculados; nada é digitado)
 

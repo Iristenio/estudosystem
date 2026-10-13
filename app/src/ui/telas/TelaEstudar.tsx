@@ -1,13 +1,14 @@
 // Tela Estudar: iniciar sessão → cronômetro (pausar/continuar) → finalizar (campos finais) → concluída.
 // Ao lado, as sessões de hoje.
 import { useEffect, useState } from 'preact/hooks';
-import type { Ciclo, Disciplina, Lei, Sessao, TipoMaterial, TipoSessao } from '../../dominio/tipos';
+import type { Ciclo, Disciplina, ItemMaterial, Lei, Sessao, TipoMaterial, TipoSessao } from '../../dominio/tipos';
 import { ID_CICLO, TIPOS_SESSAO } from '../../dominio/tipos';
 import { disciplinaSugerida, posicaoAtual } from '../../dominio/ciclo';
 import { ordenarDisciplinas } from '../../dominio/disciplinas';
 import { lerNumero } from '../../dominio/numeros';
 import { artigosLidosDaLei } from '../../dominio/artigos';
-import { cursosFora, itensDaDisciplina, resumoDoTipo, tipoMaterialDaSessao } from '../../dominio/material';
+import { cursosFora, itensDaDisciplina, resumoDoTipo, rotuloItem, tipoMaterialDaSessao } from '../../dominio/material';
+import { itensDaJanela, JanelaMaterial } from '../componentes/JanelaMaterial';
 import {
   concluidasDoDia,
   duracaoSegundos,
@@ -26,7 +27,7 @@ import { useAgora, useEntidade } from '../../dados/ganchos';
 import * as acoes from '../acoes/sessoes';
 import { useEstado } from '../estado';
 import { irPara } from '../rotas';
-import { IconeCiclo, IconeCronometro, IconeLapis, IconeMais } from '../icones';
+import { IconeCiclo, IconeCronometro, IconeGrade, IconeLapis, IconeMais } from '../icones';
 import { CampoArtigos } from '../componentes/CampoArtigos';
 import { EscolhaMaterial } from '../componentes/EscolhaMaterial';
 
@@ -96,17 +97,44 @@ function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Discip
   const [erros, setErros] = useState<string[]>([]);
   const ativas = ordenarDisciplinas(disciplinas).filter((d) => d.ativa);
   const opcoesLei = disciplinaId ? leisDisponiveis(leis, disciplinaId) : [];
+  // R39 — escolher a aula pela lista do material (PDF/Videoaula)
+  const [janela, setJanela] = useState(false);
+  const [escolhido, setEscolhido] = useState<{ id: string; rotulo: string } | null>(null);
+  const disciplina = disciplinas.find((d) => d.id === disciplinaId);
+  const tipoMaterial = tipo ? tipoMaterialDaSessao(tipo) : null;
+  const temLista = (d: Disciplina | undefined, t: TipoSessao | null) => {
+    const tm = t ? tipoMaterialDaSessao(t) : null;
+    return !!(d && tm && itensDaJanela(d, tm).length);
+  };
 
   function escolherDisciplina(id: string) {
     setEscolheu(true);
     setDisciplinaId(id);
     setLeiId(null);
     setErros([]);
+    setEscolhido(null);
+    if (temLista(disciplinas.find((d) => d.id === id), tipo)) setJanela(true);
+  }
+
+  function escolherTipo(t: TipoSessao) {
+    setTipo(t);
+    setErros([]);
+    setEscolhido(null);
+    if (temLista(disciplina, t)) setJanela(true);
+  }
+
+  function escolherDaLista(item: ItemMaterial) {
+    const rotulo = rotuloItem(item);
+    setAula(rotulo);
+    setEscolhido({ id: item.id, rotulo });
+    setJanela(false);
   }
 
   async function iniciar(e: Event) {
     e.preventDefault();
-    const dados = { disciplina_id: disciplinaId, tipo, aula, lei_id: leiId };
+    // Se a aula foi mudada à mão depois de escolher, o item não vem mais marcado
+    const materiais_estudados = escolhido && aula === escolhido.rotulo ? [escolhido.id] : [];
+    const dados = { disciplina_id: disciplinaId, tipo, aula, lei_id: leiId, materiais_estudados };
     const problemas = validarInicio(dados, disciplinas, leis, sessoes);
     setErros(problemas);
     if (problemas.length) return;
@@ -162,10 +190,7 @@ function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Discip
               type="button"
               role="radio"
               aria-checked={t === tipo}
-              onClick={() => {
-                setTipo(t);
-                setErros([]);
-              }}
+              onClick={() => escolherTipo(t)}
             >
               {ROTULO_TIPO[t]}
             </button>
@@ -195,10 +220,33 @@ function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Discip
         </label>
       )}
 
-      <label class="rotulo">
-        Aula (opcional)
-        <input class="campo" value={aula} placeholder="Ex.: Controle concentrado - ADI" onInput={(e) => setAula(e.currentTarget.value)} />
-      </label>
+      <div class="rotulo">
+        <span class="aula-com-lista">
+          <label for="campo-aula">Aula (opcional)</label>
+          {temLista(disciplina, tipo) && (
+            <button type="button" class="link link-inline" onClick={() => setJanela(true)}>
+              <IconeGrade /> Escolher da lista
+            </button>
+          )}
+        </span>
+        <input
+          id="campo-aula"
+          class="campo"
+          value={aula}
+          placeholder="Ex.: Controle concentrado - ADI"
+          onInput={(e) => setAula(e.currentTarget.value)}
+        />
+      </div>
+
+      {janela && disciplina && tipoMaterial && (
+        <JanelaMaterial
+          disciplina={disciplina}
+          tipo={tipoMaterial}
+          concluidas={sessoes.filter((s) => s.status !== 'excluido' && s.situacao === 'concluida' && s.disciplina_id === disciplina.id)}
+          aoEscolher={escolherDaLista}
+          aoFechar={() => setJanela(false)}
+        />
+      )}
 
       {erros.length > 0 && (
         <ul class="erros" role="alert">
@@ -297,7 +345,8 @@ function Finalizar({ s, disciplinas, leis, sessoes }: { s: Sessao; disciplinas: 
   const { abrirPainel, perguntar, avisar } = useEstado();
   const [textos, setTextos] = useState({ paginas: '', artigos: '', questoes: '', acertos: '' });
   const [erros, setErros] = useState<string[]>([]);
-  const [estudados, setEstudados] = useState<string[]>([]);
+  // R39 — o item escolhido ao iniciar já vem marcado
+  const [estudados, setEstudados] = useState<string[]>(s.materiais_estudados ?? []);
   const lei = s.lei_id ? leis.find((l) => l.id === s.lei_id) : undefined;
   const disciplina = disciplinas.find((d) => d.id === s.disciplina_id);
   const tipoMaterial = tipoMaterialDaSessao(s.tipo);
@@ -395,7 +444,7 @@ function Finalizar({ s, disciplinas, leis, sessoes }: { s: Sessao; disciplinas: 
           </div>
         </div>
       )}
-      {(s.tipo === 'VideoAula' || s.tipo === 'Revisão') && <p class="dica">Nada mais a preencher: é só concluir.</p>}
+      {(s.tipo === 'Revisão' || (s.tipo === 'VideoAula' && !disciplina)) && <p class="dica">Nada mais a preencher: é só concluir.</p>}
 
       {erros.length > 0 && (
         <ul class="erros" role="alert">

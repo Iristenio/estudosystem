@@ -61,6 +61,8 @@ export interface DadosInicio {
   tipo: TipoSessao | null;
   aula: string;
   lei_id: Id | null;
+  /** R39 — item do material escolhido ao iniciar (já vem marcado na finalização). */
+  materiais_estudados?: Id[];
 }
 
 /** R1 e R3 — lista de erros (vazia = pode iniciar). */
@@ -112,7 +114,7 @@ export function iniciarSessao(id: Id, dados: DadosInicio, agora = new Date()): S
     paginas: 0,
     artigos: 0,
     artigos_lidos: '',
-    materiais_estudados: [],
+    materiais_estudados: dados.tipo === 'PDF' || dados.tipo === 'VideoAula' ? [...(dados.materiais_estudados ?? [])] : [],
     questoes: 0,
     acertos: 0,
     situacao: 'andamento',

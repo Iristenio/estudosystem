@@ -97,3 +97,19 @@
 .mapa-marcar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
 .mapa-detalhe-linha { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
 .mapa-detalhe-linha .mapa-detalhe { flex: 1 1 260px; }
+
+/* ---- Janela "Escolha o vídeo/PDF" (JanelaMaterial.tsx, R39) ---- */
+.janela-material-lista { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 4px; margin: 0 -8px; padding: 0 8px; }
+.janela-material-lista h3 { margin: 10px 0 2px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--texto-2); }
+.janela-material-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: var(--toque); padding: 8px 12px;
+  border: 1px solid transparent; border-radius: 10px; background: none; color: var(--texto); font: inherit; text-align: left; cursor: pointer;
+}
+.janela-material-item:hover, .janela-material-item:focus-visible { background: var(--superficie-2); }
+.janela-material-item.proximo { border-color: var(--primaria); background: var(--primaria-suave); }
+.janela-material-marca { flex: none; width: 22px; text-align: center; font-weight: 800; color: var(--primaria); }
+.janela-material-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.janela-material-texto small { color: var(--texto-2); font-size: 13px; }
+.janela-material-item .marca-sugerida { flex: none; }
+.aula-com-lista { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.aula-com-lista .link-inline svg { width: 18px; height: 18px; }

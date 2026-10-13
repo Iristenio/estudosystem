@@ -192,6 +192,13 @@ describe('sessões e mapa do material (R36, R37)', () => {
     expect(tipoMaterialDaSessao('Lei Seca')).toBeNull();
   });
 
+  it('R39 — item escolhido ao iniciar fica na sessão (só PDF/VideoAula)', () => {
+    const base = { disciplina_id: 'D1', aula: 'PDF 2', lei_id: null, materiais_estudados: ['p2'] };
+    expect(iniciarSessao('i1', { ...base, tipo: 'PDF' }).materiais_estudados).toEqual(['p2']);
+    expect(iniciarSessao('i2', { ...base, tipo: 'Questões' }).materiais_estudados).toEqual([]);
+    expect(iniciarSessao('i3', { ...base, tipo: 'VideoAula', materiais_estudados: undefined }).materiais_estudados).toEqual([]);
+  });
+
   it('escolhíveis: só o que conta, em ordem, mais os já escolhidos; sem o "Total anterior"', () => {
     expect(itensEscolhiveis(itens, ['TJCE'], 'PDF').map((i) => i.id)).toEqual(['p1', 'p2', 'p3']);
     expect(itensEscolhiveis([...itens, item({ id: 'ant', numero: 0 })], ['TJCE'], 'PDF').map((i) => i.id)).toEqual(['p1', 'p2', 'p3']);
