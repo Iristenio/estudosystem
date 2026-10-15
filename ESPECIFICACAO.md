@@ -184,7 +184,8 @@ Cada **curso** da disciplina tem a chave **"conta no total"**.
 - **R35.** O material é lançado no cadastro da disciplina e também por um **atalho na tela Estudar**,
   ao escolher PDF ou Videoaula (inclusive na hora de finalizar, se o item ainda não existe).
 - **R36.** Ao finalizar uma sessão de PDF ou VideoAula, você pode escolher **quais itens** estudou
-  (opcional). O app destaca o próximo item, logo depois do último estudado. Numa sessão concluída, a
+  (opcional), numa lista em ordem crescente que já abre rolada até o item marcado (ou o próximo). O
+  app destaca o próximo item, logo depois do último estudado. Numa sessão concluída, a
   escolha pode ser corrigida.
 - **R37.** As sessões anteriores a esta novidade não têm itens marcados e não aparecem no mapa do
   material.

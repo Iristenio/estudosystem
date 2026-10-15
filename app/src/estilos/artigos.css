@@ -68,7 +68,7 @@
 /* ---------------- Material: escolha na sessão (EscolhaMaterial.tsx) e mapa (TelaMapaMaterial.tsx) ---------------- */
 /* fieldset tem largura mínima = conteúdo: sem min-width 0, um nome longo estica o painel */
 .escolha-material { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.chips-material { max-height: 260px; overflow-y: auto; overscroll-behavior: contain; padding: 2px; }
+.chips-material { position: relative; max-height: 260px; overflow-y: auto; overscroll-behavior: contain; padding: 2px; }
 .chip-material { position: relative; max-width: 100%; min-width: 0; }
 .chip-material-texto { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chip-material .marca-sugerida { flex: none; }
