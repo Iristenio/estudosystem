@@ -26,15 +26,25 @@ import { IconeGrade, IconeLivro, IconeMais } from '../icones';
 
 const fmtData = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const fmtPct = (n: number) => `${n.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
-// Marcado à mão sem sessão vale como "1 vez" na cor (R38)
-const nivel = (m: ItemNoMapa) => (m.vezes >= 2 ? 2 : m.estudado ? 1 : 0);
+// Cor = leituras completas (R38/R40): à mão vale como 1; PDF em andamento tem estilo próprio, com barrinha
+const nivel = (m: ItemNoMapa) => (m.leituras >= 2 ? 2 : m.estudado ? 1 : 0);
+const pctPdf = (m: ItemNoMapa) => (m.pagina ? Math.min(100, Math.round((m.pagina / m.item.tamanho) * 100)) : 0);
 
 function descrever(m: ItemNoMapa): string {
   const base = `${rotuloItem(m.item)} (${formatarTamanho(m.item)})`;
+  const ultima = m.ultima ? ` · última sessão em ${fmtData.format(new Date(m.ultima))}` : '';
+  if (m.emAndamento)
+    return m.pagina
+      ? `${base}: 1ª leitura em andamento — parou na pág. ${m.pagina} (${pctPdf(m)}%)${ultima}.`
+      : `${base}: aberto, sem página informada — informe "parei na página" na próxima sessão${ultima}.`;
   const manual = m.manual ? 'marcado à mão como já estudado' : '';
   if (!m.vezes) return `${base}: ${manual || 'ainda não estudado'}.`;
+  if (m.item.tipo === 'PDF') {
+    const leituras = m.leituras === 1 ? 'concluído' : `concluído · lido ${m.leituras} vezes`;
+    return `${base}: ${leituras}${ultima}${manual ? ` · ${manual}` : ''}.`;
+  }
   const vezes = m.vezes === 1 ? 'estudado em 1 sessão' : `estudado em ${m.vezes} sessões`;
-  return `${base}: ${vezes} · última em ${fmtData.format(new Date(m.ultima!))}${manual ? ` · ${manual}` : ''}.`;
+  return `${base}: ${vezes}${ultima}${manual ? ` · ${manual}` : ''}.`;
 }
 
 export function TelaMapaMaterial() {
@@ -154,7 +164,7 @@ export function TelaMapaMaterial() {
                 <section class="cartao mapa-resumo">
                   <div class="progresso" style={{ '--cor': 'var(--primaria)' }}>
                     <div class="progresso-topo">
-                      <span>{tipo === 'PDF' ? 'PDFs estudados' : 'Vídeos assistidos'}</span>
+                      <span>{tipo === 'PDF' ? 'PDFs concluídos' : 'Vídeos assistidos'}</span>
                       <strong>{fmtPct(resumo.percentual)}</strong>
                     </div>
                     <span class="medidor">
@@ -165,28 +175,51 @@ export function TelaMapaMaterial() {
                     </small>
                   </div>
                   <div class="mapa-numeros">
+                    {tipo === 'PDF' ? (
+                      <div>
+                        <span>Em andamento</span>
+                        <strong>{resumo.emAndamento}</strong>
+                        <small>1ª leitura começada</small>
+                      </div>
+                    ) : (
+                      <div>
+                        <span>Revistos</span>
+                        <strong>{resumo.revistos}</strong>
+                        <small>2 sessões ou mais</small>
+                      </div>
+                    )}
                     <div>
-                      <span>Revistos</span>
-                      <strong>{resumo.revistos}</strong>
-                      <small>2 sessões ou mais</small>
-                    </div>
-                    <div>
-                      <span>Nunca estudados</span>
+                      <span>{tipo === 'PDF' ? 'Nunca abertos' : 'Nunca estudados'}</span>
                       <strong>{resumo.nunca}</strong>
                     </div>
                     <div>
                       <span>Próximo</span>
                       <strong class="mapa-proximo">{proximo ? rotuloItem(proximo) : 'Tudo estudado'}</strong>
-                      {proximo && <small>depois do último estudado</small>}
+                      {proximo && (
+                        <small>
+                          {mapa.find((m) => m.item.id === proximo.id)?.emAndamento ? 'continuar a 1ª leitura' : 'depois do último estudado'}
+                        </small>
+                      )}
                     </div>
                   </div>
                 </section>
 
                 <section class="cartao mapa-grade-cartao">
                   <div class="mapa-legenda" aria-hidden="true">
-                    <span><i class="artigo-amostra nivel-0" /> Nunca estudado</span>
-                    <span><i class="artigo-amostra nivel-1" /> 1 sessão</span>
-                    <span><i class="artigo-amostra nivel-2" /> 2 ou mais</span>
+                    {tipo === 'PDF' ? (
+                      <>
+                        <span><i class="artigo-amostra nivel-0" /> Nunca aberto</span>
+                        <span><i class="artigo-amostra andamento" /> Em andamento</span>
+                        <span><i class="artigo-amostra nivel-1" /> Concluído</span>
+                        <span><i class="artigo-amostra nivel-2" /> Lido 2+ vezes</span>
+                      </>
+                    ) : (
+                      <>
+                        <span><i class="artigo-amostra nivel-0" /> Nunca estudado</span>
+                        <span><i class="artigo-amostra nivel-1" /> 1 sessão</span>
+                        <span><i class="artigo-amostra nivel-2" /> 2 ou mais</span>
+                      </>
+                    )}
                     <span>✓ marcado à mão</span>
                   </div>
                   <div class="mapa-marcar">
@@ -200,7 +233,7 @@ export function TelaMapaMaterial() {
                           setEscolhido(null);
                         }}
                       />
-                      Marcar vários como já estudados
+                      {tipo === 'PDF' ? 'Marcar vários como concluídos' : 'Marcar vários como já estudados'}
                     </label>
                   </div>
                   {varios ? (
@@ -214,7 +247,7 @@ export function TelaMapaMaterial() {
                       <p class="mapa-detalhe">{detalhe ? descrever(detalhe) : `Toque num ${nome} para ver quando foi estudado ou marcá-lo.`}</p>
                       {detalhe && (
                         <button type="button" class="botao" onClick={() => marcar([detalhe.item.id], !detalhe.manual)}>
-                          {detalhe.manual ? 'Desmarcar' : 'Marcar como já estudado'}
+                          {detalhe.manual ? 'Desmarcar' : tipo === 'PDF' ? 'Marcar como concluído' : 'Marcar como já estudado'}
                         </button>
                       )}
                     </div>
@@ -234,14 +267,19 @@ export function TelaMapaMaterial() {
                             <button
                               key={m.item.id}
                               type="button"
-                              class={`item-mapa artigo nivel-${nivel(m)}${escolhido === m.item.id || inicioVarios === m.item.id ? ' escolhido' : ''}${contaNoTotal(m.item, fora) ? '' : ' fora'}${m.manual ? ' manual' : ''}`}
+                              class={`item-mapa artigo nivel-${nivel(m)}${escolhido === m.item.id || inicioVarios === m.item.id ? ' escolhido' : ''}${contaNoTotal(m.item, fora) ? '' : ' fora'}${m.manual ? ' manual' : ''}${m.emAndamento ? ' andamento' : ''}`}
                               aria-label={descrever(m)}
                               aria-pressed={escolhido === m.item.id}
                               onClick={() => tocar(m.item.id)}
                             >
                               <strong>{m.item.numero}</strong>
                               {m.item.nome && <span class="item-mapa-nome">{m.item.nome}</span>}
-                              <small>{formatarTamanho(m.item)}</small>
+                              <small>{m.emAndamento && m.pagina ? `${m.pagina} de ${formatarTamanho(m.item)}` : formatarTamanho(m.item)}</small>
+                              {m.emAndamento && (
+                                <span class="item-mapa-barra" aria-hidden="true">
+                                  <span style={{ width: `${pctPdf(m)}%` }} />
+                                </span>
+                              )}
                             </button>
                           ))}
                         </div>

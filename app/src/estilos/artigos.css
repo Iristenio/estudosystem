@@ -113,3 +113,18 @@
 .janela-material-item .marca-sugerida { flex: none; }
 .aula-com-lista { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .aula-com-lista .link-inline svg { width: 18px; height: 18px; }
+
+/* ---- R40: PDF em andamento (1ª leitura) ---- */
+.artigo.andamento, .artigo-amostra.andamento {
+  background: var(--superficie); border: 1.5px solid color-mix(in srgb, var(--primaria) 70%, var(--superficie)); color: var(--texto);
+}
+.item-mapa-barra { display: block; width: 100%; height: 5px; margin-top: 4px; border-radius: 3px; background: var(--superficie-2); overflow: hidden; }
+.item-mapa-barra span { display: block; height: 100%; border-radius: 3px; background: var(--primaria); }
+.paginas-paradas { display: flex; flex-direction: column; gap: 10px; }
+.pagina-parada {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px;
+  padding: 12px 14px; border: 1px solid var(--borda); border-radius: var(--raio);
+}
+.pagina-parada-nome { display: flex; flex-direction: column; min-width: 0; flex: 1 1 220px; }
+.pagina-parada-nome strong { overflow-wrap: anywhere; }
+.pagina-parada-nome small { color: var(--texto-2); font-size: 13.5px; }

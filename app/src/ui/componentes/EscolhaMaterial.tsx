@@ -23,7 +23,7 @@ export function EscolhaMaterial({ disciplina, tipo, escolhidos, aoMudar, outrasS
   const itens = itensDaDisciplina(disciplina);
   const fora = cursosFora(disciplina);
   const lista = itensEscolhiveis(itens, fora, tipo, escolhidos);
-  const lidos = new Map(mapaDoMaterial(lista, outrasSessoes).map((m) => [m.item.id, m.estudado ? 1 : 0]));
+  const situacao = new Map(mapaDoMaterial(lista, outrasSessoes).map((m) => [m.item.id, m]));
   const proximo = proximoItem(itens, fora, tipo, outrasSessoes);
   const variosCursos = new Set(lista.map((i) => i.curso)).size > 1;
   const nome = tipo === 'PDF' ? 'PDF' : 'vídeo';
@@ -51,7 +51,7 @@ export function EscolhaMaterial({ disciplina, tipo, escolhidos, aoMudar, outrasS
               <button
                 key={i.id}
                 type="button"
-                class={`chip chip-material${(lidos.get(i.id) ?? 0) > 0 ? ' ja-estudado' : ''}${proximo?.id === i.id ? ' chip-proximo' : ''}`}
+                class={`chip chip-material${situacao.get(i.id)?.estudado || situacao.get(i.id)?.emAndamento ? ' ja-estudado' : ''}${proximo?.id === i.id ? ' chip-proximo' : ''}`}
                 aria-pressed={escolhidos.includes(i.id)}
                 title={rotuloItem(i)}
                 onClick={() => alternar(i.id)}
@@ -59,6 +59,7 @@ export function EscolhaMaterial({ disciplina, tipo, escolhidos, aoMudar, outrasS
                 <span class="chip-material-texto">
                   {variosCursos && i.curso && <small>{i.curso} · </small>}
                   {rotuloItem(i)}
+                  {situacao.get(i.id)?.emAndamento && situacao.get(i.id)?.pagina ? <small> · pág. {situacao.get(i.id)!.pagina}</small> : null}
                 </span>
                 {proximo?.id === i.id && <span class="marca-sugerida">próximo</span>}
               </button>

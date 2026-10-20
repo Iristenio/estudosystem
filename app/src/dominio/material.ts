@@ -250,34 +250,89 @@ export interface ItemNoMapa {
   vezes: number;
   /** R38 — marcado à mão como já estudado (sem sessão). */
   manual: boolean;
-  /** Estudado em sessão ou marcado à mão. */
+  /** Vídeo: estudado em sessão ou à mão. PDF: concluído (R40). */
   estudado: boolean;
   /** Início da sessão mais recente em que foi marcado (ISO), ou null. */
   ultima: string | null;
+  /** R40 — PDF: maior página alcançada na 1ª leitura (null = sem página informada). */
+  pagina: number | null;
+  /** R40 — PDF aberto e ainda não concluído (1ª leitura em andamento). */
+  emAndamento: boolean;
+  /** Leituras completas: PDF = 1ª leitura concluída + cada sessão depois dela; vídeo = sessões (ou 1, se à mão). */
+  leituras: number;
 }
 
-/** R37 — leituras de cada item, a partir das sessões concluídas da disciplina que marcaram itens. */
+/**
+ * R37/R40 — situação de cada item, a partir das sessões concluídas que o marcaram (em ordem de data).
+ * PDF: a 1ª leitura avança pela página em que parou; chegando à última (ou marcado à mão), fica
+ * concluído. Depois disso, cada sessão que o marca é só mais uma leitura (sem página).
+ */
 export function mapaDoMaterial(itens: ItemMaterial[], concluidas: Sessao[]): ItemNoMapa[] {
-  const manual = (item: ItemMaterial) => !!item.estudado_manual;
   const mapa = new Map(
-    ordenarItens(itens).map((item) => [item.id, { item, vezes: 0, manual: manual(item), estudado: manual(item), ultima: null as string | null }]),
+    ordenarItens(itens).map((item) => {
+      const manual = !!item.estudado_manual;
+      return [item.id, { item, vezes: 0, manual, estudado: manual, ultima: null as string | null, pagina: null as number | null, emAndamento: false, leituras: manual ? 1 : 0 }];
+    }),
   );
-  for (const s of concluidas) {
+  const ordem = [...concluidas].sort((a, b) => a.inicio.localeCompare(b.inicio));
+  for (const s of ordem) {
     for (const id of s.materiais_estudados ?? []) {
       const m = mapa.get(id);
       if (!m) continue;
       m.vezes++;
-      m.estudado = true;
       if (!m.ultima || s.inicio > m.ultima) m.ultima = s.inicio;
+      if (m.item.tipo === 'Video') {
+        m.estudado = true;
+        m.leituras = Math.max(m.leituras, m.vezes);
+        continue;
+      }
+      if (m.estudado) {
+        m.leituras++; // releitura: só conta mais uma vez
+        continue;
+      }
+      const parada = (s.paginas_paradas ?? []).find((x) => x.id === id);
+      if (parada) m.pagina = Math.max(m.pagina ?? 0, parada.pagina);
+      if (m.pagina !== null && m.pagina >= m.item.tamanho) {
+        m.estudado = true;
+        m.leituras = 1;
+        m.pagina = m.item.tamanho;
+      }
+      m.emAndamento = !m.estudado;
     }
   }
   return [...mapa.values()];
 }
 
+/** R40 — PDFs ainda na 1ª leitura: página em que pararam (0 = nunca aberto). Concluídos ficam de fora. */
+export function paginasAnteriores(itens: ItemMaterial[], concluidas: Sessao[]): Map<Id, number> {
+  return new Map(
+    mapaDoMaterial(itens.filter((i) => i.tipo === 'PDF'), concluidas)
+      .filter((m) => !m.estudado)
+      .map((m) => [m.item.id, m.pagina ?? 0]),
+  );
+}
+
+/** R40 — páginas lidas sugeridas: quanto avançou em cada PDF na 1ª leitura (página nova − anterior). */
+export function paginasSugeridas(paradas: { id: Id; pagina: number }[], anteriores: Map<Id, number>): number {
+  return paradas.reduce((soma, p) => soma + (anteriores.has(p.id) ? Math.max(0, p.pagina - anteriores.get(p.id)!) : 0), 0);
+}
+
+/** R40 — "parei na página" precisa ser um inteiro de 1 até a última página do PDF. */
+export function validarParadas(paradas: { id: Id; pagina: number }[], itens: ItemMaterial[]): string[] {
+  const erros: string[] = [];
+  for (const p of paradas) {
+    const item = itens.find((i) => i.id === p.id);
+    if (!item) continue;
+    if (!Number.isInteger(p.pagina) || p.pagina < 1) erros.push(`${rotuloItem(item)}: informe a página como um número inteiro.`);
+    else if (p.pagina > item.tamanho) erros.push(`${rotuloItem(item)} tem ${item.tamanho} páginas.`);
+  }
+  return erros;
+}
+
 /**
- * R36/R38 — próximo item sugerido: o seguinte (na ordem dos que contam) ao último estudado — o mais
- * adiante entre os itens da sessão mais recente e os marcados à mão. Sem nada estudado (ou no fim
- * da lista), o primeiro nunca estudado.
+ * R36/R38/R40 — próximo item sugerido. PDF em andamento na sessão mais recente: continua nele.
+ * Senão, o seguinte (na ordem dos que contam) ao último estudado — o mais adiante entre os itens da
+ * sessão mais recente e os marcados à mão. Sem nada estudado (ou no fim da lista), o primeiro não concluído.
  */
 export function proximoItem(itens: ItemMaterial[], fora: string[], tipo: TipoMaterial, concluidas: Sessao[]): ItemMaterial | null {
   const lista = itensEscolhiveis(itens, fora, tipo);
@@ -286,14 +341,14 @@ export function proximoItem(itens: ItemMaterial[], fora: string[], tipo: TipoMat
   const comItens = concluidas
     .filter((s) => (s.materiais_estudados ?? []).some((id) => posicao.has(id)))
     .sort((a, b) => b.inicio.localeCompare(a.inicio));
-  const mapa = mapaDoMaterial(lista, concluidas);
-  const nuncaEstudado = mapa.find((m) => !m.estudado)?.item ?? null;
-  const posicoes = [
-    ...(comItens[0]?.materiais_estudados.filter((id) => posicao.has(id)).map((id) => posicao.get(id)!) ?? []),
-    ...lista.flatMap((i, n) => (i.estudado_manual ? [n] : [])),
-  ];
-  if (!posicoes.length) return nuncaEstudado;
-  return lista[Math.max(...posicoes) + 1] ?? nuncaEstudado;
+  const mapa = new Map(mapaDoMaterial(lista, concluidas).map((m) => [m.item.id, m]));
+  const ultimos = comItens[0]?.materiais_estudados.filter((id) => posicao.has(id)) ?? [];
+  const emAndamento = ultimos.map((id) => mapa.get(id)!).filter((m) => m.emAndamento);
+  if (emAndamento.length) return emAndamento.sort((a, b) => posicao.get(a.item.id)! - posicao.get(b.item.id)!)[0].item;
+  const naoEstudado = lista.find((i) => !mapa.get(i.id)!.estudado) ?? null;
+  const posicoes = [...ultimos.map((id) => posicao.get(id)!), ...lista.flatMap((i, n) => (i.estudado_manual ? [n] : []))];
+  if (!posicoes.length) return naoEstudado;
+  return lista[Math.max(...posicoes) + 1] ?? naoEstudado;
 }
 
 /** R38 — marca (ou desmarca) à mão os itens como já estudados. */
@@ -315,11 +370,13 @@ export function itensEntre(lista: ItemMaterial[], idA: Id, idB: Id): Id[] {
 export function resumoDoMapaMaterial(mapa: ItemNoMapa[], fora: string[]) {
   const contam = mapa.filter((m) => contaNoTotal(m.item, fora));
   const estudados = contam.filter((m) => m.estudado).length;
+  const emAndamento = contam.filter((m) => m.emAndamento).length;
   return {
     total: contam.length,
     estudados,
-    revistos: contam.filter((m) => m.vezes > 1).length,
-    nunca: contam.length - estudados,
+    revistos: contam.filter((m) => m.leituras > 1).length,
+    emAndamento,
+    nunca: contam.length - estudados - emAndamento,
     percentual: contam.length ? Math.round((estudados / contam.length) * 1000) / 10 : 0,
   };
 }

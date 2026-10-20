@@ -7,7 +7,8 @@ import { disciplinaSugerida, posicaoAtual } from '../../dominio/ciclo';
 import { ordenarDisciplinas } from '../../dominio/disciplinas';
 import { lerNumero } from '../../dominio/numeros';
 import { artigosLidosDaLei } from '../../dominio/artigos';
-import { cursosFora, itensDaDisciplina, resumoDoTipo, rotuloItem, tipoMaterialDaSessao } from '../../dominio/material';
+import { cursosFora, itensDaDisciplina, paginasAnteriores, paginasSugeridas, resumoDoTipo, rotuloItem, tipoMaterialDaSessao, validarParadas } from '../../dominio/material';
+import { CamposPaginaParada, lerParadas, type TextosParada } from '../componentes/CamposPaginaParada';
 import { itensDaJanela, JanelaMaterial } from '../componentes/JanelaMaterial';
 import {
   concluidasDoDia,
@@ -351,10 +352,25 @@ function Finalizar({ s, disciplinas, leis, sessoes }: { s: Sessao; disciplinas: 
   const disciplina = disciplinas.find((d) => d.id === s.disciplina_id);
   const tipoMaterial = tipoMaterialDaSessao(s.tipo);
   const concluidas = sessoes.filter((x) => x.status !== 'excluido' && x.situacao === 'concluida');
+  // R40 — PDF na 1ª leitura: "parei na página" e páginas lidas sugeridas pelo avanço
+  const [textosParada, setTextosParada] = useState<TextosParada>({});
+  const [paginasEditadas, setPaginasEditadas] = useState(false);
+  const itensDisciplina = disciplina ? itensDaDisciplina(disciplina) : [];
+  const anteriores = paginasAnteriores(itensDisciplina, concluidas.filter((x) => x.disciplina_id === s.disciplina_id));
+  const pdfsMarcados = estudados.map((id) => itensDisciplina.find((i) => i.id === id && i.tipo === 'PDF')).filter((i) => !!i);
+  const paradasDe = (t: TextosParada) => lerParadas(t).filter((p) => estudados.includes(p.id) && anteriores.has(p.id));
+  const paradas = paradasDe(textosParada);
+  function mudarParadas(t: TextosParada) {
+    setTextosParada(t);
+    if (paginasEditadas) return;
+    const sugestao = paginasSugeridas(paradasDe(t).filter((p) => Number.isInteger(p.pagina)), anteriores);
+    setTextos((atual) => ({ ...atual, paginas: sugestao ? String(sugestao) : '' }));
+  }
   const dados = {
     paginas: lerNumero(textos.paginas),
     artigos_lidos: textos.artigos,
     materiais_estudados: estudados,
+    paginas_paradas: paradas,
     questoes: lerNumero(textos.questoes),
     acertos: lerNumero(textos.acertos),
   };
@@ -367,7 +383,10 @@ function Finalizar({ s, disciplinas, leis, sessoes }: { s: Sessao; disciplinas: 
         inputMode="numeric"
         placeholder="0"
         value={textos[chave]}
-        onInput={(e) => setTextos({ ...textos, [chave]: e.currentTarget.value })}
+        onInput={(e) => {
+          setTextos({ ...textos, [chave]: e.currentTarget.value });
+          if (chave === 'paginas') setPaginasEditadas(true);
+        }}
       />
     </label>
   );
@@ -375,7 +394,7 @@ function Finalizar({ s, disciplinas, leis, sessoes }: { s: Sessao; disciplinas: 
 
   async function concluir(e: Event) {
     e.preventDefault();
-    const problemas = validarDadosFinais(s.tipo, dados, lei?.total_artigos ?? null);
+    const problemas = [...validarDadosFinais(s.tipo, dados, lei?.total_artigos ?? null), ...(s.tipo === 'PDF' ? validarParadas(paradas, itensDisciplina) : [])];
     setErros(problemas);
     if (problemas.length) return;
     const r = await acoes.concluir(s, dados);
@@ -412,7 +431,6 @@ function Finalizar({ s, disciplinas, leis, sessoes }: { s: Sessao; disciplinas: 
         <IconeLapis /> Corrigir horários ou aula
       </button>
 
-      {s.tipo === 'PDF' && <div class="linha">{campo('paginas', 'Páginas lidas')}</div>}
       {tipoMaterial && disciplina && (
         <EscolhaMaterial
           disciplina={disciplina}
@@ -421,6 +439,13 @@ function Finalizar({ s, disciplinas, leis, sessoes }: { s: Sessao; disciplinas: 
           aoMudar={setEstudados}
           outrasSessoes={concluidas.filter((x) => x.disciplina_id === disciplina.id)}
         />
+      )}
+      {s.tipo === 'PDF' && <CamposPaginaParada pdfs={pdfsMarcados} anteriores={anteriores} textos={textosParada} aoMudar={mudarParadas} />}
+      {s.tipo === 'PDF' && (
+        <div class="linha">
+          {campo('paginas', 'Páginas lidas')}
+          {paradas.length > 0 && !paginasEditadas && <small class="dica">calculado pela página em que parou — pode corrigir</small>}
+        </div>
       )}
       {s.tipo === 'Lei Seca' && (
         <CampoArtigos

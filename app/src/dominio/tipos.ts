@@ -39,6 +39,12 @@ export interface Disciplina extends Registro {
 
 export type TipoMaterial = 'PDF' | 'Video';
 
+/** R40 — "parei na página" de um PDF numa sessão (1ª leitura). */
+export interface PaginaParada {
+  id: Id;
+  pagina: number;
+}
+
 /** Um PDF ou vídeo do material da disciplina (guardado dentro da disciplina). */
 export interface ItemMaterial {
   id: Id;
@@ -96,6 +102,8 @@ export interface Sessao extends Registro {
   situacao: SituacaoSessao;
   /** PDF/VideoAula: ids dos itens do material estudados nesta sessão (R36). */
   materiais_estudados: Id[];
+  /** PDF, 1ª leitura: página em que parou em cada PDF marcado (R40). */
+  paginas_paradas: PaginaParada[];
   /** Posição do ciclo cumprida (ex.: "3F2") — preenchida a partir da etapa 4. */
   posicao_ciclo: string | null;
   /** Cancelar = "excluido": some do app e não conta em nada (a sincronização precisa do registro). */

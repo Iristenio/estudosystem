@@ -193,6 +193,18 @@ Cada **curso** da disciplina tem a chave **"conta no total"**.
   primeiro ao último tocado), no Mapa do material ou na correção do item. A marcação muda **só o
   mapa** (cor, % estudado e próximo sugerido): não cria sessão nem soma horas, páginas ou vídeo.
   O próximo sugerido passa a ser o item seguinte ao último estudado, em sessão ou marcado à mão.
+- **R40.** **PDF lido aos poucos (1ª leitura):** ao finalizar uma sessão de PDF, para cada PDF
+  marcado que ainda não foi concluído, informa-se **"Parei na página"** (ou "Terminei este PDF").
+  - O progresso do PDF é a **maior página alcançada** ÷ total de páginas; chegando à última, o PDF
+    fica **concluído**. Marcado à mão como já estudado (R38) também conta como concluído.
+  - **Páginas lidas** é preenchido sozinho com quanto avançou (página nova − anterior) e pode ser
+    corrigido.
+  - Depois de concluído, marcar o PDF em outra sessão só conta mais uma leitura ("lido 2 ou mais
+    vezes"), sem página — releitura de PDF inteiro costuma ser feita como Revisão.
+  - No mapa: nunca aberto · **em andamento** (com barrinha "40 de 109 págs.") · concluído · lido 2+ vezes.
+    O % do mapa conta PDFs concluídos. O próximo sugerido continua no PDF em andamento até concluí-lo.
+  - Sessões antigas que marcaram um PDF sem página deixam o PDF "em andamento"; basta informar a
+    página na próxima sessão.
 - **R39.** **Escolher a aula pelo material:** na tela Estudar, ao escolher PDF ou Videoaula de uma
   disciplina com material lançado, abre uma janela com a lista do material daquele tipo (número e
   nome, por curso, em ordem crescente, com as marcas do mapa e o próximo destacado; a lista já abre

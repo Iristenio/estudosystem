@@ -77,7 +77,11 @@ export function JanelaMaterial({ disciplina, tipo, concluidas, aoEscolher, aoFec
                         </strong>
                         <small>
                           {formatarTamanho(i)}
-                          {m && m.vezes > 0 && ` · estudado em ${m.vezes} ${m.vezes === 1 ? 'sessão' : 'sessões'}`}
+                          {m?.emAndamento
+                            ? m.pagina
+                              ? ` · parou na pág. ${m.pagina}`
+                              : ' · em andamento'
+                            : m && m.vezes > 0 && ` · estudado em ${m.vezes} ${m.vezes === 1 ? 'sessão' : 'sessões'}`}
                         </small>
                       </span>
                       {ehProximo && <span class="marca-sugerida">próximo</span>}

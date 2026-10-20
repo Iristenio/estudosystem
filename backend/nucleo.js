@@ -38,6 +38,7 @@ var ESQUEMA = {
       ['criado_em', 's'], ['atualizado_em', 's'],
       ['artigos_lidos', 's'], // 13/10/2026 — faixas de artigos da lei seca ("1-10, 15")
       ['materiais_estudados', 'j'], // 13/10/2026 — itens do material estudados na sessão
+      ['paginas_paradas', 'j'], // 20/10/2026 — PDF: página em que parou (1ª leitura)
     ],
   },
   ciclo: {

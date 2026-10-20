@@ -8,6 +8,9 @@ import {
   itensEscolhiveis,
   mapaDoMaterial,
   proximoItem,
+  paginasAnteriores,
+  paginasSugeridas,
+  validarParadas,
   marcarEstudados,
   itensEntre,
   recentesPrimeiro,
@@ -178,10 +181,18 @@ describe('sessões e mapa do material (R36, R37)', () => {
   const v = item({ id: 'vid', tipo: 'Video', numero: 1 });
   const itens = [p3, p1, p2, pFora, velho, v];
   const inicio = new Date('2026-10-13T08:00:00Z');
-  const sessao = (id: string, tipo: 'PDF' | 'VideoAula' | 'Revisão', ids: string[], horas = 0) => {
+  // PDFs de teste têm 10 páginas: "concluído" = parou na página 10 (R40)
+  const sessao = (id: string, tipo: 'PDF' | 'VideoAula' | 'Revisão', ids: string[], horas = 0, paradas = ids.map((x) => ({ id: x, pagina: 10 }))) => {
     const quando = new Date(inicio.getTime() + horas * 3600e3);
     const s = iniciarSessao(id, { disciplina_id: 'D1', tipo, aula: '', lei_id: null }, quando);
-    return concluir(finalizar(s, new Date(quando.getTime() + 600e3)), { paginas: 5, artigos_lidos: '', questoes: null, acertos: null, materiais_estudados: ids });
+    return concluir(finalizar(s, new Date(quando.getTime() + 600e3)), {
+      paginas: 5,
+      artigos_lidos: '',
+      questoes: null,
+      acertos: null,
+      materiais_estudados: ids,
+      paginas_paradas: paradas,
+    });
   };
 
   it('concluir guarda os itens só em PDF e VideoAula, sem repetir; corrigir troca a lista', () => {
@@ -210,7 +221,58 @@ describe('sessões e mapa do material (R36, R37)', () => {
     const mapa = mapaDoMaterial(itens.filter((i) => i.tipo === 'PDF'), sessoes);
     expect(mapa.map((m) => `${m.item.id}:${m.vezes}`)).toEqual(['p1:2', 'p2:1', 'p3:0', 'pf:0', 'v1:0']);
     expect(mapa[0].ultima).toBe(new Date(inicio.getTime() + 5 * 3600e3).toISOString());
-    expect(resumoDoMapaMaterial(mapa, ['TJCE'])).toEqual({ total: 3, estudados: 2, revistos: 1, nunca: 1, percentual: 66.7 });
+    expect(resumoDoMapaMaterial(mapa, ['TJCE'])).toEqual({ total: 3, estudados: 2, revistos: 1, emAndamento: 0, nunca: 1, percentual: 66.7 });
+  });
+
+  describe('R40 — PDF lido aos poucos (1ª leitura)', () => {
+    const pdf = item({ id: 'g', numero: 1, tamanho: 109 });
+    const s1 = sessao('s1', 'PDF', ['g'], 0, [{ id: 'g', pagina: 15 }]);
+    const s2 = sessao('s2', 'PDF', ['g'], 1, [{ id: 'g', pagina: 40 }]);
+    const s3 = sessao('s3', 'PDF', ['g'], 2, [{ id: 'g', pagina: 109 }]);
+    const releitura = sessao('s4', 'PDF', ['g'], 3, []);
+
+    it('avança pela maior página; chegando à última, conclui; depois, só conta leituras', () => {
+      const [a] = mapaDoMaterial([pdf], [s2, s1]); // ordem de data, não de chegada
+      expect([a.pagina, a.emAndamento, a.estudado, a.leituras]).toEqual([40, true, false, 0]);
+      const voltou = mapaDoMaterial([pdf], [s1, s2, sessao('x', 'PDF', ['g'], 1.5, [{ id: 'g', pagina: 20 }])])[0];
+      expect(voltou.pagina).toBe(40); // reler o começo não faz voltar
+      const [c] = mapaDoMaterial([pdf], [s1, s2, s3]);
+      expect([c.pagina, c.emAndamento, c.estudado, c.leituras]).toEqual([109, false, true, 1]);
+      const [d] = mapaDoMaterial([pdf], [s1, s2, s3, releitura]);
+      expect([d.estudado, d.leituras, d.vezes]).toEqual([true, 2, 4]);
+    });
+
+    it('sessão antiga sem página deixa em andamento; à mão conta como concluído', () => {
+      const [a] = mapaDoMaterial([pdf], [sessao('v', 'PDF', ['g'], 0, [])]);
+      expect([a.pagina, a.emAndamento, a.estudado]).toEqual([null, true, false]);
+      const [b] = mapaDoMaterial([{ ...pdf, estudado_manual: true }], [sessao('w', 'PDF', ['g'], 0, [])]);
+      expect([b.estudado, b.emAndamento, b.leituras]).toEqual([true, false, 2]);
+    });
+
+    it('páginas anteriores, sugestão de páginas lidas e validação', () => {
+      const ant = paginasAnteriores([pdf, p1], [s1, s2]);
+      expect([...ant.entries()]).toEqual([['p1', 0], ['g', 40]]);
+      expect(paginasSugeridas([{ id: 'g', pagina: 62 }, { id: 'p1', pagina: 4 }], ant)).toBe(26);
+      expect(paginasSugeridas([{ id: 'g', pagina: 30 }], ant)).toBe(0);
+      expect(paginasAnteriores([pdf], [s1, s2, s3]).size).toBe(0); // concluído sai da lista
+      expect(validarParadas([{ id: 'g', pagina: 110 }], [pdf])).toEqual(['PDF 1 tem 109 páginas.']);
+      expect(validarParadas([{ id: 'g', pagina: 0 }], [pdf])).toHaveLength(1);
+      expect(validarParadas([{ id: 'g', pagina: 109 }], [pdf])).toEqual([]);
+    });
+
+    it('próximo continua no PDF em andamento até concluir', () => {
+      const lista = [pdf, { ...p2, numero: 2 }];
+      expect(proximoItem(lista, [], 'PDF', [s1])?.id).toBe('g');
+      expect(proximoItem(lista, [], 'PDF', [s1, s2, s3])?.id).toBe('p2');
+    });
+
+    it('concluir guarda só as páginas dos PDFs marcados', () => {
+      const s = sessao('k', 'PDF', ['g'], 0, [{ id: 'g', pagina: 40 }, { id: 'outro', pagina: 3 }]);
+      expect(s.paginas_paradas).toEqual([{ id: 'g', pagina: 40 }]);
+      expect(corrigirMateriais(s, ['g'], [{ id: 'g', pagina: 55 }]).paginas_paradas).toEqual([{ id: 'g', pagina: 55 }]);
+      expect(corrigirMateriais(s, []).paginas_paradas).toEqual([]);
+      expect(sessao('v', 'VideoAula', ['vid'], 0).paginas_paradas).toEqual([]);
+    });
   });
 
   it('R38 — marcado à mão conta no mapa e no próximo, sem sessão', () => {

@@ -3,7 +3,7 @@
 //
 // O cronômetro não é um contador rodando: a duração é sempre calculada pelos horários gravados
 // (início, pausas, instante em que o relógio parou). Por isso continua certa com o app fechado (R7).
-import type { Disciplina, Id, Lei, Sessao, TipoSessao } from './tipos';
+import type { Disciplina, Id, Lei, PaginaParada, Sessao, TipoSessao } from './tipos';
 import { formatarFaixas, lerFaixas } from './artigos';
 
 /** Nome de cada tipo como aparece na tela. */
@@ -115,6 +115,7 @@ export function iniciarSessao(id: Id, dados: DadosInicio, agora = new Date()): S
     artigos: 0,
     artigos_lidos: '',
     materiais_estudados: dados.tipo === 'PDF' || dados.tipo === 'VideoAula' ? [...(dados.materiais_estudados ?? [])] : [],
+    paginas_paradas: [],
     questoes: 0,
     acertos: 0,
     situacao: 'andamento',
@@ -158,6 +159,8 @@ export interface DadosFinais {
   artigos_lidos: string;
   /** PDF/VideoAula: itens do material estudados (R36; opcional). */
   materiais_estudados?: Id[];
+  /** PDF, 1ª leitura: página em que parou em cada PDF marcado (R40). */
+  paginas_paradas?: PaginaParada[];
   questoes: number | null;
   acertos: number | null;
 }
@@ -191,6 +194,7 @@ export function concluir(s: Sessao, dados: DadosFinais): Sessao {
     artigos: artigos.length,
     artigos_lidos: formatarFaixas(artigos),
     materiais_estudados: s.tipo === 'PDF' || s.tipo === 'VideoAula' ? [...new Set(dados.materiais_estudados ?? [])] : [],
+    paginas_paradas: s.tipo === 'PDF' ? paradasDosMarcados(dados.paginas_paradas ?? [], dados.materiais_estudados ?? []) : [],
     questoes: soTipo('Questões', dados.questoes),
     acertos: soTipo('Questões', dados.acertos),
   };
@@ -203,10 +207,19 @@ export function corrigirArtigos(s: Sessao, faixas: string): Sessao {
   return { ...s, artigos: artigos.length, artigos_lidos: formatarFaixas(artigos) };
 }
 
-/** R36 — corrige os itens do material marcados numa sessão de PDF ou VideoAula. */
-export function corrigirMateriais(s: Sessao, ids: Id[]): Sessao {
+/** Só as páginas dos PDFs marcados, uma por PDF. */
+function paradasDosMarcados(paradas: PaginaParada[], ids: Id[]): PaginaParada[] {
+  const marcados = new Set(ids);
+  const porId = new Map(paradas.filter((p) => marcados.has(p.id) && p.pagina > 0).map((p) => [p.id, p]));
+  return [...porId.values()].map((p) => ({ id: p.id, pagina: p.pagina }));
+}
+
+/** R36/R40 — corrige os itens do material marcados (e, no PDF, as páginas em que parou). */
+export function corrigirMateriais(s: Sessao, ids: Id[], paradas: PaginaParada[] | null = null): Sessao {
   if (s.tipo !== 'PDF' && s.tipo !== 'VideoAula') return s;
-  return { ...s, materiais_estudados: [...new Set(ids)] };
+  const r: Sessao = { ...s, materiais_estudados: [...new Set(ids)] };
+  if (s.tipo === 'PDF') r.paginas_paradas = paradasDosMarcados(paradas ?? s.paginas_paradas ?? [], ids);
+  return r;
 }
 
 export const erros = (s: Pick<Sessao, 'questoes' | 'acertos'>) => s.questoes - s.acertos;

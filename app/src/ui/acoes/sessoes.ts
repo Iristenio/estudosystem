@@ -1,5 +1,5 @@
 // Ações do cronômetro: aplicam a regra (dominio/sessoes.ts) e gravam localmente na hora.
-import type { Sessao } from '../../dominio/tipos';
+import type { PaginaParada, Sessao } from '../../dominio/tipos';
 import { ID_CICLO } from '../../dominio/tipos';
 import { avancar, disciplinaDaSessaoAnterior } from '../../dominio/ciclo';
 import * as regra from '../../dominio/sessoes';
@@ -39,9 +39,17 @@ export async function cancelar(s: Sessao) {
 }
 
 /** R10–R12, R28 e R36 — horários (já validados), aula, faixas de artigos (Lei Seca) e material estudado (PDF/VideoAula). */
-export function corrigir(s: Sessao, inicio: Date, fim: Date | null, aula: string, faixas: string | null = null, materiais: string[] | null = null) {
+export function corrigir(
+  s: Sessao,
+  inicio: Date,
+  fim: Date | null,
+  aula: string,
+  faixas: string | null = null,
+  materiais: string[] | null = null,
+  paradas: PaginaParada[] | null = null,
+) {
   let r = { ...regra.aplicarHorarios(s, inicio, fim), aula: aula.trim() };
   if (faixas?.trim()) r = regra.corrigirArtigos(r, faixas);
-  if (materiais) r = regra.corrigirMateriais(r, materiais);
+  if (materiais) r = regra.corrigirMateriais(r, materiais, paradas);
   return salvar('sessoes', r);
 }

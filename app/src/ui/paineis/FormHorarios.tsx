@@ -15,7 +15,8 @@ import {
 } from '../../dominio/sessoes';
 import { paraDataISO, paraHora } from '../../dominio/datas';
 import { artigosLidosDaLei, lerFaixas } from '../../dominio/artigos';
-import { tipoMaterialDaSessao } from '../../dominio/material';
+import { itensDaDisciplina, paginasAnteriores, tipoMaterialDaSessao, validarParadas } from '../../dominio/material';
+import { CamposPaginaParada, lerParadas, type TextosParada } from '../componentes/CamposPaginaParada';
 import { buscar } from '../../dados/repositorio';
 import { useAgora, useEntidade } from '../../dados/ganchos';
 import { corrigir } from '../acoes/sessoes';
@@ -52,6 +53,7 @@ export function FormHorarios({ id }: { id: string }) {
   const [aula, setAula] = useState('');
   const [faixas, setFaixas] = useState('');
   const [estudados, setEstudados] = useState<string[]>([]);
+  const [textosParada, setTextosParada] = useState<TextosParada>({});
 
   useEffect(() => {
     buscar('sessoes', id).then((atual) => {
@@ -63,6 +65,7 @@ export function FormHorarios({ id }: { id: string }) {
       setAula(atual.aula);
       setFaixas(atual.artigos_lidos ?? '');
       setEstudados(atual.materiais_estudados ?? []);
+      setTextosParada(Object.fromEntries((atual.paginas_paradas ?? []).map((p) => [p.id, String(p.pagina)])));
     });
   }, [id]);
 
@@ -76,6 +79,15 @@ export function FormHorarios({ id }: { id: string }) {
   const tipoMaterial = s.situacao === 'concluida' ? tipoMaterialDaSessao(s.tipo) : null;
   const disciplina = disciplinas.find((d) => d.id === s.disciplina_id);
   const editaMaterial = !!(tipoMaterial && disciplina);
+  // R40 — no PDF, a página em que parou também pode ser corrigida (vale o que veio antes desta sessão)
+  const itensDisciplina = disciplina ? itensDaDisciplina(disciplina) : [];
+  const anteriores = paginasAnteriores(
+    itensDisciplina,
+    todas.filter((o) => o.id !== s.id && o.status !== 'excluido' && o.situacao === 'concluida' && o.disciplina_id === s.disciplina_id && o.inicio < s.inicio),
+  );
+  const paradas = lerParadas(textosParada).filter((p) => estudados.includes(p.id) && anteriores.has(p.id));
+  const errosParadas = editaMaterial && s.tipo === 'PDF' ? validarParadas(paradas, itensDisciplina) : [];
+  const pdfsMarcados = estudados.map((id) => itensDisciplina.find((i) => i.id === id && i.tipo === 'PDF')).filter((i) => !!i);
   const errosArtigos = !editaArtigos
     ? []
     : faixas.trim()
@@ -91,8 +103,8 @@ export function FormHorarios({ id }: { id: string }) {
 
   async function salvar(e: Event) {
     e.preventDefault();
-    if (problemas.length || errosArtigos.length) return;
-    await corrigir(s!, novoInicio, novoFim, aula, editaArtigos ? faixas : null, editaMaterial ? estudados : null);
+    if (problemas.length || errosArtigos.length || errosParadas.length) return;
+    await corrigir(s!, novoInicio, novoFim, aula, editaArtigos ? faixas : null, editaMaterial ? estudados : null, editaMaterial ? paradas : null);
     fecharPainel();
     avisar({ texto: 'Sessão corrigida' });
   }
@@ -187,9 +199,19 @@ export function FormHorarios({ id }: { id: string }) {
           podeLancar={false}
         />
       )}
+      {editaMaterial && s.tipo === 'PDF' && (
+        <CamposPaginaParada pdfs={pdfsMarcados} anteriores={anteriores} textos={textosParada} aoMudar={setTextosParada} />
+      )}
+      {errosParadas.length > 0 && (
+        <ul class="erros" role="alert">
+          {errosParadas.map((x) => (
+            <li key={x}>{x}</li>
+          ))}
+        </ul>
+      )}
 
       <div class="acoes-form">
-        <button type="submit" class="botao primario" disabled={problemas.length > 0 || errosArtigos.length > 0}>
+        <button type="submit" class="botao primario" disabled={problemas.length > 0 || errosArtigos.length > 0 || errosParadas.length > 0}>
           Salvar
         </button>
       </div>
