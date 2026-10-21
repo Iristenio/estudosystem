@@ -118,15 +118,18 @@ export interface PosicaoCiclo {
   duracao_prevista: number;
 }
 
-/** Registro único (id "atual"): horas do ciclo, sequência de uma volta e o ponteiro (volta F ordem). */
+/** Registro único (id "atual"): horas do ciclo, blocos (cota de cada disciplina) e o nº do ciclo atual. */
 export interface Ciclo extends Registro {
   horas_totais: number;
   sequencia: PosicaoCiclo[];
-  /** Ponteiro: próxima posição sugerida — ex.: volta 4, ordem 4 = "4F4". */
+  /** Número do ciclo atual (Ciclo 1, 2, 3…). O nome do campo vem da versão antiga ("volta"). */
   volta: number;
+  /** Não é mais usado (era o ponteiro da versão por sessões); mantido pela planilha. */
   ordem: number;
-  /** Quando a sequência foi gerada (sessões anteriores não contam nas horas feitas da volta). */
+  /** Quando a sequência foi gerada. */
   gerado_em: string | null;
+  /** Início do ciclo atual (nº em `volta`): as sessões a partir daqui preenchem as cotas (R20). */
+  iniciado_em: string | null;
 }
 
 export const ID_CICLO = 'atual';

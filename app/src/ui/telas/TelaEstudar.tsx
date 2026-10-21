@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { Ciclo, Disciplina, ItemMaterial, Lei, Sessao, TipoMaterial, TipoSessao } from '../../dominio/tipos';
 import { ID_CICLO, TIPOS_SESSAO } from '../../dominio/tipos';
-import { disciplinaSugerida, posicaoAtual } from '../../dominio/ciclo';
+import { andamentoDoCiclo, disciplinaSugerida } from '../../dominio/ciclo';
 import { ordenarDisciplinas } from '../../dominio/disciplinas';
 import { lerNumero } from '../../dominio/numeros';
 import { artigosLidosDaLei } from '../../dominio/artigos';
@@ -86,7 +86,7 @@ function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Discip
   const { abrirPainel } = useEstado();
   const [disciplinaId, setDisciplinaId] = useState('');
   const [escolheu, setEscolheu] = useState(false);
-  const sugerida = disciplinaSugerida(ciclo);
+  const sugerida = disciplinaSugerida(ciclo, sessoes);
   const nomeSugerida = disciplinas.find((d) => d.id === sugerida)?.nome;
   // R2 — já vem marcada a disciplina sugerida pelo ciclo (até o usuário escolher outra)
   useEffect(() => {
@@ -165,7 +165,7 @@ function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Discip
 
       {ciclo && sugerida && (
         <p class="sugestao-ciclo">
-          <IconeCiclo /> Próxima do ciclo: <strong>{posicaoAtual(ciclo)}</strong> · {nomeSugerida ?? 'disciplina removida'}
+          <IconeCiclo /> Próxima do ciclo: <strong>{nomeSugerida ?? 'disciplina removida'}</strong> · {resumoCiclo(ciclo, sessoes)}
         </p>
       )}
 
@@ -262,6 +262,12 @@ function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Discip
       </button>
     </form>
   );
+}
+
+/** "Ciclo 2 · 12h30 de 30h" */
+function resumoCiclo(ciclo: Ciclo, sessoes: Sessao[]): string {
+  const a = andamentoDoCiclo(ciclo, sessoes);
+  return `Ciclo ${a.numero} · ${formatarDuracaoCurta(a.feito * 3600)} de ${formatarDuracaoCurta(a.total * 3600)}`;
 }
 
 /** R35 — atalho para lançar o material da disciplina sem sair da tela Estudar. */
@@ -398,7 +404,11 @@ function Finalizar({ s, disciplinas, leis, sessoes }: { s: Sessao; disciplinas: 
     setErros(problemas);
     if (problemas.length) return;
     const r = await acoes.concluir(s, dados);
-    const ciclo = !r.posicao ? '' : r.avancou ? ` · ciclo: ${r.posicao} cumprida` : ` · ciclo mantido em ${r.posicao}`;
+    const ciclo = !r
+      ? ''
+      : r.fechou
+        ? ` · Ciclo ${r.numero} concluído! Começa o Ciclo ${r.numero + 1}`
+        : ` · Ciclo ${r.numero}: ${formatarDuracaoCurta(r.feito * 3600)} de ${formatarDuracaoCurta(r.total * 3600)}`;
     avisar({ texto: `Sessão concluída: ${formatarDuracaoCurta(duracao)}${ciclo}` });
   }
 

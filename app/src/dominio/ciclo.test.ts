@@ -1,40 +1,76 @@
 import { describe, expect, it } from 'vitest';
 import type { Ciclo, Sessao } from './tipos';
 import {
-  ajustarPonteiro,
-  avancar,
-  disciplinaDaSessaoAnterior,
+  andamentoDoCiclo,
+  cicloAtual,
+  cotasDoCiclo,
   disciplinaSugerida,
-  formatarPosicao,
   gerarSequencia,
-  horasFeitasNaVolta,
   incluirPosicao,
-  lerPosicao,
+  INICIO_CICLO_POR_HORAS,
   moverPosicao,
   novoCiclo,
   regenerar,
+  registrarConclusao,
   removerPosicao,
   trocarDisciplina,
 } from './ciclo';
-import { cicloInicial, disciplinasIniciais } from './dadosIniciais';
+import { disciplinasIniciais } from './dadosIniciais';
+import { novaDisciplina } from './disciplinas';
 import { concluir, finalizar, iniciarSessao } from './sessoes';
 
-const ids = (c: Ciclo) => c.sequencia.map((p) => p.disciplina_id);
-/** Ciclo da planilha: D01 D02 D03 D04 D05 D01 D02 D04 */
-const ciclo = (volta = 1, ordem = 1) => ({ ...cicloInicial(), volta, ordem });
+const ids = (c: Pick<Ciclo, 'sequencia'>) => c.sequencia.map((p) => p.disciplina_id);
+const contagem = (c: Pick<Ciclo, 'sequencia'>) =>
+  Object.fromEntries(cotasDoCiclo({ ...novoCiclo(), sequencia: c.sequencia }).map((x) => [x.disciplina_id, x.blocos]));
 
-describe('gerar a sequência (R17)', () => {
-  it('30 h com pesos 2,2,1,2,1 → 8 posições de 3,75 h, por rodadas (igual à planilha)', () => {
-    const { sequencia, erros } = gerarSequencia(disciplinasIniciais(), 30);
-    expect(erros).toEqual([]);
-    expect(sequencia.map((p) => p.disciplina_id)).toEqual(['D01', 'D02', 'D03', 'D04', 'D05', 'D01', 'D02', 'D04']);
-    expect(sequencia.every((p) => p.duracao_prevista === 3.75)).toBe(true);
+/** Ciclo de 6 blocos de 1 h: D01 ×2, D02 ×2, D03, D04 — começou em 01/10. */
+const INICIO = '2026-10-01T10:00:00.000Z';
+const ciclo = (campos: Partial<Ciclo> = {}): Ciclo =>
+  novoCiclo({
+    horas_totais: 6,
+    volta: 3,
+    iniciado_em: INICIO,
+    sequencia: ['D01', 'D02', 'D03', 'D01', 'D02', 'D04'].map((d) => ({ disciplina_id: d, duracao_prevista: 1 })),
+    ...campos,
   });
 
-  it('ignora disciplinas inativas e respeita a ordem', () => {
-    const ds = disciplinasIniciais().map((d) => (d.id === 'D03' ? { ...d, ativa: false } : d.id === 'D05' ? { ...d, ordem: 0 } : d));
-    expect(gerarSequencia(ds, 21).sequencia.map((p) => p.disciplina_id)).toEqual(['D05', 'D01', 'D02', 'D04', 'D01', 'D02', 'D04']);
-    expect(gerarSequencia(ds, 21).sequencia[0].duracao_prevista).toBe(3);
+let seq = 0;
+function sessao(disciplina: string, inicioIso: string, minutos: number): Sessao {
+  const inicio = new Date(inicioIso);
+  const s = iniciarSessao(`s${++seq}`, { disciplina_id: disciplina, tipo: 'Revisão', aula: '', lei_id: null }, inicio);
+  return concluir(finalizar(s, new Date(inicio.getTime() + minutos * 60_000)), { paginas: null, artigos_lidos: '', questoes: null, acertos: null });
+}
+
+describe('gerar os blocos (R17)', () => {
+  it('30 h, pesos 2,2,1,2,1 → 30 blocos de 1 h repartidos pelo peso (maiores restos)', () => {
+    const { sequencia, erros } = gerarSequencia(disciplinasIniciais(), 30);
+    expect(erros).toEqual([]);
+    expect(sequencia).toHaveLength(30);
+    expect(sequencia.every((p) => p.duracao_prevista === 1)).toBe(true);
+    expect(contagem({ sequencia })).toEqual({ D01: 8, D02: 7, D03: 4, D04: 7, D05: 4 });
+  });
+
+  it('o exemplo combinado: 30 h, pesos 2,2,2,1,1,1 → 7,7,7,3,3,3', () => {
+    const ds = [
+      novaDisciplina({ id: 'A', nome: 'A', peso: 2, ordem: 1 }),
+      novaDisciplina({ id: 'B', nome: 'B', peso: 2, ordem: 2 }),
+      novaDisciplina({ id: 'C', nome: 'C', peso: 2, ordem: 3 }),
+      novaDisciplina({ id: 'D', nome: 'D', peso: 1, ordem: 4 }),
+      novaDisciplina({ id: 'E', nome: 'E', peso: 1, ordem: 5 }),
+      novaDisciplina({ id: 'F', nome: 'F', peso: 1, ordem: 6 }),
+    ];
+    const { sequencia } = gerarSequencia(ds, 30);
+    expect(contagem({ sequencia })).toEqual({ A: 7, B: 7, C: 7, D: 3, E: 3, F: 3 });
+    // espalhados: a mesma disciplina nunca aparece duas vezes seguidas
+    expect(ids({ sequencia }).some((d, i, l) => d === l[i + 1])).toBe(false);
+    expect(ids({ sequencia }).slice(0, 6)).toEqual(['A', 'B', 'C', 'D', 'E', 'F']);
+  });
+
+  it('ignora inativas; com poucas horas, cada disciplina tem pelo menos 1 bloco', () => {
+    const ds = disciplinasIniciais().map((d) => (d.id === 'D03' ? { ...d, ativa: false } : d));
+    const { sequencia } = gerarSequencia(ds, 3);
+    expect(contagem({ sequencia })).toEqual({ D01: 1, D02: 1, D04: 1, D05: 1 });
+    expect(sequencia[0].duracao_prevista).toBe(0.75); // 3 h em 4 blocos
   });
 
   it('acusa horas inválidas ou nenhuma disciplina ativa', () => {
@@ -42,123 +78,93 @@ describe('gerar a sequência (R17)', () => {
     expect(gerarSequencia([], 30).erros).toEqual(['Não há disciplinas ativas para montar o ciclo.']);
   });
 
-  it('R18: regenerar substitui e volta para 1F1', () => {
-    const r = regenerar(ciclo(4, 4), [{ disciplina_id: 'D01', duracao_prevista: 5 }], 5, new Date('2026-09-27T10:00:00Z'));
-    expect([r.volta, r.ordem, r.horas_totais, r.gerado_em]).toEqual([1, 1, 5, '2026-09-27T10:00:00.000Z']);
+  it('R18: gerar de novo substitui os blocos e recomeça no Ciclo 1, a partir de agora', () => {
+    const r = regenerar(ciclo(), [{ disciplina_id: 'D01', duracao_prevista: 5 }], 5, new Date('2026-10-21T10:00:00Z'));
+    expect([r.volta, r.horas_totais, r.gerado_em, r.iniciado_em]).toEqual([1, 5, '2026-10-21T10:00:00.000Z', '2026-10-21T10:00:00.000Z']);
+  });
+
+  it('ciclo gravado na versão antiga (sem início) vale como Ciclo 1 desde a mudança', () => {
+    const antigo = ciclo({ volta: 4, iniciado_em: null });
+    expect([cicloAtual(antigo).volta, cicloAtual(antigo).iniciado_em]).toEqual([1, INICIO_CICLO_POR_HORAS]);
   });
 });
 
-describe('posição (CRON_ID)', () => {
-  it('formata e lê "volta F ordem"', () => {
-    expect(formatarPosicao(3, 2)).toBe('3F2');
-    expect(lerPosicao('12F8')).toEqual({ volta: 12, ordem: 8 });
-    expect(lerPosicao('x')).toBeNull();
-    expect(lerPosicao(null)).toBeNull();
-  });
-
-  it('sugere a disciplina da posição do ponteiro', () => {
-    expect(disciplinaSugerida(ciclo(4, 4))).toBe('D04');
-    expect(disciplinaSugerida(ciclo(1, 99))).toBe('D01'); // fora da sequência → 1ª posição
-    expect(disciplinaSugerida(novoCiclo())).toBeNull();
-    expect(disciplinaSugerida(null)).toBeNull();
-  });
-});
-
-describe('avanço do ponteiro (R20, R21)', () => {
-  it('disciplina da posição atual → avança uma posição e grava a posição cumprida', () => {
-    const r = avancar(ciclo(4, 4), 'D04', 'D03');
-    expect(r).toMatchObject({ posicao: '4F4', avancou: true });
-    expect([r.ciclo.volta, r.ciclo.ordem]).toEqual([4, 5]);
-  });
-
-  it('na mesma disciplina da posição atual, avança mesmo repetindo a sessão anterior', () => {
-    expect(avancar(ciclo(1, 2), 'D02', 'D02').avancou).toBe(true);
-  });
-
-  it('mais à frente na volta → salta até ela (se não repetir a sessão anterior)', () => {
-    const r = avancar(ciclo(1, 1), 'D05', 'D01');
-    expect(r.posicao).toBe('1F5');
-    expect(r.ciclo.ordem).toBe(6);
-  });
-
-  it('trava de repetição: repetir a disciplina da sessão anterior não salta posições', () => {
-    // ponteiro em 1F2 (D02); repetiu D01, que aparece de novo em 1F6
-    const r = avancar(ciclo(1, 2), 'D01', 'D01');
-    expect(r).toMatchObject({ avancou: false, posicao: '1F2' });
-    expect(r.ciclo.ordem).toBe(2);
-  });
-
-  it('já cumprida nesta volta (só aparece para trás) → não se move e grava a posição atual', () => {
-    const r = avancar(ciclo(2, 7), 'D03', 'D02');
-    expect(r).toMatchObject({ avancou: false, posicao: '2F7' });
-  });
-
-  it('fora do ciclo → não se move', () => {
-    expect(avancar(ciclo(1, 3), 'D99', null).avancou).toBe(false);
-  });
-
-  it('última posição → próxima volta, posição 1', () => {
-    const r = avancar(ciclo(3, 8), 'D04', 'D02');
-    expect(r.posicao).toBe('3F8');
-    expect([r.ciclo.volta, r.ciclo.ordem]).toEqual([4, 1]);
-  });
-
-  it('sem sequência não há posição', () => {
-    expect(avancar(novoCiclo(), 'D01', null)).toMatchObject({ posicao: null, avancou: false });
-  });
-});
-
-function sessaoConcluida(id: string, disciplina: string, inicioIso: string, minutos: number, posicao: string | null = null): Sessao {
-  const inicio = new Date(inicioIso);
-  const s = iniciarSessao(id, { disciplina_id: disciplina, tipo: 'Revisão', aula: '', lei_id: null }, inicio);
-  return { ...concluir(finalizar(s, new Date(inicio.getTime() + minutos * 60_000)), { paginas: null, artigos_lidos: '', questoes: null, acertos: null }), posicao_ciclo: posicao };
-}
-
-describe('sessão anterior e horas da volta', () => {
-  it('sessão anterior = concluída mais recente que começou antes', () => {
-    const a = sessaoConcluida('a', 'D01', '2026-09-27T07:00:00Z', 30);
-    const b = sessaoConcluida('b', 'D02', '2026-09-27T08:00:00Z', 30);
-    const atual = iniciarSessao('c', { disciplina_id: 'D03', tipo: 'PDF', aula: '', lei_id: null }, new Date('2026-09-27T09:00:00Z'));
-    expect(disciplinaDaSessaoAnterior(atual, [a, b, atual])).toBe('D02');
-    expect(disciplinaDaSessaoAnterior(atual, [{ ...b, status: 'excluido' }, a])).toBe('D01');
-    expect(disciplinaDaSessaoAnterior(a, [a])).toBeNull();
-  });
-
-  it('soma as horas de cada posição da volta atual, depois da geração', () => {
-    const c = { ...ciclo(4, 4), gerado_em: '2026-09-01T00:00:00Z' };
+describe('andamento por horas (R20–R22)', () => {
+  it('cada sessão preenche a cota da disciplina com o tempo real; blocos na ordem', () => {
     const lista = [
-      sessaoConcluida('1', 'D01', '2026-09-27T07:00:00Z', 90, '4F1'),
-      sessaoConcluida('2', 'D01', '2026-09-27T09:00:00Z', 30, '4F1'),
-      sessaoConcluida('3', 'D02', '2026-09-27T10:00:00Z', 60, '4F2'),
-      sessaoConcluida('4', 'D02', '2026-09-20T10:00:00Z', 60, '3F2'), // volta anterior
-      sessaoConcluida('5', 'D02', '2026-08-20T10:00:00Z', 60, '4F2'), // antes da geração
+      sessao('D01', '2026-10-02T08:00:00Z', 90), // 1h30 de Constitucional: 1º bloco cheio, 2º com 30 min
+      sessao('D02', '2026-10-02T10:00:00Z', 30),
+      sessao('D02', '2026-10-02T11:00:00Z', 30), // 30 + 30 = 1 bloco
+      sessao('D03', '2026-09-30T10:00:00Z', 60), // antes do início do ciclo: não conta
     ];
-    expect(horasFeitasNaVolta(c, lista)).toEqual([2, 1, 0, 0, 0, 0, 0, 0]);
+    const a = andamentoDoCiclo(ciclo(), lista);
+    expect(a.numero).toBe(3);
+    expect(a.feito).toBe(2.5);
+    expect(a.blocos.map((b) => [b.disciplina_id, b.feito, b.cumprido])).toEqual([
+      ['D01', 1, true],
+      ['D02', 1, true],
+      ['D03', 0, false],
+      ['D01', 0.5, false],
+      ['D02', 0, false],
+      ['D04', 0, false],
+    ]);
+    expect(a.porDisciplina).toEqual([
+      { disciplina_id: 'D01', cota: 2, feito: 1.5 },
+      { disciplina_id: 'D02', cota: 2, feito: 1 },
+      { disciplina_id: 'D03', cota: 1, feito: 0 },
+      { disciplina_id: 'D04', cota: 1, feito: 0 },
+    ]);
+    expect(a.proxima).toBe('D03'); // primeiro bloco não cumprido
+    expect(disciplinaSugerida(ciclo(), lista)).toBe('D03');
+  });
+
+  it('hora além da cota conta no total; disciplina fora do ciclo não conta', () => {
+    const lista = [sessao('D04', '2026-10-02T08:00:00Z', 180), sessao('D99', '2026-10-02T12:00:00Z', 60)];
+    const a = andamentoDoCiclo(ciclo(), lista);
+    expect(a.feito).toBe(3);
+    expect(a.porDisciplina.find((x) => x.disciplina_id === 'D04')).toEqual({ disciplina_id: 'D04', cota: 1, feito: 3 });
+    expect(a.blocos[5].feito).toBe(1);
+  });
+
+  it('R21: ao somar o total, o ciclo fecha e o próximo começa no fim da sessão', () => {
+    const antes = [sessao('D01', '2026-10-02T08:00:00Z', 120), sessao('D02', '2026-10-03T08:00:00Z', 120), sessao('D03', '2026-10-04T08:00:00Z', 60)];
+    const ultima = sessao('D04', '2026-10-05T08:00:00Z', 70); // 5 h + 1h10 ≥ 6 h
+    const r = registrarConclusao(ciclo(), ultima, [...antes, ultima]);
+    expect([r.fechou, r.numero, r.posicao]).toEqual([true, 3, 'C3']);
+    expect(r.ciclo.volta).toBe(4);
+    expect(r.ciclo.iniciado_em).toBe(ultima.fim);
+    // o novo ciclo começa zerado
+    expect(andamentoDoCiclo(r.ciclo, [...antes, ultima]).feito).toBe(0);
+
+    const parcial = registrarConclusao(ciclo(), antes[0], [antes[0]]);
+    expect([parcial.fechou, parcial.posicao, parcial.feito, parcial.total]).toEqual([false, 'C3', 2, 6]);
+    expect(parcial.ciclo.volta).toBe(3);
+  });
+
+  it('fecha mesmo se alguma disciplina não completou a cota (vale o total)', () => {
+    const r = registrarConclusao(ciclo(), sessao('D01', '2026-10-02T08:00:00Z', 360), [sessao('D01', '2026-10-02T08:00:00Z', 360)]);
+    expect(r.fechou).toBe(true);
+  });
+
+  it('sem blocos, nada muda', () => {
+    const s = sessao('D01', '2026-10-02T08:00:00Z', 60);
+    expect(registrarConclusao(novoCiclo(), s, [s])).toMatchObject({ posicao: null, fechou: false });
+    expect(disciplinaSugerida(novoCiclo(), [])).toBeNull();
+    expect(disciplinaSugerida(null, [])).toBeNull();
   });
 });
 
-describe('edição manual (R19, R22)', () => {
-  it('troca, move, inclui e remove posições', () => {
-    let c = ciclo(1, 1);
+describe('edição manual (R19)', () => {
+  it('troca, move, inclui e remove blocos', () => {
+    let c = ciclo();
     c = trocarDisciplina(c, 3, 'D05');
     expect(ids(c)[2]).toBe('D05');
     c = moverPosicao(c, 1, 1);
     expect(ids(c).slice(0, 2)).toEqual(['D02', 'D01']);
     expect(moverPosicao(c, 1, -1)).toBe(c);
     c = incluirPosicao(c, 'D03');
-    expect(c.sequencia).toHaveLength(9);
-    expect(c.sequencia[8]).toEqual({ disciplina_id: 'D03', duracao_prevista: 3.75 });
-  });
-
-  it('remover mantém o ponteiro na mesma disciplina seguinte', () => {
-    const c = removerPosicao(ciclo(1, 5), 2); // tira D02 da posição 2; ponteiro estava em D05
-    expect(ids(c)[c.ordem - 1]).toBe('D05');
-    expect(removerPosicao(ciclo(1, 8), 8).ordem).toBe(1); // tirou a última onde estava o ponteiro
-  });
-
-  it('R22: ajuste manual do ponteiro, dentro dos limites', () => {
-    expect([ajustarPonteiro(ciclo(), 5, 3).volta, ajustarPonteiro(ciclo(), 5, 3).ordem]).toEqual([5, 3]);
-    expect(ajustarPonteiro(ciclo(), 0, 99).ordem).toBe(8);
-    expect(ajustarPonteiro(ciclo(), 0, 99).volta).toBe(1);
+    expect(c.sequencia[6]).toEqual({ disciplina_id: 'D03', duracao_prevista: 1 });
+    c = removerPosicao(c, 1);
+    expect(ids(c)[0]).toBe('D01');
   });
 });

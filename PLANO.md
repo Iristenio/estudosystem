@@ -20,6 +20,7 @@ o Google vem depois. A planilha antiga continua sendo usada normalmente até a t
 | 11 | Mapa da lei | Ver na grade os artigos lidos e o próximo trecho | ✅ 13/10 |
 | 12 | Material em lançamentos | Lançar PDFs e vídeos aos poucos, por curso, com totais somados | ✅ 13/10 |
 | 13 | Mapa do material | Marcar o PDF/vídeo estudado em cada sessão e ver o mapa do curso | ✅ 13/10 |
+| 14 | Ciclo por horas | Cotas de horas por disciplina, ciclo fecha ao somar o total (R17–R22 revistas) | ✅ 21/10 |
 
 ---
 

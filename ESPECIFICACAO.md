@@ -65,10 +65,13 @@ disciplina: páginas, vídeo, lei seca e questões.
 
 Dia da semana e mês são **derivados da data** e não precisam ser guardados.
 
-### 3.4 Ciclo de estudos
-- **Horas totais do ciclo** (ex.: 30 h).
-- **Sequência:** lista ordenada de disciplinas, cada posição com a duração prevista.
-- **Ponteiro:** volta e posição da próxima disciplina sugerida (ex.: volta 4, posição 4 = "4F4").
+### 3.4 Ciclo de estudos (por horas, desde 21/10/2026 — método de Alexandre Meirelles)
+- **Horas do ciclo** (ex.: 30 h). O ciclo termina quando você estuda essa carga, sem prazo fixo
+  (uma semana é só o objetivo).
+- **Blocos:** as horas viram blocos de cerca de 1 h (a sessão média), repartidos pelo peso das
+  disciplinas. A soma dos blocos de uma disciplina é a **cota** dela no ciclo (ex.: 7 h).
+- **Número do ciclo:** Ciclo 1, 2, 3… Não existe mais "volta" nem "ponteiro": ciclo e volta são a
+  mesma coisa.
 
 ### 3.5 Material da disciplina (novidade de 13/10/2026)
 O material é lançado **aos poucos**, item por item, em vez de um total único.
@@ -126,22 +129,25 @@ Cada **curso** da disciplina tem a chave **"conta no total"**.
 - **R16.** Uma sessão concluída **não pode ser excluída**.
 
 ### Ciclo de estudos
-- **R17.** Geração da sequência: a duração de cada vez é igual às horas totais ÷ soma dos pesos das
-  disciplinas ativas. A sequência é montada em **rodadas**: cada disciplina com peso restante aparece
-  uma vez por rodada, na ordem das disciplinas, até esgotar os pesos. Exemplo: 30 h e pesos
-  2, 2, 1, 2, 1 geram 8 posições de 3,75 h.
-- **R18.** Gerar de novo **substitui** a sequência (o app pede confirmação) e volta o ponteiro para 1F1.
-- **R19.** A sequência pode ser **editada à mão**: trocar a disciplina de uma posição, reordenar,
-  incluir e remover posições.
-- **R20.** Avanço do ponteiro ao concluir uma sessão:
-  - se a disciplina é a da **posição atual**, avança uma posição;
-  - se ela aparece **mais à frente** na mesma volta, salta até ela, mas **só se for diferente da
-    disciplina da sessão anterior** (repetir a mesma disciplina não pula posições);
-  - se ela não está à frente nesta volta (já cumprida ou fora do ciclo), o ponteiro não se move;
-  - ao passar da última posição, começa a próxima volta, na posição 1.
-- **R21.** A sessão concluída guarda a posição cumprida (ex.: 3F2). Se não avançou, guarda a
-  posição atual do ponteiro, como hoje.
-- **R22.** O ponteiro pode ser ajustado à mão (ex.: pular uma disciplina).
+> Revisto em 21/10/2026. Antes, um "ponteiro" andava a cada sessão (posições como "3F2", vindas da
+> planilha antiga); por isso os blocos de 3h20 nunca se completavam. Agora o ciclo conta horas.
+
+- **R17.** **Gerar:** o número de blocos é o total de horas (30 h → 30 blocos de 1 h), repartido entre
+  as disciplinas ativas pelo peso (maiores restos; cada uma com pelo menos 1 bloco). Os blocos de cada
+  disciplina são espalhados pelo ciclo, na ordem das disciplinas. Ex.: 30 h e pesos 2, 2, 2, 1, 1, 1
+  → cotas de 7, 7, 7, 3, 3 e 3 h.
+- **R18.** Gerar de novo **substitui** os blocos (o app pede confirmação) e recomeça a contagem no
+  **Ciclo 1**, a partir daquele momento. O histórico de sessões não muda.
+- **R19.** Os blocos podem ser **editados à mão**: trocar a disciplina, reordenar, incluir e remover.
+- **R20.** Cada sessão concluída de uma disciplina do ciclo **preenche a cota** dela com o **tempo
+  real** estudado (2 h, 1 h ou 30 min — tanto faz); dentro da cota, os blocos são preenchidos na ordem.
+  Hora além da cota conta no total do ciclo e aparece como "além da cota". Sessões de disciplinas fora
+  do ciclo não contam.
+- **R21.** O ciclo **fecha** quando a soma chega ao total (ex.: 30 h), mesmo que alguma disciplina não
+  tenha completado a cota. O próximo ciclo começa no fim da sessão que fechou, zerado (a sobra dessa
+  sessão não passa adiante). A sessão guarda em qual ciclo contou ("C3").
+- **R22.** **Próxima sugerida:** a disciplina do primeiro bloco ainda não cumprido.
+- Na mudança (21/10/2026), a contagem recomeçou no **Ciclo 1**, valendo as sessões a partir desse dia.
 
 ### Cadastros
 - **R23.** Uma disciplina ou lei com sessões registradas não pode ser apagada, só **desativada**.
@@ -242,8 +248,8 @@ Consideram apenas as **sessões concluídas**.
   - tocar num item mostra em quantas sessões e quando foi estudado pela última vez, e permite
     marcá-lo à mão como já estudado (R38; o item ganha um ✓);
   - no topo: itens estudados / total (%) e o próximo item ainda não estudado.
-- **Ciclo:** a sequência da volta atual, com a posição do ponteiro destacada e as horas feitas em
-  cada posição.
+- **Ciclo:** o ciclo atual (número, início, horas feitas de 30 h, próxima sugerida), as horas de
+  cada disciplina contra a cota e a ordem dos blocos (cumpridos, em andamento, próximo).
 
 ### Dashboard dinâmico ao rolar (igual ao PCA)
 - Cada bloco **aparece suavemente quando entra na tela** durante a rolagem: ele sobe um pouco e
@@ -266,7 +272,7 @@ Consideram apenas as **sessões concluídas**.
 3. **Sessões**: histórico com filtros por disciplina, tipo e período. Tocar numa sessão abre a
    edição no painel lateral.
 4. **Acompanhamento**: progresso por disciplina.
-5. **Ciclo**: sequência, ponteiro, geração e edição.
+5. **Ciclo**: andamento do ciclo atual, cotas por disciplina, ordem dos blocos, geração e edição.
 6. **Cadastros**: Disciplinas e Leis. Cada lei tem o seu **Mapa da lei**.
 7. **Ajustes**: sincronização com o Google, aparência e informações do aparelho.
 

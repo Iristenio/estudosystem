@@ -46,6 +46,7 @@ var ESQUEMA = {
     campos: [
       ['id', 's'], ['horas_totais', 'n'], ['sequencia', 'j'], ['volta', 'n'], ['ordem', 'n'], ['gerado_em', 's?'],
       ['criado_em', 's'], ['atualizado_em', 's'],
+      ['iniciado_em', 's?'], // 21/10/2026 — início do ciclo atual (contagem por horas)
     ],
   },
 };
