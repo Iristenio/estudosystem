@@ -92,3 +92,10 @@ select.campo.campo-largo { width: 100%; }
 .editar-item-material { display: flex; flex-direction: column; gap: 12px; padding: 14px; border: 2px solid var(--primaria); border-radius: var(--raio); }
 .atalho-material { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; margin: 0; color: var(--texto-2); font-size: 15px; }
 .atalho-material .link-inline svg { width: 18px; height: 18px; }
+
+/* ---- R41/R42: seção ao lançar, cursos recolhidos e ações do curso ---- */
+.grade-secao { grid-template-columns: 96px minmax(0, 1fr); }
+.grade-item-3 { grid-template-columns: 80px 96px minmax(0, 1fr); }
+.curso-material-acoes { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.curso-material-acoes .link-inline { font-size: 14px; }
+.link.perigo { color: var(--perigo); }

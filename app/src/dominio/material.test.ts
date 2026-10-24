@@ -3,6 +3,13 @@ import type { ItemMaterial } from './tipos';
 import { novaDisciplina } from './disciplinas';
 import {
   aplicarMaterial,
+  apagarCursoSemHistorico,
+  codigoItem,
+  comPrefixoSemSecao,
+  ordenarItens,
+  separarPrefixo,
+  ultimaSecao,
+  usarPrefixoComoSecao,
   cursosDoTipo,
   formatarMinutos,
   itensEscolhiveis,
@@ -300,5 +307,60 @@ describe('sessões e mapa do material (R36, R37)', () => {
     expect(proximoItem(itens, ['TJCE'], 'PDF', [sessao('a', 'PDF', ['p2'], 1), sessao('b', 'PDF', ['p3'], 2)])?.id).toBe('p1');
     expect(proximoItem(itens, ['TJCE'], 'PDF', [sessao('a', 'PDF', ['p1', 'p2', 'p3'])])).toBeNull();
     expect(proximoItem([], [], 'Video', [])).toBeNull();
+  });
+});
+
+describe('seções, troca de curso e prefixo (R41–R43)', () => {
+  const novo = () => `x${++seq}`;
+
+  it('R41 — com seção, a numeração recomeça em cada seção e aparece como "1.2"', () => {
+    let itens = lancarItens([], { tipo: 'Video', curso: 'C', nome: 'Teoria', valores: [30], secao: 1 }, novo);
+    itens = lancarItens(itens, { tipo: 'Video', curso: 'C', nome: 'Poder constituinte', valores: [40], secao: 1 }, novo);
+    itens = lancarItens(itens, { tipo: 'Video', curso: 'C', nome: 'Controle', valores: [20], secao: 2 }, novo);
+    itens = lancarItens(itens, { tipo: 'Video', curso: 'C', nome: 'Avulso', valores: [10] }, novo);
+    expect(ordenarItens(itens).map(rotuloItem)).toEqual(['Vídeo 1 · Avulso', 'Vídeo 1.1 · Teoria', 'Vídeo 1.2 · Poder constituinte', 'Vídeo 2.1 · Controle']);
+    expect(ultimaSecao(itens, 'Video', 'C')).toBe(2);
+    expect(recentesPrimeiro(itens).map(codigoItem)).toEqual(['2.1', '1.2', '1.1', '1']);
+    expect(validarItem({ ...itens[1], numero: 1 }, itens)).toEqual(['Já existe Vídeo 1.1 neste curso.']);
+    expect(validarItem({ ...itens[1], secao: 0 }, itens)).toEqual(['A seção precisa ser um número inteiro maior que zero.']);
+  });
+
+  it('R42 — cursos desligados vão para o fim', () => {
+    const itens = [item({ curso: 'Antigo' }), item({ curso: 'Novo' }), item({ curso: 'Zeta' })];
+    expect(cursosDoTipo(itens, 'PDF', ['Antigo'])).toEqual(['Novo', 'Zeta', 'Antigo']);
+  });
+
+  it('R42 — apagar o curso mantém só os itens com sessões', () => {
+    const a = item({ id: 'a1', curso: 'Antigo' });
+    const b = item({ id: 'a2', curso: 'Antigo', numero: 2 });
+    const c = item({ id: 'n1', curso: 'Novo' });
+    const r = apagarCursoSemHistorico([a, b, c], 'PDF', 'Antigo', [{ materiais_estudados: ['a2'] }]);
+    expect([r.apagados, r.mantidos, r.itens.map((i) => i.id)]).toEqual([1, 1, ['a2', 'n1']]);
+  });
+
+  it('R43 — separar prefixo e usá-lo como seção, sem trocar o item', () => {
+    expect(separarPrefixo('1.2-Teoria da Constituição')).toEqual({ secao: 1, numero: 2, nome: 'Teoria da Constituição' });
+    expect(separarPrefixo('3.10 – Controle')).toEqual({ secao: 3, numero: 10, nome: 'Controle' });
+    expect(separarPrefixo('1.1 BD I')).toEqual({ secao: 1, numero: 1, nome: 'BD I' });
+    expect(separarPrefixo('01. Redes I')).toBeNull();
+    expect(separarPrefixo('Inteligência Artificial')).toBeNull();
+    expect(separarPrefixo('1.2-')).toBeNull();
+    const itens = [
+      item({ id: 'p', curso: 'C', numero: 1, nome: '1.1-Teoria' }),
+      item({ id: 'q', curso: 'C', numero: 2, nome: '1.2-Poder' }),
+      item({ id: 'r', curso: 'C', numero: 3, nome: '1.2-Repetido' }),
+      item({ id: 's', curso: 'C', numero: 4, nome: 'Sem prefixo' }),
+      item({ id: 't', curso: 'Outro', numero: 1, nome: '2.1-De outro curso' }),
+    ];
+    expect(comPrefixoSemSecao(itens, 'PDF', 'C')).toBe(3);
+    const r = usarPrefixoComoSecao(itens, 'PDF', 'C');
+    expect([r.convertidos, r.ignorados]).toEqual([2, 1]);
+    expect(r.itens.map((i) => [i.id, i.secao ?? null, i.numero, i.nome])).toEqual([
+      ['p', 1, 1, 'Teoria'],
+      ['q', 1, 2, 'Poder'],
+      ['r', null, 3, '1.2-Repetido'],
+      ['s', null, 4, 'Sem prefixo'],
+      ['t', null, 1, '2.1-De outro curso'],
+    ]);
   });
 });

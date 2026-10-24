@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'preact/hooks';
 import { createPortal } from 'preact/compat';
 import type { Disciplina, ItemMaterial, Sessao, TipoMaterial } from '../../dominio/tipos';
-import { cursosFora, formatarTamanho, itensDaDisciplina, itensEscolhiveis, mapaDoMaterial, proximoItem, ROTULO_MATERIAL } from '../../dominio/material';
+import { codigoItem, cursosFora, formatarTamanho, itensDaDisciplina, itensEscolhiveis, mapaDoMaterial, proximoItem, ROTULO_MATERIAL } from '../../dominio/material';
 import { IconeFechar } from '../icones';
 
 interface Props {
@@ -72,7 +72,7 @@ export function JanelaMaterial({ disciplina, tipo, concluidas, aoEscolher, aoFec
                       </span>
                       <span class="janela-material-texto">
                         <strong>
-                          {ROTULO_MATERIAL[i.tipo]} {i.numero}
+                          {ROTULO_MATERIAL[i.tipo]} {codigoItem(i)}
                           {i.nome && ` · ${i.nome}`}
                         </strong>
                         <small>

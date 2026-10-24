@@ -4,7 +4,9 @@ import { useState } from 'preact/hooks';
 import type { Disciplina, TipoMaterial } from '../../dominio/tipos';
 import { ordenarDisciplinas } from '../../dominio/disciplinas';
 import {
+  codigoItem,
   contaNoTotal,
+  cursosDoTipo,
   cursosFora,
   formatarTamanho,
   itensDaDisciplina,
@@ -69,7 +71,9 @@ export function TelaMapaMaterial() {
   const resumo = resumoDoMapaMaterial(mapa, fora);
   const proximo = d ? proximoItem(itens, fora, tipo, concluidas) : null;
   const semMarcacao = concluidas.filter((s) => tipoMaterialDaSessao(s.tipo) === tipo && !(s.materiais_estudados ?? []).length).length;
-  const cursos = [...new Set(doTipo.map((i) => i.curso))];
+  // R42 — cursos desligados vão para o fim e aparecem recolhidos (toque para abrir)
+  const cursos = cursosDoTipo(doTipo, tipo, fora);
+  const [abertos, setAbertos] = useState<string[]>([]);
   const detalhe = mapa.find((m) => m.item.id === escolhido);
   const nome = tipo === 'PDF' ? 'PDF' : 'vídeo';
 
@@ -260,9 +264,19 @@ export function TelaMapaMaterial() {
                           <h3>
                             {c || 'Sem curso'}
                             {fora.includes(c) && <span class="etiqueta neutra">fora do total</span>}
+                            {fora.includes(c) && (
+                              <button
+                                type="button"
+                                class="link link-inline"
+                                aria-expanded={abertos.includes(c)}
+                                onClick={() => setAbertos(abertos.includes(c) ? abertos.filter((x) => x !== c) : [...abertos, c])}
+                              >
+                                {abertos.includes(c) ? 'esconder' : `mostrar ${doCurso.length}`}
+                              </button>
+                            )}
                           </h3>
                         )}
-                        <div class="grade-material">
+                        {(!fora.includes(c) || abertos.includes(c)) && <div class="grade-material">
                           {doCurso.map((m) => (
                             <button
                               key={m.item.id}
@@ -272,7 +286,7 @@ export function TelaMapaMaterial() {
                               aria-pressed={escolhido === m.item.id}
                               onClick={() => tocar(m.item.id)}
                             >
-                              <strong>{m.item.numero}</strong>
+                              <strong>{codigoItem(m.item)}</strong>
                               {m.item.nome && <span class="item-mapa-nome">{m.item.nome}</span>}
                               <small>{m.emAndamento && m.pagina ? `${m.pagina} de ${formatarTamanho(m.item)}` : formatarTamanho(m.item)}</small>
                               {m.emAndamento && (
@@ -282,7 +296,7 @@ export function TelaMapaMaterial() {
                               )}
                             </button>
                           ))}
-                        </div>
+                        </div>}
                       </div>
                     );
                   })}

@@ -211,6 +211,17 @@ Cada **curso** da disciplina tem a chave **"conta no total"**.
     O % do mapa conta PDFs concluídos. O próximo sugerido continua no PDF em andamento até concluí-lo.
   - Sessões antigas que marcaram um PDF sem página deixam o PDF "em andamento"; basta informar a
     página na próxima sessão.
+- **R41.** **Seção:** ao lançar, informa-se a **seção** do curso (opcional; o app lembra a última). A
+  numeração recomeça em cada seção e aparece como "1.1", "1.2", "2.1"… em todo lugar (painel, mapa,
+  lista ao iniciar, finalização). Sem seção, continua "Vídeo 3". No formulário a ordem é **Nome →
+  Duração/Páginas → Seção → Curso**; Enter no nome vai para a duração, Enter na duração lança e o
+  cursor volta para o nome.
+- **R42.** **Troca de curso:** curso com "conta no total" desligado vai para o **fim** da lista e fica
+  **recolhido** (no painel e no mapa). Cada curso tem **"Apagar vídeos/PDFs deste curso"**: apaga de
+  uma vez os que nunca foram marcados em sessão e mantém os que têm histórico (R33).
+- **R43.** **Prefixo como seção:** num curso com nomes como "1.2-Teoria da Constituição", o botão
+  "Usar o prefixo do nome como seção" passa a seção 1, número 2, nome "Teoria da Constituição" — os
+  itens (e as sessões ligadas a eles) continuam os mesmos. Números repetidos ficam como estavam.
 - **R39.** **Escolher a aula pelo material:** na tela Estudar, ao escolher PDF ou Videoaula de uma
   disciplina com material lançado, abre uma janela com a lista do material daquele tipo (número e
   nome, por curso, em ordem crescente, com as marcas do mapa e o próximo destacado; a lista já abre

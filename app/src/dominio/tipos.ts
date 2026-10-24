@@ -49,8 +49,10 @@ export interface PaginaParada {
 export interface ItemMaterial {
   id: Id;
   tipo: TipoMaterial;
-  /** Sequencial dentro do tipo e do curso; 0 = "Total anterior" (R34). */
+  /** Sequencial dentro do tipo, do curso e da seção; 0 = "Total anterior" (R34). */
   numero: number;
+  /** R41 — seção do curso na plataforma (ex.: 1 → itens "1.1", "1.2"…). Sem seção: "Vídeo 3". */
+  secao?: number | null;
   nome: string;
   curso: string;
   /** Páginas (PDF) ou minutos (vídeo; com fração quando há segundos). */

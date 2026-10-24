@@ -67,29 +67,40 @@ export function ordenarItens(itens: ItemMaterial[]): ItemMaterial[] {
     (a, b) =>
       (a.tipo === b.tipo ? 0 : a.tipo === 'PDF' ? -1 : 1) ||
       (a.curso === b.curso ? 0 : !a.curso ? 1 : !b.curso ? -1 : a.curso.localeCompare(b.curso, 'pt-BR')) ||
+      (a.secao ?? 0) - (b.secao ?? 0) ||
       a.numero - b.numero,
   );
 }
 
-/** Para listas: mesma ordem de tipo e curso, mas o último lançado (maior número) primeiro. */
+/** Para listas: mesma ordem de tipo e curso, mas o último lançado (maior seção e número) primeiro. */
 export function recentesPrimeiro(itens: ItemMaterial[]): ItemMaterial[] {
   const ordem = new Map(ordenarItens(itens).map((i, n) => [i.id, n]));
   const grupo = (i: ItemMaterial) => `${i.tipo}|${i.curso}`;
   const inicioDoGrupo = new Map<string, number>();
   for (const i of ordenarItens(itens)) if (!inicioDoGrupo.has(grupo(i))) inicioDoGrupo.set(grupo(i), ordem.get(i.id)!);
-  return [...itens].sort((a, b) => inicioDoGrupo.get(grupo(a))! - inicioDoGrupo.get(grupo(b))! || b.numero - a.numero);
+  return [...itens].sort((a, b) => inicioDoGrupo.get(grupo(a))! - inicioDoGrupo.get(grupo(b))! || ordem.get(b.id)! - ordem.get(a.id)!);
 }
 
-/** Cursos usados num tipo de material, na ordem da lista. "" = sem curso. */
-export function cursosDoTipo(itens: ItemMaterial[], tipo: TipoMaterial): string[] {
-  return [...new Set(ordenarItens(itens.filter((i) => i.tipo === tipo)).map((i) => i.curso))];
+/** Cursos usados num tipo de material, na ordem da lista. "" = sem curso. R42: os desligados vão para o fim. */
+export function cursosDoTipo(itens: ItemMaterial[], tipo: TipoMaterial, fora: string[] = []): string[] {
+  const cursos = [...new Set(ordenarItens(itens.filter((i) => i.tipo === tipo)).map((i) => i.curso))];
+  return [...cursos.filter((c) => !fora.includes(c)), ...cursos.filter((c) => fora.includes(c))];
 }
 
 /** Todos os nomes de curso já usados na disciplina (para sugerir ao digitar). */
 export const cursosUsados = (itens: ItemMaterial[]) => [...new Set(itens.map((i) => i.curso).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
 
-export function proximoNumero(itens: ItemMaterial[], tipo: TipoMaterial, curso: string): number {
-  return itens.filter((i) => i.tipo === tipo && i.curso === curso).reduce((m, i) => Math.max(m, i.numero), 0) + 1;
+/** Próximo número no tipo, curso e seção (R41: com seção, a numeração recomeça em cada uma: 1.1, 1.2… 2.1). */
+export function proximoNumero(itens: ItemMaterial[], tipo: TipoMaterial, curso: string, secao: number | null = null): number {
+  return (
+    itens.filter((i) => i.tipo === tipo && i.curso === curso && (i.secao ?? null) === secao).reduce((m, i) => Math.max(m, i.numero), 0) + 1
+  );
+}
+
+/** Última seção usada no tipo e curso (para o formulário lembrar), ou null. */
+export function ultimaSecao(itens: ItemMaterial[], tipo: TipoMaterial, curso: string): number | null {
+  const doCurso = ordenarItens(itens.filter((i) => i.tipo === tipo && i.curso === curso && i.numero > 0));
+  return doCurso[doCurso.length - 1]?.secao ?? null;
 }
 
 /* ============================ Lançar rápido (R31) ============================ */
@@ -158,15 +169,90 @@ export function lerTamanhos(texto: string, tipo: TipoMaterial): LeituraTamanhos 
 /** Cria os itens lançados, numerados na sequência do curso. Com nome, só um item. */
 export function lancarItens(
   itens: ItemMaterial[],
-  dados: { tipo: TipoMaterial; curso: string; nome: string; valores: number[] },
+  dados: { tipo: TipoMaterial; curso: string; nome: string; valores: number[]; secao?: number | null },
   gerarId: () => Id,
 ): ItemMaterial[] {
   const curso = dados.curso.trim();
   const nome = dados.nome.trim();
+  const secao = dados.secao ?? null;
   const valores = nome ? dados.valores.slice(0, 1) : dados.valores;
-  let numero = proximoNumero(itens, dados.tipo, curso);
-  const novos = valores.map((tamanho) => ({ id: gerarId(), tipo: dados.tipo, numero: numero++, nome, curso, tamanho, fora: false }));
+  let numero = proximoNumero(itens, dados.tipo, curso, secao);
+  const novos = valores.map((tamanho) => ({
+    id: gerarId(),
+    tipo: dados.tipo,
+    numero: numero++,
+    nome,
+    curso,
+    tamanho,
+    fora: false,
+    ...(secao !== null ? { secao } : {}),
+  }));
   return [...itens, ...novos];
+}
+
+/** Número que aparece: "1.2" (com seção) ou "3". */
+export const codigoItem = (i: Pick<ItemMaterial, 'numero' | 'secao'>) => (i.secao ? `${i.secao}.${i.numero}` : String(i.numero));
+
+/**
+ * R43 — "1.2-Teoria da Constituição" → seção 1, número 2, nome "Teoria da Constituição". Aceita
+ * separadores "-", "–", ".", ":", ")" ou espaço depois do número. Sem prefixo assim, devolve null.
+ */
+export function separarPrefixo(nome: string): { secao: number; numero: number; nome: string } | null {
+  const m = /^\s*(\d{1,3})\.(\d{1,3})(?:\s*[-–—.:)]\s*|\s+)(.*)$/.exec(nome);
+  if (!m || !m[3].trim()) return null;
+  return { secao: Number(m[1]), numero: Number(m[2]), nome: m[3].trim() };
+}
+
+/**
+ * R43 — num curso, usa o prefixo do nome como seção (os itens continuam os mesmos, com as mesmas
+ * sessões). Itens sem prefixo, já com seção ou que repetiriam um número ficam como estão.
+ */
+export function usarPrefixoComoSecao(itens: ItemMaterial[], tipo: TipoMaterial, curso: string): { itens: ItemMaterial[]; convertidos: number; ignorados: number } {
+  const usados = new Set(itens.filter((i) => i.tipo === tipo && i.curso === curso && i.secao).map((i) => `${i.secao}.${i.numero}`));
+  let convertidos = 0;
+  let ignorados = 0;
+  const novos = itens.map((i) => {
+    if (i.tipo !== tipo || i.curso !== curso || i.secao || i.numero === 0) return i;
+    const p = separarPrefixo(i.nome);
+    if (!p) return i;
+    const chave = `${p.secao}.${p.numero}`;
+    if (usados.has(chave)) {
+      ignorados++;
+      return i;
+    }
+    usados.add(chave);
+    convertidos++;
+    return { ...i, secao: p.secao, numero: p.numero, nome: p.nome };
+  });
+  return { itens: novos, convertidos, ignorados };
+}
+
+/** Quantos itens do curso têm prefixo "1.2" no nome e ainda não têm seção (para mostrar o botão). */
+export const comPrefixoSemSecao = (itens: ItemMaterial[], tipo: TipoMaterial, curso: string) =>
+  itens.filter((i) => i.tipo === tipo && i.curso === curso && !i.secao && i.numero > 0 && separarPrefixo(i.nome)).length;
+
+/**
+ * R42 — apaga de uma vez os itens de um curso que nunca foram marcados em sessão; os que têm
+ * histórico ficam (podem continuar fora do total).
+ */
+export function apagarCursoSemHistorico(
+  itens: ItemMaterial[],
+  tipo: TipoMaterial,
+  curso: string,
+  sessoes: { materiais_estudados?: Id[] }[],
+): { itens: ItemMaterial[]; apagados: number; mantidos: number } {
+  let apagados = 0;
+  let mantidos = 0;
+  const novos = itens.filter((i) => {
+    if (i.tipo !== tipo || i.curso !== curso) return true;
+    if (podeApagarItem(i.id, sessoes)) {
+      apagados++;
+      return false;
+    }
+    mantidos++;
+    return true;
+  });
+  return { itens: novos, apagados, mantidos };
 }
 
 /* ============================ Edição de um item ============================ */
@@ -178,9 +264,14 @@ export function validarItem(item: ItemMaterial, itens: ItemMaterial[]): string[]
   if (!Number.isInteger(item.numero) || item.numero < 0) erros.push('O número precisa ser inteiro.');
   else if (
     item.numero > 0 &&
-    itens.some((o) => o.id !== item.id && o.tipo === item.tipo && o.curso === item.curso.trim() && o.numero === item.numero)
+    itens.some(
+      (o) =>
+        o.id !== item.id && o.tipo === item.tipo && o.curso === item.curso.trim() && (o.secao ?? null) === (item.secao ?? null) && o.numero === item.numero,
+    )
   )
-    erros.push(`Já existe ${ROTULO_MATERIAL[item.tipo]} ${item.numero} neste curso.`);
+    erros.push(`Já existe ${ROTULO_MATERIAL[item.tipo]} ${codigoItem(item)} neste curso.`);
+  if (item.secao !== undefined && item.secao !== null && !(Number.isInteger(item.secao) && item.secao > 0))
+    erros.push('A seção precisa ser um número inteiro maior que zero.');
   return erros;
 }
 
@@ -192,9 +283,9 @@ export function podeApagarItem(id: Id, sessoes: { materiais_estudados?: Id[] }[]
 /* ============================ Textos ============================ */
 
 /** "PDF 3 · Controle de constitucionalidade" · "Vídeo 12" · "Total anterior" */
-export function rotuloItem(i: Pick<ItemMaterial, 'tipo' | 'numero' | 'nome'>): string {
+export function rotuloItem(i: Pick<ItemMaterial, 'tipo' | 'numero' | 'nome' | 'secao'>): string {
   if (i.numero === 0) return i.nome || ROTULO_MATERIAL[i.tipo];
-  return `${ROTULO_MATERIAL[i.tipo]} ${i.numero}${i.nome ? ` · ${i.nome}` : ''}`;
+  return `${ROTULO_MATERIAL[i.tipo]} ${codigoItem(i)}${i.nome ? ` · ${i.nome}` : ''}`;
 }
 
 /** 30 → "30 min" · 32,75 → "32 min 45 s" · 80 → "1h20" · 0,5 → "30 s" (acima de 1 h, sem segundos) */
