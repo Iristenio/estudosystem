@@ -53,7 +53,7 @@ export function TelaOutros() {
   const sessoes = outrasConcluidas(todasOutras);
   const grupos = cursosPorArea(cursos);
   const curso = (id: string): CursoExtra | undefined => cursos.find((c) => c.id === id);
-  const [periodo, setPeriodo] = useState<PeriodoOutros>('semana');
+  const [periodo, setPeriodo] = useState<PeriodoOutros>('hoje');
   // A sessão em andamento (concurso ou outros) também conta, e os números se atualizam sozinhos
   const agora = useAgora(15_000);
   const emAndamento = [...todasOutras, ...sessoesConcurso].some((s) => s.status !== 'excluido' && s.situacao !== 'concluida');
