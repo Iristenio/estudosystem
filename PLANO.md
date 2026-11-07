@@ -22,7 +22,7 @@ o Google vem depois. A planilha antiga continua sendo usada normalmente até a t
 | 13 | Mapa do material | Marcar o PDF/vídeo estudado em cada sessão e ver o mapa do curso | ✅ 13/10 |
 | 14 | Ciclo por horas | Cotas de horas por disciplina, ciclo fecha ao somar o total (R17–R22 revistas) | ✅ 21/10 |
 | 15 | Outros estudos — registro | Cadastrar áreas/cursos e estudar pelo cronômetro (Concurso \| Outros) ou lançar à mão | ✅ 07/11 |
-| 16 | Outros estudos — acompanhamento | Tela com "Onde está meu tempo", tempo por dia, totais e sessões | a fazer |
+| 16 | Outros estudos — acompanhamento | Tela com "Onde está meu tempo", tempo por dia, totais e sessões | ✅ 07/11 |
 
 ---
 

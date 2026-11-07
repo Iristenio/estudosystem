@@ -224,6 +224,70 @@ export function GraficoColunas({ colunas, formatarEixo, descricao }: PropsColuna
   );
 }
 
+/* ---------------- Colunas empilhadas (várias partes coloridas por coluna) ---------------- */
+
+export interface ColunaEmpilhada {
+  chave: string;
+  rotulo: string;
+  partes: { valor: number; cor: string }[];
+  texto?: string;
+  dica: ConteudoDica;
+}
+
+/** Como GraficoColunas, mas cada coluna é a soma de partes coloridas (ex.: um curso em cada cor). */
+export function ColunasEmpilhadas({ colunas, formatarEixo, descricao }: { colunas: ColunaEmpilhada[]; formatarEixo: (n: number) => string; descricao: string }) {
+  const dica = useDica();
+  const total = (c: ColunaEmpilhada) => c.partes.reduce((t, p) => t + p.valor, 0);
+  const comValores = colunas.some((c) => c.texto);
+  const vertical = colunas.length > LIMITE_VALORES_HORIZONTAIS;
+  const { max, passo } = escalaRedonda(Math.max(0, ...colunas.map(total)));
+  const linhas: number[] = [];
+  for (let v = 0; v <= max + 1e-9; v += passo) linhas.push(v);
+
+  return (
+    <div class={`grafico-colunas${comValores ? ' com-valores' : ''}${vertical ? ' valores-verticais' : ''}`} role="img" aria-label={descricao}>
+      <div class="eixo-y" aria-hidden="true">
+        {linhas.map((v) => (
+          <span key={v} style={{ bottom: `${(v / max) * 100}%` }}>
+            {formatarEixo(v)}
+          </span>
+        ))}
+      </div>
+      <div class="area-colunas">
+        {linhas.map((v) => (
+          <span key={v} class="grade" style={{ bottom: `${(v / max) * 100}%` }} aria-hidden="true" />
+        ))}
+        {colunas.map((c, i) => {
+          const t = total(c);
+          return (
+            <button
+              key={c.chave}
+              type="button"
+              class="coluna"
+              aria-label={`${c.dica.titulo}: ${c.dica.linhas.map((l) => `${l.rotulo ?? ''} ${l.valor}`).join(', ')}`}
+              {...comDica(dica, c.dica)}
+            >
+              <span class="coluna-barra coluna-empilhada" style={{ height: `${(t / max) * 100}%`, transitionDelay: `${Math.min(i * 25, 600)}ms` }}>
+                {c.partes.map((p, j) => (
+                  <span key={j} class={`coluna-parte${j === c.partes.length - 1 ? ' topo' : ''}`} style={{ height: `${t ? (p.valor / t) * 100 : 0}%`, background: p.cor }} />
+                ))}
+                {c.texto && (
+                  <span class="coluna-valor" aria-hidden="true">
+                    {c.texto}
+                  </span>
+                )}
+              </span>
+              <span class="coluna-rotulo" aria-hidden="true">
+                {c.rotulo}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ---------------- Barras horizontais (nome · barra · valor na ponta) ---------------- */
 
 export interface Barra {

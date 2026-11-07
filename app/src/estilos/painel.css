@@ -182,3 +182,8 @@
 .secao-titulo { margin: 8px 0 0; font-size: 15px; font-weight: 650; color: var(--texto-2); text-transform: uppercase; letter-spacing: 0.04em; }
 .faltam { margin: 0; padding-top: 10px; border-top: 1px solid var(--borda); font-size: 13.5px; color: var(--texto-2); }
 .faltam strong { color: var(--texto); }
+
+/* ---- Colunas empilhadas (Outros estudos: um curso em cada cor) ---- */
+.coluna-empilhada { display: flex; flex-direction: column-reverse; background: none; overflow: visible; }
+.coluna-parte { display: block; width: 100%; flex: none; }
+.coluna-parte.topo { border-radius: 4px 4px 0 0; }

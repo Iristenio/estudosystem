@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
+  concluidasNoIntervalo,
   concluirOutra,
+  intervaloOutros,
+  ondeEstaMeuTempo,
+  tempoPorArea,
+  tempoPorDiaOutros,
   corLivre,
   cursosPorArea,
   iniciarOutra,
@@ -75,5 +80,51 @@ describe('sessões de outros estudos (R45–R48)', () => {
     const b = lancarOutra('b', { curso_id: 'c1', descricao: '', inicio: t('10:00'), fim: t('11:00') }, cursos, t('12:00')).sessao!;
     const aberta = iniciarOutra('c', { curso_id: 'c1', descricao: '' }, t('11:30'));
     expect(outrasConcluidas([a, b, aberta, { ...b, id: 'd', status: 'excluido' }]).map((s) => s.id)).toEqual(['b', 'a']);
+  });
+});
+
+describe('acompanhamento (etapa 16)', () => {
+  const local = (dia: number, h: number) => new Date(2026, 10, dia, h, 0, 0); // novembro de 2026 (dia 7 = sábado)
+  const sessao = (id: string, curso: string, dia: number, h: number, minutos: number) =>
+    lancarOutra(id, { curso_id: curso, descricao: '', inicio: local(dia, h), fim: new Date(local(dia, h).getTime() + minutos * 60e3) }, cursos, local(30, 0)).sessao!;
+  const lista = [sessao('a', 'c1', 7, 8, 60), sessao('b', 'c1', 6, 8, 30), sessao('c', 'c2', 7, 10, 90), sessao('d', 'c2', 1, 10, 45)];
+
+  it('períodos: a semana começa na segunda-feira', () => {
+    expect(intervaloOutros('semana', local(7, 12))).toEqual({ de: '2026-11-02', ate: '2026-11-07' });
+    expect(intervaloOutros('mes', local(7, 12))).toEqual({ de: '2026-11-01', ate: '2026-11-07' });
+    expect(intervaloOutros('tudo', local(7, 12)).de).toBeNull();
+  });
+
+  it('tempo por área e curso no período, e o Concurso × áreas com %', () => {
+    const daSemana = concluidasNoIntervalo(lista, '2026-11-02', '2026-11-07');
+    expect(daSemana.map((s) => s.id).sort()).toEqual(['a', 'b', 'c']);
+    const areas = tempoPorArea(daSemana, cursos);
+    expect(areas.map((a) => [a.area, a.segundos / 60, a.cursos.map((c) => c.curso_id)])).toEqual([
+      ['Alura', 90, ['c1']],
+      ['Graduação', 90, ['c2']],
+    ]);
+    expect(ondeEstaMeuTempo(3 * 3600, areas)).toEqual([
+      { chave: 'concurso', rotulo: 'Concurso', segundos: 10800, percentual: 50 },
+      { chave: 'area:Alura', rotulo: 'Alura', segundos: 5400, percentual: 25 },
+      { chave: 'area:Graduação', rotulo: 'Graduação', segundos: 5400, percentual: 25 },
+    ]);
+    expect(ondeEstaMeuTempo(0, [])).toEqual([]);
+  });
+
+  it('tempo por dia: do mais recente para o mais antigo, com as partes de cada curso', () => {
+    const dias = tempoPorDiaOutros(lista, 7, local(7, 23));
+    expect(dias.map((d) => [d.dia, d.total / 60])).toEqual([
+      ['2026-11-07', 150],
+      ['2026-11-06', 30],
+      ['2026-11-05', 0],
+      ['2026-11-04', 0],
+      ['2026-11-03', 0],
+      ['2026-11-02', 0],
+      ['2026-11-01', 45],
+    ]);
+    expect(dias[0].partes).toEqual([
+      { curso_id: 'c1', segundos: 3600 },
+      { curso_id: 'c2', segundos: 5400 },
+    ]);
   });
 });
