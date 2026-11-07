@@ -93,6 +93,15 @@ describe('acompanhamento (etapa 16)', () => {
     expect(intervaloOutros('semana', local(7, 12))).toEqual({ de: '2026-11-02', ate: '2026-11-07' });
     expect(intervaloOutros('mes', local(7, 12))).toEqual({ de: '2026-11-01', ate: '2026-11-07' });
     expect(intervaloOutros('tudo', local(7, 12)).de).toBeNull();
+    expect(intervaloOutros('hoje', local(7, 12))).toEqual({ de: '2026-11-07', ate: '2026-11-07' });
+  });
+
+  it('a sessão em andamento entra quando pedido, com o tempo até agora', () => {
+    const aberta = iniciarOutra('ab', { curso_id: 'c1', descricao: '' }, local(7, 14));
+    expect(concluidasNoIntervalo([...lista, aberta], '2026-11-07', '2026-11-07').map((s) => s.id).sort()).toEqual(['a', 'c']);
+    const comAberta = concluidasNoIntervalo([...lista, aberta], '2026-11-07', '2026-11-07', true);
+    expect(comAberta.map((s) => s.id).sort()).toEqual(['a', 'ab', 'c']);
+    expect(tempoPorDiaOutros([...lista, aberta], 1, new Date(2026, 10, 7, 14, 30), true)[0].total / 60).toBe(150 + 30);
   });
 
   it('tempo por área e curso no período, e o Concurso × áreas com %', () => {

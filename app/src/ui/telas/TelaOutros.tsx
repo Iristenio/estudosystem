@@ -17,7 +17,7 @@ import {
 import { deDataISO } from '../../dominio/datas';
 import { ColunasEmpilhadas, ProvedorDica, type ColunaEmpilhada } from '../componentes/Graficos';
 import { duracaoSegundos, formatarDuracaoCurta } from '../../dominio/sessoes';
-import { useEntidade } from '../../dados/ganchos';
+import { useAgora, useEntidade } from '../../dados/ganchos';
 import { useEstado } from '../estado';
 import { irPara } from '../rotas';
 import { IconeCapelo, IconeMais } from '../icones';
@@ -54,9 +54,12 @@ export function TelaOutros() {
   const grupos = cursosPorArea(cursos);
   const curso = (id: string): CursoExtra | undefined => cursos.find((c) => c.id === id);
   const [periodo, setPeriodo] = useState<PeriodoOutros>('semana');
+  // A sessão em andamento (concurso ou outros) também conta, e os números se atualizam sozinhos
+  const agora = useAgora(15_000);
+  const emAndamento = [...todasOutras, ...sessoesConcurso].some((s) => s.status !== 'excluido' && s.situacao !== 'concluida');
   const { de, ate } = intervaloOutros(periodo);
-  const areas = tempoPorArea(concluidasNoIntervalo(todasOutras, de, ate), cursos);
-  const segundosConcurso = concluidasNoIntervalo(sessoesConcurso, de, ate).reduce((t, s) => t + duracaoSegundos(s), 0);
+  const areas = tempoPorArea(concluidasNoIntervalo(todasOutras, de, ate, true), cursos);
+  const segundosConcurso = concluidasNoIntervalo(sessoesConcurso, de, ate, true).reduce((t, s) => t + duracaoSegundos(s, agora), 0);
   const tempoDoCurso = new Map(areas.flatMap((a) => a.cursos.map((c) => [c.curso_id, c.segundos] as const)));
   const tempoDaArea = new Map(areas.map((a) => [a.area, a.segundos]));
 
@@ -75,8 +78,8 @@ export function TelaOutros() {
       </header>
       <div class="conteudo">
         <div class="grade-outros-topo">
-          <OndeEstaMeuTempo segundosConcurso={segundosConcurso} areas={areas} periodo={periodo} />
-          <TempoPorDia sessoes={todasOutras} cursos={cursos} />
+          <OndeEstaMeuTempo segundosConcurso={segundosConcurso} areas={areas} periodo={periodo} emAndamento={emAndamento} />
+          <TempoPorDia sessoes={todasOutras} cursos={cursos} agora={agora} />
         </div>
         <div class="grade-outros">
           <section class="cartao">
@@ -183,7 +186,17 @@ export function TelaOutros() {
 
 /* ---------------- Onde está meu tempo (Concurso × áreas; tocar numa área mostra os cursos) ---------------- */
 
-function OndeEstaMeuTempo({ segundosConcurso, areas, periodo }: { segundosConcurso: number; areas: TempoDeArea[]; periodo: PeriodoOutros }) {
+function OndeEstaMeuTempo({
+  segundosConcurso,
+  areas,
+  periodo,
+  emAndamento,
+}: {
+  segundosConcurso: number;
+  areas: TempoDeArea[];
+  periodo: PeriodoOutros;
+  emAndamento: boolean;
+}) {
   const [aberta, setAberta] = useState<string | null>(null);
   const itens = ondeEstaMeuTempo(segundosConcurso, areas);
   const total = itens.reduce((t, x) => t + x.segundos, 0);
@@ -243,15 +256,18 @@ function OndeEstaMeuTempo({ segundosConcurso, areas, periodo }: { segundosConcur
           })}
         </ul>
       )}
-      <p class="dica">Concurso = todas as sessões do concurso no período. Toque numa área para ver os cursos.</p>
+      <p class="dica">
+        Concurso = todas as sessões do concurso no período. Toque numa área para ver os cursos.
+        {emAndamento && ' Inclui a sessão em andamento (atualiza sozinho).'}
+      </p>
     </section>
   );
 }
 
 /* ---------------- Tempo por dia (30 dias, um curso em cada cor; o mais recente à esquerda) ---------------- */
 
-function TempoPorDia({ sessoes, cursos }: { sessoes: OutraSessao[]; cursos: CursoExtra[] }) {
-  const dias = tempoPorDiaOutros(sessoes, 30);
+function TempoPorDia({ sessoes, cursos, agora }: { sessoes: OutraSessao[]; cursos: CursoExtra[]; agora: Date }) {
+  const dias = tempoPorDiaOutros(sessoes, 30, agora, true);
   const curso = (id: string) => cursos.find((c) => c.id === id);
   const comEstudo = new Set(dias.flatMap((d) => d.partes.map((p) => p.curso_id)));
   const colunas: ColunaEmpilhada[] = dias.map((d, i) => {

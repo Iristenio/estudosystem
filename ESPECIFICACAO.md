@@ -361,9 +361,11 @@ Sem páginas, questões, material, mapas ou ciclo.
   hoje aparecem na tela Outros estudos.
 
 ### 10.4 Tela "Outros estudos" (item próprio no menu)
-- **Onde está meu tempo:** no período escolhido (esta semana, este mês, este ano, tudo), as horas de
+- **Onde está meu tempo:** no período escolhido (hoje, esta semana, este mês, este ano, tudo), as horas de
   **Concurso** (todas as sessões concluídas do concurso) comparadas com cada **área** dos outros
   estudos, em barras e porcentagem do total. Tocar numa área mostra os cursos dela.
+  A sessão **em andamento** (concurso ou outros) também entra na conta e os números se atualizam
+  sozinhos — com "Hoje", dá para comparar o dia em tempo real.
 - **Tempo por dia:** barras dos últimos 30 dias, cada curso na sua cor (o dia mais recente à
   esquerda, como no Dashboard).
 - **Totais por curso e por área** no período.

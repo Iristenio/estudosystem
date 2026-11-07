@@ -123,9 +123,10 @@ export function outrasConcluidas(lista: OutraSessao[]): OutraSessao[] {
 
 /* ============================ Acompanhamento (etapa 16, 10.4) ============================ */
 
-export type PeriodoOutros = 'semana' | 'mes' | 'ano' | 'tudo';
+export type PeriodoOutros = 'hoje' | 'semana' | 'mes' | 'ano' | 'tudo';
 
 export const ROTULO_PERIODO_OUTROS: Record<PeriodoOutros, string> = {
+  hoje: 'Hoje',
   semana: 'Esta semana',
   mes: 'Este mês',
   ano: 'Este ano',
@@ -135,16 +136,20 @@ export const ROTULO_PERIODO_OUTROS: Record<PeriodoOutros, string> = {
 /** Intervalo [de, ate] ("AAAA-MM-DD", inclusivo) do período; a semana começa na segunda-feira. null = sem limite. */
 export function intervaloOutros(p: PeriodoOutros, agora = new Date()): { de: string | null; ate: string } {
   const hoje = paraDataISO(agora);
+  if (p === 'hoje') return { de: hoje, ate: hoje };
   if (p === 'semana') return { de: somarDias(hoje, -((agora.getDay() + 6) % 7)), ate: hoje };
   if (p === 'mes') return { de: `${hoje.slice(0, 7)}-01`, ate: hoje };
   if (p === 'ano') return { de: `${hoje.slice(0, 4)}-01-01`, ate: hoje };
   return { de: null, ate: hoje };
 }
 
-/** Sessões concluídas (de qualquer tipo com cronômetro) cujo dia de início está no intervalo. */
-export function concluidasNoIntervalo<T extends Cronometrado>(lista: T[], de: string | null, ate: string): T[] {
+/**
+ * Sessões concluídas (de qualquer tipo com cronômetro) cujo dia de início está no intervalo. Com
+ * `incluirAbertas`, entra também a sessão em andamento (a duração dela cresce em tempo real).
+ */
+export function concluidasNoIntervalo<T extends Cronometrado>(lista: T[], de: string | null, ate: string, incluirAbertas = false): T[] {
   return sessoesValidas(lista).filter((s) => {
-    if (s.situacao !== 'concluida') return false;
+    if (s.situacao !== 'concluida' && !incluirAbertas) return false;
     const dia = paraDataISO(new Date(s.inicio));
     return (!de || dia >= de) && dia <= ate;
   });
@@ -196,14 +201,14 @@ export function ondeEstaMeuTempo(segundosConcurso: number, areas: TempoDeArea[])
 }
 
 /** Tempo por dia dos últimos `dias` dias (do mais recente para o mais antigo), com as partes de cada curso. */
-export function tempoPorDiaOutros(sessoes: OutraSessao[], dias: number, agora = new Date()): { dia: string; total: number; partes: { curso_id: Id; segundos: number }[] }[] {
+export function tempoPorDiaOutros(sessoes: OutraSessao[], dias: number, agora = new Date(), incluirAbertas = false): { dia: string; total: number; partes: { curso_id: Id; segundos: number }[] }[] {
   const hoje = paraDataISO(agora);
   const lista = Array.from({ length: dias }, (_, i) => somarDias(hoje, -i));
   const porDia = new Map<string, Map<Id, number>>();
-  for (const s of concluidasNoIntervalo(sessoes, lista[lista.length - 1], hoje)) {
+  for (const s of concluidasNoIntervalo(sessoes, lista[lista.length - 1], hoje, incluirAbertas)) {
     const dia = paraDataISO(new Date(s.inicio));
     const m = porDia.get(dia) ?? new Map<Id, number>();
-    m.set(s.curso_id, (m.get(s.curso_id) ?? 0) + duracaoSegundos(s));
+    m.set(s.curso_id, (m.get(s.curso_id) ?? 0) + duracaoSegundos(s, agora));
     porDia.set(dia, m);
   }
   return lista.map((dia) => {
