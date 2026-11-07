@@ -2,8 +2,10 @@
 // Ao lado, as sessões de hoje.
 import { useEffect, useState } from 'preact/hooks';
 import type { Ciclo, Disciplina, ItemMaterial, Lei, Sessao, TipoMaterial, TipoSessao } from '../../dominio/tipos';
+import type { BlocoNoCiclo } from '../../dominio/ciclo';
 import { ID_CICLO, TIPOS_SESSAO } from '../../dominio/tipos';
-import { andamentoDoCiclo, disciplinaSugerida } from '../../dominio/ciclo';
+import { andamentoDoCiclo, blocoDaSessao, blocosParaEscolher } from '../../dominio/ciclo';
+import { PainelCiclo } from '../componentes/PainelCiclo';
 import { ordenarDisciplinas } from '../../dominio/disciplinas';
 import { lerNumero } from '../../dominio/numeros';
 import { artigosLidosDaLei } from '../../dominio/artigos';
@@ -28,7 +30,7 @@ import { useAgora, useEntidade } from '../../dados/ganchos';
 import * as acoes from '../acoes/sessoes';
 import { useEstado } from '../estado';
 import { irPara } from '../rotas';
-import { IconeCiclo, IconeCronometro, IconeGrade, IconeLapis, IconeMais } from '../icones';
+import { IconeCronometro, IconeGrade, IconeLapis, IconeMais } from '../icones';
 import { CampoArtigos } from '../componentes/CampoArtigos';
 import { EscolhaMaterial } from '../componentes/EscolhaMaterial';
 
@@ -51,7 +53,7 @@ export function TelaEstudar() {
       <div class="conteudo">
         <div class="grade-estudar">
           {!aberta && <NovaSessao disciplinas={disciplinas} leis={leis} sessoes={sessoes} ciclo={ciclo} />}
-          {aberta && aberta.situacao !== 'finalizando' && <Cronometro s={aberta} disciplinas={disciplinas} leis={leis} />}
+          {aberta && aberta.situacao !== 'finalizando' && <Cronometro s={aberta} disciplinas={disciplinas} leis={leis} sessoes={sessoes} ciclo={ciclo} />}
           {aberta && aberta.situacao === 'finalizando' && <Finalizar s={aberta} disciplinas={disciplinas} leis={leis} sessoes={sessoes} />}
           <Hoje sessoes={sessoes} disciplinas={disciplinas} />
         </div>
@@ -86,12 +88,18 @@ function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Discip
   const { abrirPainel } = useEstado();
   const [disciplinaId, setDisciplinaId] = useState('');
   const [escolheu, setEscolheu] = useState(false);
-  const sugerida = disciplinaSugerida(ciclo, sessoes);
-  const nomeSugerida = disciplinas.find((d) => d.id === sugerida)?.nome;
-  // R2 — já vem marcada a disciplina sugerida pelo ciclo (até o usuário escolher outra)
+  // R44 — com ciclo, a disciplina é escolhida pela lista dos blocos ainda não cumpridos (o atual já vem marcado)
+  const andamento = ciclo && ciclo.sequencia.length ? andamentoDoCiclo(ciclo, sessoes) : null;
+  const ativaId = (id: string) => disciplinas.some((d) => d.id === id && d.ativa && d.status !== 'excluido');
+  const opcoesBloco = andamento ? blocosParaEscolher(andamento).filter((x) => ativaId(x.bloco.disciplina_id)) : [];
+  const [bloco, setBloco] = useState<number | null>(null);
+  const blocoEscolhido = andamento && bloco ? (andamento.blocos[bloco - 1] ?? null) : null;
+  const sugerido = opcoesBloco[0]?.bloco ?? null;
   useEffect(() => {
-    if (!escolheu && sugerida && disciplinas.some((d) => d.id === sugerida && d.ativa && d.status !== 'excluido')) setDisciplinaId(sugerida);
-  }, [sugerida, escolheu, disciplinas]);
+    if (escolheu || !sugerido) return;
+    setBloco(sugerido.ordem);
+    setDisciplinaId(sugerido.disciplina_id);
+  }, [sugerido?.ordem, sugerido?.disciplina_id, escolheu]);
   const [tipo, setTipo] = useState<TipoSessao | null>(null);
   const [leiId, setLeiId] = useState<string | null>(null);
   const [aula, setAula] = useState('');
@@ -107,6 +115,13 @@ function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Discip
     const tm = t ? tipoMaterialDaSessao(t) : null;
     return !!(d && tm && itensDaJanela(d, tm).length);
   };
+
+  function escolherBloco(ordem: number) {
+    const b = andamento?.blocos[ordem - 1];
+    if (!b) return;
+    setBloco(ordem);
+    escolherDisciplina(b.disciplina_id);
+  }
 
   function escolherDisciplina(id: string) {
     setEscolheu(true);
@@ -135,7 +150,8 @@ function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Discip
     e.preventDefault();
     // Se a aula foi mudada à mão depois de escolher, o item não vem mais marcado
     const materiais_estudados = escolhido && aula === escolhido.rotulo ? [escolhido.id] : [];
-    const dados = { disciplina_id: disciplinaId, tipo, aula, lei_id: leiId, materiais_estudados };
+    const bloco_ciclo = blocoEscolhido && blocoEscolhido.disciplina_id === disciplinaId ? blocoEscolhido.ordem : null;
+    const dados = { disciplina_id: disciplinaId, tipo, aula, lei_id: leiId, materiais_estudados, bloco_ciclo };
     const problemas = validarInicio(dados, disciplinas, leis, sessoes);
     setErros(problemas);
     if (problemas.length) return;
@@ -163,24 +179,41 @@ function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Discip
         <IconeCronometro /> Nova sessão
       </h2>
 
-      {ciclo && sugerida && (
-        <p class="sugestao-ciclo">
-          <IconeCiclo /> Próxima do ciclo: <strong>{nomeSugerida ?? 'disciplina removida'}</strong> · {resumoCiclo(ciclo, sessoes)}
-        </p>
-      )}
+      {andamento && blocoEscolhido && <PainelCiclo andamento={andamento} bloco={blocoEscolhido} disciplinas={disciplinas} />}
 
-      <fieldset>
-        <legend>Disciplina</legend>
-        <div class="chips">
-          {ativas.map((d) => (
-            <button key={d.id} type="button" class="chip" aria-pressed={d.id === disciplinaId} onClick={() => escolherDisciplina(d.id)}>
-              <span class="bolinha" style={{ background: d.cor }} />
-              {d.nome}
-              {d.id === sugerida && <span class="marca-sugerida">ciclo</span>}
-            </button>
-          ))}
-        </div>
-      </fieldset>
+      {andamento && opcoesBloco.length > 0 ? (
+        <label class="rotulo">
+          Disciplina
+          <select
+            class="campo campo-largo campo-bloco"
+            value={bloco ?? ''}
+            onChange={(e) => escolherBloco(Number(e.currentTarget.value))}
+          >
+            {opcoesBloco.some((x) => !x.pulado) && (
+              <optgroup label={`Ciclo ${andamento.numero} — na ordem`}>
+                {opcoesBloco.filter((x) => !x.pulado).map((x) => opcaoBloco(x.bloco, disciplinas))}
+              </optgroup>
+            )}
+            {opcoesBloco.some((x) => x.pulado) && (
+              <optgroup label="Ficaram para trás">
+                {opcoesBloco.filter((x) => x.pulado).map((x) => opcaoBloco(x.bloco, disciplinas))}
+              </optgroup>
+            )}
+          </select>
+        </label>
+      ) : (
+        <fieldset>
+          <legend>Disciplina</legend>
+          <div class="chips">
+            {ativas.map((d) => (
+              <button key={d.id} type="button" class="chip" aria-pressed={d.id === disciplinaId} onClick={() => escolherDisciplina(d.id)}>
+                <span class="bolinha" style={{ background: d.cor }} />
+                {d.nome}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
 
       <fieldset>
         <legend>Tipo de estudo</legend>
@@ -264,10 +297,15 @@ function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Discip
   );
 }
 
-/** "Ciclo 2 · 12h30 de 30h" */
-function resumoCiclo(ciclo: Ciclo, sessoes: Sessao[]): string {
-  const a = andamentoDoCiclo(ciclo, sessoes);
-  return `Ciclo ${a.numero} · ${formatarDuracaoCurta(a.feito * 3600)} de ${formatarDuracaoCurta(a.total * 3600)}`;
+/** "24 · BANCO DE DADOS — faltam 37 min" */
+function opcaoBloco(b: BlocoNoCiclo, disciplinas: Disciplina[]) {
+  const nome = disciplinas.find((d) => d.id === b.disciplina_id)?.nome ?? 'Disciplina removida';
+  const falta = b.feito > 0 ? ` — faltam ${formatarDuracaoCurta((b.duracao - b.feito) * 3600)}` : '';
+  return (
+    <option key={b.ordem} value={b.ordem}>
+      {`${b.ordem} · ${nome}${falta}`}
+    </option>
+  );
 }
 
 /** R35 — atalho para lançar o material da disciplina sem sair da tela Estudar. */
@@ -294,10 +332,18 @@ function AtalhoMaterial({
 
 /* ---------------- 2. Cronômetro ---------------- */
 
-function Cronometro({ s, disciplinas, leis }: { s: Sessao; disciplinas: Disciplina[]; leis: Lei[] }) {
+function Cronometro({ s, disciplinas, leis, sessoes, ciclo }: { s: Sessao; disciplinas: Disciplina[]; leis: Lei[]; sessoes: Sessao[]; ciclo: Ciclo | null }) {
   const { abrirPainel, perguntar } = useEstado();
   const agora = useAgora(1000);
   const pausada = s.situacao === 'pausada';
+  // R44 — a evolução da disciplina e do ciclo enchem ao vivo enquanto a sessão corre
+  const andamento = ciclo && ciclo.sequencia.length ? andamentoDoCiclo(ciclo, sessoes) : null;
+  const n = blocoDaSessao(s);
+  const blocoDaVez = andamento
+    ? n && andamento.blocos[n - 1]?.disciplina_id === s.disciplina_id
+      ? andamento.blocos[n - 1]
+      : andamento.blocos.find((b) => b.disciplina_id === s.disciplina_id && !b.cumprido)
+    : undefined;
 
   async function cancelar() {
     const r = await perguntar(
@@ -324,6 +370,10 @@ function Cronometro({ s, disciplinas, leis }: { s: Sessao; disciplinas: Discipli
       <button class="link link-inline" onClick={() => abrirPainel({ tipo: 'horarios', id: s.id })}>
         <IconeLapis /> Corrigir horário de início ou aula
       </button>
+
+      {andamento && blocoDaVez && s.inicio >= andamento.iniciado_em && (
+        <PainelCiclo andamento={andamento} bloco={blocoDaVez} disciplinas={disciplinas} aoVivo={duracaoSegundos(s, agora) / 3600} comCartoes={false} />
+      )}
 
       <div class="botoes-cronometro">
         {pausada ? (

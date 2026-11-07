@@ -159,7 +159,7 @@ function Blocos({ ciclo, andamento, disciplinas, editando, setEditando }: PropsB
   const { avisar } = useEstado();
   const ativas = ordenarDisciplinas(disciplinas).filter((d) => d.ativa);
   const [nova, setNova] = useState('');
-  const proximo = andamento.blocos.find((b) => !b.cumprido)?.ordem ?? null;
+  const proximo = andamento.atual?.ordem ?? null; // R44: segue o último bloco escolhido
 
   async function aplicar(novo: Ciclo, texto: string) {
     const desfazer = await salvarCiclo(novo);

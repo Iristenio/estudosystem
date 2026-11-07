@@ -118,7 +118,13 @@ export interface AndamentoDoCiclo {
   concluido: boolean;
   porDisciplina: { disciplina_id: Id; cota: number; feito: number }[];
   blocos: BlocoNoCiclo[];
-  /** R22 — próxima disciplina sugerida: a do primeiro bloco ainda não cumprido. */
+  /** R22/R44 — bloco atual: segue o último bloco escolhido; sem escolha, o primeiro não cumprido. */
+  atual: BlocoNoCiclo | null;
+  /** Bloco antes do atual na ordem do ciclo. */
+  anterior: BlocoNoCiclo | null;
+  /** Próximo bloco não cumprido depois do atual. */
+  seguinte: BlocoNoCiclo | null;
+  /** Disciplina do bloco atual (sugerida para a próxima sessão). */
   proxima: Id | null;
 }
 
@@ -128,26 +134,53 @@ export function sessoesDoCiclo(c: Ciclo, sessoes: Sessao[]): Sessao[] {
   return sessoesValidas(sessoes).filter((s) => s.situacao === 'concluida' && s.inicio >= atual.iniciado_em!);
 }
 
+/** R44 — bloco escolhido ao iniciar a sessão, guardado em posicao_ciclo ("B24" e, ao concluir, "C1B24"). */
+export function blocoDaSessao(s: Pick<Sessao, 'posicao_ciclo'>): number | null {
+  const m = /B(\d+)$/.exec(s.posicao_ciclo ?? '');
+  return m ? Number(m[1]) : null;
+}
+
 /**
- * R20 — cada sessão preenche a cota da disciplina com o tempo real estudado; dentro da cota, os blocos
- * da disciplina são preenchidos na ordem. Hora além da cota conta no total (aparece como "além da cota").
+ * R20/R44 — cada sessão (em ordem de data) preenche, com o tempo real estudado:
+ *  • o bloco escolhido ao iniciar (se for da mesma disciplina) e, se sobrar, os próximos blocos pendentes
+ *    dessa disciplina (depois os de antes, que ficaram pulados);
+ *  • sem bloco escolhido (sessões antigas), os blocos da disciplina na ordem.
+ * Hora além da cota conta no total do ciclo (aparece como "além da cota").
  */
 export function andamentoDoCiclo(c: Ciclo, sessoes: Sessao[]): AndamentoDoCiclo {
   const atual = cicloAtual(c);
   const cotas = cotasDoCiclo(atual);
   const noCiclo = new Set(cotas.map((x) => x.disciplina_id));
+  const blocos: BlocoNoCiclo[] = atual.sequencia.map((p, i) => ({ ordem: i + 1, disciplina_id: p.disciplina_id, duracao: p.duracao_prevista, feito: 0, cumprido: false }));
   const feitoPor = new Map<Id, number>();
-  for (const s of sessoesDoCiclo(atual, sessoes)) {
-    if (!noCiclo.has(s.disciplina_id)) continue;
-    feitoPor.set(s.disciplina_id, (feitoPor.get(s.disciplina_id) ?? 0) + duracaoSegundos(s) / 3600);
+  let referencia: number | null = null;
+
+  const daSessoes = sessoesDoCiclo(atual, sessoes)
+    .filter((s) => noCiclo.has(s.disciplina_id))
+    .sort((a, b) => a.inicio.localeCompare(b.inicio));
+  for (const s of daSessoes) {
+    let resto = duracaoSegundos(s) / 3600;
+    feitoPor.set(s.disciplina_id, (feitoPor.get(s.disciplina_id) ?? 0) + resto);
+    const escolhido = blocoDaSessao(s);
+    const valido = escolhido !== null && blocos[escolhido - 1]?.disciplina_id === s.disciplina_id;
+    const daDisciplina = blocos.filter((b) => b.disciplina_id === s.disciplina_id);
+    const ordem = valido
+      ? [...daDisciplina.filter((b) => b.ordem >= escolhido!), ...daDisciplina.filter((b) => b.ordem < escolhido!)]
+      : daDisciplina;
+    for (const b of ordem) {
+      if (resto <= 0) break;
+      const x = Math.min(b.duracao - b.feito, resto);
+      b.feito += x;
+      resto -= x;
+    }
+    if (valido) referencia = escolhido;
   }
-  const restante = new Map(feitoPor);
-  const blocos = atual.sequencia.map((p, i) => {
-    const disponivel = restante.get(p.disciplina_id) ?? 0;
-    const feito = Math.min(p.duracao_prevista, disponivel);
-    restante.set(p.disciplina_id, disponivel - feito);
-    return { ordem: i + 1, disciplina_id: p.disciplina_id, duracao: p.duracao_prevista, feito, cumprido: feito >= p.duracao_prevista - FOLGA_HORAS };
-  });
+  for (const b of blocos) b.cumprido = b.feito >= b.duracao - FOLGA_HORAS;
+
+  const pendentes = blocos.filter((b) => !b.cumprido);
+  const depois = (n: number) => pendentes.find((b) => b.ordem >= n) ?? pendentes[0] ?? null;
+  const blocoAtual = depois(referencia ?? 1);
+  const seguinte = blocoAtual ? (pendentes.find((b) => b.ordem > blocoAtual.ordem) ?? pendentes.find((b) => b.ordem < blocoAtual.ordem) ?? null) : null;
   const total = totalDoCiclo(atual);
   const feito = [...feitoPor.values()].reduce((s, h) => s + h, 0);
   return {
@@ -158,8 +191,24 @@ export function andamentoDoCiclo(c: Ciclo, sessoes: Sessao[]): AndamentoDoCiclo 
     concluido: total > 0 && feito >= total - FOLGA_HORAS,
     porDisciplina: cotas.map((x) => ({ disciplina_id: x.disciplina_id, cota: x.horas, feito: feitoPor.get(x.disciplina_id) ?? 0 })),
     blocos,
-    proxima: blocos.find((b) => !b.cumprido)?.disciplina_id ?? atual.sequencia[0]?.disciplina_id ?? null,
+    atual: blocoAtual,
+    anterior: blocoAtual && blocoAtual.ordem > 1 ? blocos[blocoAtual.ordem - 2] : null,
+    seguinte,
+    proxima: blocoAtual?.disciplina_id ?? atual.sequencia[0]?.disciplina_id ?? null,
   };
+}
+
+/**
+ * R44 — blocos para escolher ao iniciar: os não cumpridos, a partir do atual; os que ficaram para trás
+ * (pulados) vêm no fim.
+ */
+export function blocosParaEscolher(a: AndamentoDoCiclo): { bloco: BlocoNoCiclo; pulado: boolean }[] {
+  const pendentes = a.blocos.filter((b) => !b.cumprido);
+  const inicio = a.atual?.ordem ?? 1;
+  return [
+    ...pendentes.filter((b) => b.ordem >= inicio).map((bloco) => ({ bloco, pulado: false })),
+    ...pendentes.filter((b) => b.ordem < inicio).map((bloco) => ({ bloco, pulado: true })),
+  ];
 }
 
 /** Disciplina sugerida para a próxima sessão (R2/R22). */
@@ -180,7 +229,8 @@ export function registrarConclusao(
   if (!c.sequencia.length) return { ciclo: c, posicao: null, numero: 0, fechou: false, feito: 0, total: 0 };
   const atual = cicloAtual(c);
   const a = andamentoDoCiclo(atual, sessoes);
-  const posicao = `C${atual.volta}`;
+  const bloco = blocoDaSessao(sessao);
+  const posicao = `C${atual.volta}${bloco ? `B${bloco}` : ''}`;
   if (!a.concluido) return { ciclo: atual, posicao, numero: atual.volta, fechou: false, feito: a.feito, total: a.total };
   const proximo = { ...atual, volta: atual.volta + 1, iniciado_em: sessao.fim ?? new Date().toISOString() };
   return { ciclo: proximo, posicao, numero: atual.volta, fechou: true, feito: a.feito, total: a.total };

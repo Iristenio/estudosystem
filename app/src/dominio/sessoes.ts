@@ -63,6 +63,8 @@ export interface DadosInicio {
   lei_id: Id | null;
   /** R39 — item do material escolhido ao iniciar (já vem marcado na finalização). */
   materiais_estudados?: Id[];
+  /** R44 — bloco do ciclo escolhido ao iniciar (a sessão preenche esse bloco). */
+  bloco_ciclo?: number | null;
 }
 
 /** R1 e R3 — lista de erros (vazia = pode iniciar). */
@@ -119,7 +121,7 @@ export function iniciarSessao(id: Id, dados: DadosInicio, agora = new Date()): S
     questoes: 0,
     acertos: 0,
     situacao: 'andamento',
-    posicao_ciclo: null,
+    posicao_ciclo: dados.bloco_ciclo ? `B${dados.bloco_ciclo}` : null,
     status: 'ativo',
     criado_em: carimbo,
     atualizado_em: carimbo,

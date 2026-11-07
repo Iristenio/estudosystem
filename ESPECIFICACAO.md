@@ -148,6 +148,18 @@ Cada **curso** da disciplina tem a chave **"conta no total"**.
   sessão não passa adiante). A sessão guarda em qual ciclo contou ("C3").
 - **R22.** **Próxima sugerida:** a disciplina do primeiro bloco ainda não cumprido.
 - Na mudança (21/10/2026), a contagem recomeçou no **Ciclo 1**, valendo as sessões a partir desse dia.
+- **R44.** **Disciplina escolhida pelo ciclo (07/11/2026):** na tela Estudar, a disciplina é escolhida
+  numa lista dos **blocos ainda não cumpridos** do ciclo ("24 · BANCO DE DADOS — faltam 37 min"), a
+  partir do atual; os que ficaram para trás aparecem no fim ("Ficaram para trás"). Só disciplinas do
+  ciclo (sem ciclo gerado, a escolha volta a ser pelos botões das disciplinas ativas).
+  - A sessão guarda o bloco escolhido e **preenche esse bloco**; se passar da duração dele, a sobra vai
+    para o próximo bloco pendente da mesma disciplina. Sessões sem bloco escolhido (antigas) preenchem
+    os blocos da disciplina na ordem, como antes.
+  - O **atual** segue o último bloco escolhido: escolher um bloco mais à frente faz o ponteiro pular
+    junto; os pulados continuam pendentes e voltam no fim da lista.
+  - Acima da lista: **Evolução da disciplina atual** (ex.: "23 min de 1h00 · faltam 37 min"),
+    **Evolução do ciclo atual** ("24h29 de 30h00") e os cartões **disciplina anterior · atual ·
+    próxima**. Durante a sessão, no cronômetro, as duas barras enchem ao vivo.
 
 ### Cadastros
 - **R23.** Uma disciplina ou lei com sessões registradas não pode ser apagada, só **desativada**.

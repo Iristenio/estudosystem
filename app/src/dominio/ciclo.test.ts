@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { Ciclo, Sessao } from './tipos';
 import {
   andamentoDoCiclo,
+  blocoDaSessao,
+  blocosParaEscolher,
   cicloAtual,
   cotasDoCiclo,
   disciplinaSugerida,
@@ -166,5 +168,47 @@ describe('edição manual (R19)', () => {
     expect(c.sequencia[6]).toEqual({ disciplina_id: 'D03', duracao_prevista: 1 });
     c = removerPosicao(c, 1);
     expect(ids(c)[0]).toBe('D01');
+  });
+});
+
+describe('bloco escolhido ao iniciar (R44)', () => {
+  // Ciclo de teste: 1 D01 · 2 D02 · 3 D03 · 4 D01 · 5 D02 · 6 D04 (blocos de 1 h)
+  const comBloco = (disciplina: string, inicioIso: string, minutos: number, bloco: number): Sessao => ({
+    ...sessao(disciplina, inicioIso, minutos),
+    posicao_ciclo: `C3B${bloco}`,
+  });
+
+  it('a sessão preenche o bloco escolhido; o atual segue a partir dele e os pulados ficam pendentes', () => {
+    const lista = [sessao('D01', '2026-10-02T08:00:00Z', 60), comBloco('D02', '2026-10-02T10:00:00Z', 23, 5)];
+    const a = andamentoDoCiclo(ciclo(), lista);
+    expect(a.blocos.map((b) => Math.round(b.feito * 60))).toEqual([60, 0, 0, 0, 23, 0]);
+    expect([a.atual?.ordem, a.anterior?.ordem, a.seguinte?.ordem, a.proxima]).toEqual([5, 4, 6, 'D02']);
+    expect(blocosParaEscolher(a).map((x) => `${x.bloco.ordem}${x.pulado ? 'p' : ''}`)).toEqual(['5', '6', '2p', '3p', '4p']);
+  });
+
+  it('completando o bloco escolhido, o atual passa ao próximo pendente; a sobra vai para o próximo da disciplina', () => {
+    const lista = [comBloco('D02', '2026-10-02T10:00:00Z', 90, 2)]; // 1h30: bloco 2 cheio + 30 min no bloco 5
+    const a = andamentoDoCiclo(ciclo(), lista);
+    expect(a.blocos.map((b) => Math.round(b.feito * 60))).toEqual([0, 60, 0, 0, 30, 0]);
+    expect([a.atual?.ordem, a.seguinte?.ordem]).toEqual([3, 4]);
+  });
+
+  it('no fim da lista, volta aos blocos pulados', () => {
+    const lista = [comBloco('D04', '2026-10-02T10:00:00Z', 60, 6)];
+    const a = andamentoDoCiclo(ciclo(), lista);
+    expect([a.atual?.ordem, a.anterior, a.seguinte?.ordem]).toEqual([1, null, 2]);
+  });
+
+  it('bloco que não é da disciplina da sessão é ignorado (preenche na ordem, como antes)', () => {
+    const a = andamentoDoCiclo(ciclo(), [comBloco('D01', '2026-10-02T10:00:00Z', 60, 2)]);
+    expect(a.blocos[0].feito).toBe(1);
+    expect(a.blocos[1].feito).toBe(0);
+  });
+
+  it('iniciar guarda o bloco e concluir mantém ("B5" → "C3B5")', () => {
+    const s = iniciarSessao('x', { disciplina_id: 'D02', tipo: 'Revisão', aula: '', lei_id: null, bloco_ciclo: 5 }, new Date('2026-10-02T10:00:00Z'));
+    expect([s.posicao_ciclo, blocoDaSessao(s)]).toEqual(['B5', 5]);
+    const fim = concluir(finalizar(s, new Date('2026-10-02T10:30:00Z')), { paginas: null, artigos_lidos: '', questoes: null, acertos: null });
+    expect(registrarConclusao(ciclo(), fim, [fim]).posicao).toBe('C3B5');
   });
 });
