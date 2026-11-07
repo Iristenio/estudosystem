@@ -5,6 +5,7 @@ import type { ComponentType, JSX } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import {
   IconeBalanca,
+  IconeCapelo,
   IconeCiclo,
   IconeCronometro,
   IconeGrafico,
@@ -19,6 +20,7 @@ export const TELAS = [
   'sessoes',
   'acompanhamento',
   'ciclo',
+  'outros', // Outros estudos (seção 10 da ESPECIFICACAO)
   'disciplinas',
   'leis',
   'mapa', // Mapa da lei: "#/mapa/<id da lei>" (fora do menu; aberto a partir de Leis secas)
@@ -45,6 +47,7 @@ export const MENU: (ItemMenu | GrupoMenu)[] = [
   { tela: 'sessoes', rotulo: 'Sessões', Icone: IconeLista },
   { tela: 'acompanhamento', rotulo: 'Acompanhamento', Icone: IconeProgresso },
   { tela: 'ciclo', rotulo: 'Ciclo de estudos', Icone: IconeCiclo },
+  { tela: 'outros', rotulo: 'Outros estudos', Icone: IconeCapelo },
   {
     grupo: 'Cadastros',
     itens: [

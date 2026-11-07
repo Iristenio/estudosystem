@@ -18,6 +18,9 @@ import { FormDisciplina } from './paineis/FormDisciplina';
 import { FormLei } from './paineis/FormLei';
 import { FormHorarios } from './paineis/FormHorarios';
 import { FormMaterial } from './paineis/FormMaterial';
+import { FormCurso } from './paineis/FormCurso';
+import { FormOutraSessao } from './paineis/FormOutraSessao';
+import { TelaOutros } from './telas/TelaOutros';
 import { TelaEstudar } from './telas/TelaEstudar';
 import { TelaSessoes } from './telas/TelaSessoes';
 import { TelaCiclo } from './telas/TelaCiclo';
@@ -38,6 +41,7 @@ const TELA: Record<Tela, () => JSX.Element> = {
   leis: TelaLeis,
   mapa: TelaMapaLei,
   material: TelaMapaMaterial,
+  outros: TelaOutros,
   config: TelaAjustes,
 };
 
@@ -52,6 +56,10 @@ function tituloPainel(p: Painel): string {
       return 'Corrigir sessão';
     case 'material':
       return 'Material da disciplina';
+    case 'curso':
+      return p.id ? 'Curso (outros estudos)' : 'Novo curso';
+    case 'outra':
+      return p.id ? 'Sessão de outros estudos' : 'Lançar sessão';
   }
 }
 
@@ -65,6 +73,10 @@ function ConteudoPainel({ painel }: { painel: Painel }) {
       return <FormHorarios id={painel.id} />;
     case 'material':
       return <FormMaterial disciplinaId={painel.disciplinaId} tipoMaterial={painel.tipoMaterial} />;
+    case 'curso':
+      return <FormCurso id={painel.id} area={painel.area} />;
+    case 'outra':
+      return <FormOutraSessao id={painel.id} />;
   }
 }
 
@@ -77,7 +89,9 @@ function Estrutura() {
   // R8 — ao abrir o app com uma sessão aberta, vai direto para o cronômetro
   useEffect(() => {
     if (location.hash) return;
-    listarTodos('sessoes').then((lista) => sessaoAberta(lista) && irPara('estudar'));
+    Promise.all([listarTodos('sessoes'), listarTodos('outras_sessoes')]).then(
+      ([sessoes, outras]) => (sessaoAberta(sessoes) || sessaoAberta(outras)) && irPara('estudar'),
+    );
   }, []);
 
   return (

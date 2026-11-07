@@ -82,6 +82,36 @@ export type TipoSessao = (typeof TIPOS_SESSAO)[number];
 /** andamento → pausada ⇄ andamento → finalizando (relógio congelado) → concluida */
 export type SituacaoSessao = 'andamento' | 'pausada' | 'finalizando' | 'concluida';
 
+/** Campos do cronômetro, comuns às sessões do concurso e às de outros estudos. */
+export interface Cronometrado extends Registro {
+  inicio: string; // ISO completo
+  /** Fim: preenchido ao concluir. */
+  fim: string | null;
+  /** Soma das pausas já encerradas. */
+  segundos_pausados: number;
+  /** Quando o relógio parou (pausa em curso ou "Finalizar"). */
+  pausado_desde: string | null;
+  situacao: SituacaoSessao;
+  status: StatusRegistro;
+}
+
+/* ---------------- Outros estudos (graduação, pós, Alura… — seção 10 da ESPECIFICACAO) ---------------- */
+
+/** Curso de outros estudos, dentro de uma área (ex.: Alura → Python para Dados). */
+export interface CursoExtra extends Registro {
+  area: string;
+  nome: string;
+  cor: string;
+  ativo: boolean;
+  status: StatusRegistro;
+}
+
+/** Sessão de outros estudos: só curso, horários e descrição (R45–R48). */
+export interface OutraSessao extends Cronometrado {
+  curso_id: Id;
+  descricao: string;
+}
+
 export interface Sessao extends Registro {
   disciplina_id: Id;
   tipo: TipoSessao;
@@ -137,7 +167,7 @@ export interface Ciclo extends Registro {
 export const ID_CICLO = 'atual';
 
 /** Nomes das entidades sincronizadas (cada uma vira uma loja local e uma aba na planilha). */
-export const ENTIDADES = ['disciplinas', 'leis', 'sessoes', 'ciclo'] as const;
+export const ENTIDADES = ['disciplinas', 'leis', 'sessoes', 'ciclo', 'cursos', 'outras_sessoes'] as const;
 export type Entidade = (typeof ENTIDADES)[number];
 
 /* ---------------- Infraestrutura ---------------- */

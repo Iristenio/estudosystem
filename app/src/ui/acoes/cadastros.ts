@@ -7,7 +7,7 @@ import { buscar, gravar, type Alteracao } from '../../dados/repositorio';
 export type Desfazer = () => Promise<void>;
 
 /** Grava tudo numa transação; "Desfazer" devolve cada registro à versão anterior (ou o exclui, se era novo). */
-async function gravarComDesfazer(alteracoes: Alteracao[]): Promise<Desfazer> {
+export async function gravarComDesfazer(alteracoes: Alteracao[]): Promise<Desfazer> {
   const anteriores = await gravar(alteracoes);
   return async () => {
     await gravar(

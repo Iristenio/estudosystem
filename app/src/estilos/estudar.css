@@ -94,3 +94,17 @@ form.cartao-sessao > .botao-grande { align-self: stretch; }
   font-variant-numeric: tabular-nums;
 }
 .menu-tempo.parado { background: var(--aviso); }
+
+/* ---- Outros estudos (seção 10) ---- */
+.modo-estudo { margin-bottom: 4px; }
+.grade-outros { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.grade-outros h2 { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.grade-outros .botao-pequeno svg { width: 16px; height: 16px; }
+.dia-outros + .dia-outros, .area-outros + .area-outros { margin-top: 14px; }
+.dia-outros h3, .area-outros h3 {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin: 0 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--texto-2);
+}
+.dia-outros h3 span:first-child::first-letter { text-transform: uppercase; }
+.dia-outros .linha-item { align-items: center; gap: 10px; }
+@media (max-width: 900px) { .grade-outros { grid-template-columns: minmax(0, 1fr); } }

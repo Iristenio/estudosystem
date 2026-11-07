@@ -1,11 +1,12 @@
 // Tela Estudar: iniciar sessão → cronômetro (pausar/continuar) → finalizar (campos finais) → concluída.
 // Ao lado, as sessões de hoje.
 import { useEffect, useState } from 'preact/hooks';
-import type { Ciclo, Disciplina, ItemMaterial, Lei, Sessao, TipoMaterial, TipoSessao } from '../../dominio/tipos';
+import type { Ciclo, CursoExtra, Disciplina, ItemMaterial, Lei, Sessao, TipoMaterial, TipoSessao } from '../../dominio/tipos';
 import type { BlocoNoCiclo } from '../../dominio/ciclo';
 import { ID_CICLO, TIPOS_SESSAO } from '../../dominio/tipos';
 import { andamentoDoCiclo, blocoDaSessao, blocosParaEscolher } from '../../dominio/ciclo';
 import { PainelCiclo } from '../componentes/PainelCiclo';
+import { CronometroOutro, FinalizarOutro, NovaOutra } from './EstudarOutros';
 import { ordenarDisciplinas } from '../../dominio/disciplinas';
 import { lerNumero } from '../../dominio/numeros';
 import { artigosLidosDaLei } from '../../dominio/artigos';
@@ -43,6 +44,10 @@ export function TelaEstudar() {
   const leis = useEntidade('leis');
   const ciclo = useEntidade('ciclo').find((c) => c.id === ID_CICLO) ?? null;
   const aberta = sessaoAberta(sessoes);
+  // Outros estudos (R45): o mesmo cronômetro; uma sessão aberta por vez, de um tipo ou de outro
+  const outras = useEntidade('outras_sessoes');
+  const cursos = useEntidade('cursos');
+  const outra = aberta ? null : sessaoAberta(outras);
 
   return (
     <>
@@ -52,7 +57,9 @@ export function TelaEstudar() {
       </header>
       <div class="conteudo">
         <div class="grade-estudar">
-          {!aberta && <NovaSessao disciplinas={disciplinas} leis={leis} sessoes={sessoes} ciclo={ciclo} />}
+          {!aberta && !outra && <NovaSessao disciplinas={disciplinas} leis={leis} sessoes={sessoes} ciclo={ciclo} cursos={cursos} />}
+          {outra && outra.situacao !== 'finalizando' && <CronometroOutro s={outra} cursos={cursos} />}
+          {outra && outra.situacao === 'finalizando' && <FinalizarOutro s={outra} cursos={cursos} />}
           {aberta && aberta.situacao !== 'finalizando' && <Cronometro s={aberta} disciplinas={disciplinas} leis={leis} sessoes={sessoes} ciclo={ciclo} />}
           {aberta && aberta.situacao === 'finalizando' && <Finalizar s={aberta} disciplinas={disciplinas} leis={leis} sessoes={sessoes} />}
           <Hoje sessoes={sessoes} disciplinas={disciplinas} />
@@ -84,8 +91,22 @@ function Identificacao({ s, disciplinas, leis }: { s: Sessao; disciplinas: Disci
 
 /* ---------------- 1. Nova sessão ---------------- */
 
-function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Disciplina[]; leis: Lei[]; sessoes: Sessao[]; ciclo: Ciclo | null }) {
+function NovaSessao({
+  disciplinas,
+  leis,
+  sessoes,
+  ciclo,
+  cursos,
+}: {
+  disciplinas: Disciplina[];
+  leis: Lei[];
+  sessoes: Sessao[];
+  ciclo: Ciclo | null;
+  cursos: CursoExtra[];
+}) {
   const { abrirPainel } = useEstado();
+  // R45 — "Concurso | Outros estudos"
+  const [modo, setModo] = useState<'concurso' | 'outros'>('concurso');
   const [disciplinaId, setDisciplinaId] = useState('');
   const [escolheu, setEscolheu] = useState(false);
   // R44 — com ciclo, a disciplina é escolhida pela lista dos blocos ainda não cumpridos (o atual já vem marcado)
@@ -158,6 +179,28 @@ function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Discip
     await acoes.iniciar(dados);
   }
 
+  const seletorModo = (
+    <div class="segmentado modo-estudo" role="radiogroup" aria-label="O que vai estudar">
+      {(['concurso', 'outros'] as const).map((m) => (
+        <button key={m} type="button" role="radio" aria-checked={modo === m} onClick={() => setModo(m)}>
+          {m === 'concurso' ? 'Concurso' : 'Outros estudos'}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (modo === 'outros') {
+    return (
+      <section class="cartao cartao-sessao formulario">
+        <h2>
+          <IconeCronometro /> Nova sessão
+        </h2>
+        {seletorModo}
+        <NovaOutra cursos={cursos} algumaAberta={!!sessaoAberta(sessoes)} />
+      </section>
+    );
+  }
+
   if (!ativas.length) {
     return (
       <section class="cartao cartao-sessao">
@@ -178,6 +221,7 @@ function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Discip
       <h2>
         <IconeCronometro /> Nova sessão
       </h2>
+      {seletorModo}
 
       {andamento && blocoEscolhido && <PainelCiclo andamento={andamento} bloco={blocoEscolhido} disciplinas={disciplinas} />}
 

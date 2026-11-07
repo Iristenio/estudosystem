@@ -3,7 +3,7 @@
 //
 // O cronômetro não é um contador rodando: a duração é sempre calculada pelos horários gravados
 // (início, pausas, instante em que o relógio parou). Por isso continua certa com o app fechado (R7).
-import type { Disciplina, Id, Lei, PaginaParada, Sessao, TipoSessao } from './tipos';
+import type { Cronometrado, Disciplina, Id, Lei, PaginaParada, Sessao, TipoSessao } from './tipos';
 import { formatarFaixas, lerFaixas } from './artigos';
 
 /** Nome de cada tipo como aparece na tela. */
@@ -17,26 +17,26 @@ export const ROTULO_TIPO: Record<TipoSessao, string> = {
 
 const seg = (iso: string) => new Date(iso).getTime() / 1000;
 
-export function sessoesValidas(lista: Sessao[]): Sessao[] {
+export function sessoesValidas<T extends Pick<Cronometrado, 'status'>>(lista: T[]): T[] {
   return lista.filter((s) => s.status !== 'excluido');
 }
 
 /** R1 — a sessão aberta (em andamento, pausada ou finalizando), se houver. */
-export function sessaoAberta(lista: Sessao[]): Sessao | null {
+export function sessaoAberta<T extends Cronometrado>(lista: T[]): T | null {
   const abertas = sessoesValidas(lista).filter((s) => s.situacao !== 'concluida');
   // Se dois aparelhos abriram sessões sem internet, vale a mais recente
   return abertas.sort((a, b) => b.inicio.localeCompare(a.inicio))[0] ?? null;
 }
 
 /** Instante até onde o relógio conta: fim (concluída), relógio parado (pausa/finalizando) ou agora. */
-function fimDaContagem(s: Sessao, agora: Date): number {
+function fimDaContagem(s: Cronometrado, agora: Date): number {
   if (s.situacao === 'concluida' && s.fim) return seg(s.fim);
   if (s.pausado_desde) return seg(s.pausado_desde);
   return agora.getTime() / 1000;
 }
 
 /** Duração em segundos = fim − início − pausas (nunca negativa). */
-export function duracaoSegundos(s: Sessao, agora = new Date()): number {
+export function duracaoSegundos(s: Cronometrado, agora = new Date()): number {
   return Math.max(0, Math.round(fimDaContagem(s, agora) - seg(s.inicio) - s.segundos_pausados));
 }
 
@@ -131,13 +131,13 @@ export function iniciarSessao(id: Id, dados: DadosInicio, agora = new Date()): S
 /* ======================= Pausar / continuar / finalizar ======================= */
 
 /** R4 — só pausa o que está em andamento. */
-export function pausar(s: Sessao, agora = new Date()): Sessao {
+export function pausar<T extends Cronometrado>(s: T, agora = new Date()): T {
   if (s.situacao !== 'andamento') return s;
   return { ...s, situacao: 'pausada', pausado_desde: agora.toISOString() };
 }
 
 /** R4 — soma o tempo desta pausa e volta a contar. Também serve para "voltar ao cronômetro" depois de Finalizar. */
-export function continuar(s: Sessao, agora = new Date()): Sessao {
+export function continuar<T extends Cronometrado>(s: T, agora = new Date()): T {
   if (s.situacao !== 'pausada' && s.situacao !== 'finalizando') return s;
   const pausa = s.pausado_desde ? Math.max(0, agora.getTime() / 1000 - seg(s.pausado_desde)) : 0;
   return { ...s, situacao: 'andamento', pausado_desde: null, segundos_pausados: Math.round(s.segundos_pausados + pausa) };
@@ -147,7 +147,7 @@ export function continuar(s: Sessao, agora = new Date()): Sessao {
  * R5 — congela o relógio. Se estava em andamento, para agora; se estava pausada, vale o instante
  * em que a pausa começou. O tempo gasto preenchendo os campos finais nunca conta.
  */
-export function finalizar(s: Sessao, agora = new Date()): Sessao {
+export function finalizar<T extends Cronometrado>(s: T, agora = new Date()): T {
   if (s.situacao === 'andamento') return { ...s, situacao: 'finalizando', pausado_desde: agora.toISOString() };
   if (s.situacao === 'pausada') return { ...s, situacao: 'finalizando' };
   return s;
@@ -235,7 +235,7 @@ export const percentualAcerto = (s: Pick<Sessao, 'questoes' | 'acertos'>) =>
  * Regras: início não pode estar no futuro; fim depois do início e não no futuro; as pausas
  * não podem ser maiores que o tempo entre início e fim (senão a duração ficaria negativa).
  */
-export function validarHorarios(s: Sessao, novoInicio: Date, novoFim: Date | null, agora = new Date()): string[] {
+export function validarHorarios(s: Cronometrado, novoInicio: Date, novoFim: Date | null, agora = new Date()): string[] {
   const erros: string[] = [];
   const t = agora.getTime();
   if (Number.isNaN(novoInicio.getTime())) return ['Horário de início inválido.'];
@@ -254,8 +254,8 @@ export function validarHorarios(s: Sessao, novoInicio: Date, novoFim: Date | nul
  * Aplica os horários corrigidos (já validados). Na sessão aberta só o início muda (R10);
  * ao finalizar e nas concluídas, o fim também (R11): enquanto "finalizando", o fim é o relógio parado.
  */
-export function aplicarHorarios(s: Sessao, novoInicio: Date, novoFim: Date | null): Sessao {
-  const r: Sessao = { ...s, inicio: novoInicio.toISOString() };
+export function aplicarHorarios<T extends Cronometrado>(s: T, novoInicio: Date, novoFim: Date | null): T {
+  const r: T = { ...s, inicio: novoInicio.toISOString() };
   if (novoFim) {
     if (s.situacao === 'concluida') r.fim = novoFim.toISOString();
     else if (s.situacao === 'finalizando') r.pausado_desde = novoFim.toISOString();
@@ -264,14 +264,14 @@ export function aplicarHorarios(s: Sessao, novoInicio: Date, novoFim: Date | nul
 }
 
 /** Instante que aparece como "fim" na correção: concluída → fim; finalizando → relógio parado. */
-export function fimAtual(s: Sessao): Date | null {
+export function fimAtual(s: Cronometrado): Date | null {
   if (s.situacao === 'concluida' && s.fim) return new Date(s.fim);
   if (s.situacao === 'finalizando' && s.pausado_desde) return new Date(s.pausado_desde);
   return null;
 }
 
 /** R14 — sessões concluídas cujo intervalo se cruza com [inicio, fim] (só para avisar; não bloqueia). */
-export function sessoesSobrepostas(s: Sessao, inicio: Date, fim: Date, todas: Sessao[]): Sessao[] {
+export function sessoesSobrepostas<T extends Cronometrado>(s: Cronometrado, inicio: Date, fim: Date, todas: T[]): T[] {
   const a = inicio.getTime();
   const b = fim.getTime();
   return sessoesValidas(todas).filter((o) => {

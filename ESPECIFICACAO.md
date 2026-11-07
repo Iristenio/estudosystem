@@ -321,3 +321,56 @@ Numa etapa própria, depois do app funcionando:
 Você tem interesse. Elas entram **depois** que o app estiver funcionando e com o histórico
 migrado. Os detalhes serão combinados na hora: meta diária ou semanal, em horas, páginas ou
 questões, por disciplina ou geral.
+## 10. Outros estudos (aprovada em 07/11/2026)
+
+O app continua sendo, antes de tudo, para o **concurso**. Esta área registra, de forma simples, o tempo
+dedicado a **outros estudos** (graduações, especialização, cursos da Alura…), para saber quanto tempo
+vai para cada um por dia e decidir o que focar. Ela **não entra** no ciclo, no Dashboard, no
+Acompanhamento, nos mapas nem nas estatísticas do concurso — o Dashboard principal fica intocado.
+
+### 10.1 Cadastro: áreas e cursos
+| Campo | Observação |
+|---|---|
+| Área | Texto livre, com sugestões das já usadas (ex.: Graduação, Especialização, Alura) |
+| Curso | Nome (ex.: Engenharia de Software; Python para Dados). Único dentro da área |
+| Cor | Usada nos gráficos |
+| Ativo | Sim/não. Inativo some da escolha ao iniciar, mas o histórico fica |
+
+### 10.2 Sessão de outros estudos
+| Campo | Observação |
+|---|---|
+| Curso | Obrigatório |
+| Início, fim, pausas | Como nas sessões do concurso; duração calculada |
+| Descrição | Opcional (ex.: "Aula 3 – Pandas") |
+
+Sem páginas, questões, material, mapas ou ciclo.
+
+### 10.3 Regras
+- **R45.** **Mesmo cronômetro:** na tela Estudar, a "Nova sessão" ganha a escolha **Concurso | Outros
+  estudos**. Em "Outros estudos" escolhe-se o curso (agrupado por área) e a descrição opcional; o
+  cronômetro (pausar, continuar, finalizar, cancelar) funciona igual. Continua existindo **uma sessão
+  aberta por vez**, seja do concurso ou de outros estudos (R1).
+- **R46.** Ao finalizar uma sessão de outros estudos não há campos extras: é só concluir. Ela não
+  mexe no ciclo.
+- **R47.** **Lançar à mão:** na tela Outros estudos, dá para registrar uma sessão que já aconteceu
+  (curso, data, início, fim e descrição), para quando se esquece de usar o cronômetro.
+- **R48.** Sessões de outros estudos podem ser corrigidas (horários, curso e descrição) e excluídas
+  na própria tela (diferente do concurso, onde a sessão concluída não se exclui — R16).
+- **R49.** Um curso com sessões não pode ser apagado, só desativado (como as disciplinas, R23).
+- **R50.** Na tela Estudar, o quadro **Hoje** continua mostrando só o concurso; os outros estudos de
+  hoje aparecem na tela Outros estudos.
+
+### 10.4 Tela "Outros estudos" (item próprio no menu)
+- **Onde está meu tempo:** no período escolhido (esta semana, este mês, este ano, tudo), as horas de
+  **Concurso** (todas as sessões concluídas do concurso) comparadas com cada **área** dos outros
+  estudos, em barras e porcentagem do total. Tocar numa área mostra os cursos dela.
+- **Tempo por dia:** barras dos últimos 30 dias, cada curso na sua cor (o dia mais recente à
+  esquerda, como no Dashboard).
+- **Totais por curso e por área** no período.
+- **Sessões:** a lista das sessões de outros estudos (mais recentes primeiro), com correção e o botão
+  **Lançar sessão** (R47).
+- **Cursos:** botão para cadastrar, editar e ativar/desativar áreas e cursos.
+
+### 10.5 Planilha
+Duas abas novas (cursos e sessões de outros estudos), criadas sozinhas; tablet e PC sincronizam
+como o resto.

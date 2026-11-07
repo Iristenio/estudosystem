@@ -8,7 +8,9 @@ export type Painel =
   | { tipo: 'disciplina'; id?: string }
   | { tipo: 'lei'; id?: string; disciplinaId?: string }
   | { tipo: 'horarios'; id: string }
-  | { tipo: 'material'; disciplinaId: string; tipoMaterial?: TipoMaterial };
+  | { tipo: 'material'; disciplinaId: string; tipoMaterial?: TipoMaterial }
+  | { tipo: 'curso'; id?: string; area?: string }
+  | { tipo: 'outra'; id?: string };
 
 export interface Aviso {
   texto: string;

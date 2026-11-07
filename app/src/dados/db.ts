@@ -3,20 +3,22 @@
 // ► Nova entidade? Acrescente a loja em AppDB e crie-a num bloco `if (versaoAntiga < N)`,
 //   aumentando VERSAO. Nunca altere blocos antigos (os aparelhos já instalados dependem deles).
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { Ciclo, Disciplina, ItemFila, Lei, Sessao } from '../dominio/tipos';
+import type { Ciclo, CursoExtra, Disciplina, ItemFila, Lei, OutraSessao, Sessao } from '../dominio/tipos';
 
 export interface AppDB extends DBSchema {
   disciplinas: { key: string; value: Disciplina };
   leis: { key: string; value: Lei };
   sessoes: { key: string; value: Sessao };
   ciclo: { key: string; value: Ciclo };
+  cursos: { key: string; value: CursoExtra };
+  outras_sessoes: { key: string; value: OutraSessao };
   fila_sync: { key: string; value: ItemFila; indexes: { registro_id: string } };
   config: { key: string; value: { chave: string; valor: unknown } };
 }
 
 // Nome próprio: todos os apps do usuário ficam em iristenio.github.io e compartilhariam um banco "app".
 export const NOME_BANCO = 'estudosystem';
-const VERSAO = 3;
+const VERSAO = 4;
 
 let conexao: Promise<IDBPDatabase<AppDB>> | null = null;
 
@@ -34,6 +36,11 @@ export function abrirBanco(): Promise<IDBPDatabase<AppDB>> {
       }
       if (versaoAntiga < 3) {
         db.createObjectStore('ciclo', { keyPath: 'id' });
+      }
+      if (versaoAntiga < 4) {
+        // Outros estudos (seção 10 da ESPECIFICACAO)
+        db.createObjectStore('cursos', { keyPath: 'id' });
+        db.createObjectStore('outras_sessoes', { keyPath: 'id' });
       }
     },
   });

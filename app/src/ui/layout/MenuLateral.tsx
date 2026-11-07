@@ -8,7 +8,8 @@ import { duracaoSegundos, formatarDuracao, sessaoAberta } from '../../dominio/se
 
 /** Tempo da sessão aberta ao lado de "Estudar" (componente próprio: só ele se redesenha a cada segundo). */
 function TempoSessao() {
-  const aberta = sessaoAberta(useEntidade('sessoes'));
+  const outras = useEntidade('outras_sessoes');
+  const aberta = sessaoAberta(useEntidade('sessoes')) ?? sessaoAberta(outras);
   const agora = useAgora(1000);
   if (!aberta) return null;
   return (

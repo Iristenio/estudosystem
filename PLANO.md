@@ -21,6 +21,8 @@ o Google vem depois. A planilha antiga continua sendo usada normalmente até a t
 | 12 | Material em lançamentos | Lançar PDFs e vídeos aos poucos, por curso, com totais somados | ✅ 13/10 |
 | 13 | Mapa do material | Marcar o PDF/vídeo estudado em cada sessão e ver o mapa do curso | ✅ 13/10 |
 | 14 | Ciclo por horas | Cotas de horas por disciplina, ciclo fecha ao somar o total (R17–R22 revistas) | ✅ 21/10 |
+| 15 | Outros estudos — registro | Cadastrar áreas/cursos e estudar pelo cronômetro (Concurso \| Outros) ou lançar à mão | ✅ 07/11 |
+| 16 | Outros estudos — acompanhamento | Tela com "Onde está meu tempo", tempo por dia, totais e sessões | a fazer |
 
 ---
 
@@ -129,6 +131,15 @@ o Google vem depois. A planilha antiga continua sendo usada normalmente até a t
   corrigir depois em Sessões.
 - Tela **Mapa do material** de cada disciplina, como o Mapa da lei.
 - Planilha: coluna nova na aba SESSOES.
+
+## Etapa 15 — Outros estudos: registro (R45–R50)
+- Cadastro de áreas e cursos (painel aberto pela tela Outros estudos).
+- Tela Estudar: "Concurso | Outros estudos" na Nova sessão; mesmo cronômetro; uma sessão aberta por vez.
+- Tela Outros estudos (primeira versão): lista de sessões, correção, exclusão e "Lançar sessão".
+- Planilha: abas novas, criadas sozinhas.
+
+## Etapa 16 — Outros estudos: acompanhamento
+- "Onde está meu tempo" (Concurso × áreas), tempo por dia (30 dias) e totais por curso e área.
 
 ---
 

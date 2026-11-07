@@ -63,4 +63,5 @@ function prepararAba(planilha, nome, colunas) {
   aba.setFrozenRows(1);
   // Tudo como texto: impede a planilha de transformar "2026-09-24" em data ou "10:00" em hora
   aba.getRange(1, 1, aba.getMaxRows(), colunas.length).setNumberFormat('@');
+  return aba;
 }

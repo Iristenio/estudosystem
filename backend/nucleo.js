@@ -41,6 +41,21 @@ var ESQUEMA = {
       ['paginas_paradas', 'j'], // 20/10/2026 — PDF: página em que parou (1ª leitura)
     ],
   },
+  cursos: {
+    aba: 'CURSOS',
+    campos: [
+      ['id', 's'], ['area', 's'], ['nome', 's'], ['cor', 's'], ['ativo', 'b'], ['status', 's'],
+      ['criado_em', 's'], ['atualizado_em', 's'],
+    ],
+  },
+  outras_sessoes: {
+    aba: 'OUTRAS_SESSOES',
+    campos: [
+      ['id', 's'], ['curso_id', 's'], ['descricao', 's'], ['inicio', 's'], ['fim', 's?'],
+      ['segundos_pausados', 'n'], ['pausado_desde', 's?'], ['situacao', 's'], ['status', 's'],
+      ['criado_em', 's'], ['atualizado_em', 's'],
+    ],
+  },
   ciclo: {
     aba: 'CICLO',
     campos: [

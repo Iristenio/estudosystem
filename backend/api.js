@@ -48,7 +48,7 @@ function tabelasDaPlanilha(planilha) {
   var tabelas = {};
   Object.keys(ESQUEMA).forEach(function (entidade) {
     var aba = planilha.getSheetByName(ESQUEMA[entidade].aba);
-    if (!aba) throw new Error('Aba ' + ESQUEMA[entidade].aba + ' não existe — execute configurar() de novo.');
+    if (!aba) aba = prepararAba(planilha, ESQUEMA[entidade].aba, cabecalho(entidade)); // entidade nova: cria a aba
     garantirEstrutura(aba, entidade);
     var colunas = cabecalho(entidade).length;
     var cache = null;
