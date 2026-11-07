@@ -300,7 +300,7 @@ function NovaSessao({ disciplinas, leis, sessoes, ciclo }: { disciplinas: Discip
 /** "24 · BANCO DE DADOS — faltam 37 min" */
 function opcaoBloco(b: BlocoNoCiclo, disciplinas: Disciplina[]) {
   const nome = disciplinas.find((d) => d.id === b.disciplina_id)?.nome ?? 'Disciplina removida';
-  const falta = b.feito > 0 ? ` — faltam ${formatarDuracaoCurta((b.duracao - b.feito) * 3600)}` : '';
+  const falta = ` — faltam ${formatarDuracaoCurta((b.duracao - b.feito) * 3600)}`;
   return (
     <option key={b.ordem} value={b.ordem}>
       {`${b.ordem} · ${nome}${falta}`}

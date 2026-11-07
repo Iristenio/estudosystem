@@ -98,7 +98,8 @@
 .cartao-bloco.atual strong { font-size: 15.5px; }
 .campo-bloco { font-weight: 600; }
 /* A coluna da sessão é estreita no tablet: o painel se adapta à largura dele, não à da tela */
-.painel-ciclo { container-type: inline-size; }
+/* container-type tira a largura "natural": dentro do cronômetro (centralizado) o painel encolheria — por isso width 100% */
+.painel-ciclo { container-type: inline-size; width: 100%; box-sizing: border-box; align-self: stretch; }
 @container (max-width: 560px) {
   .painel-ciclo-barras { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .painel-ciclo-cartoes { grid-template-columns: minmax(0, 1fr); gap: 6px; }
