@@ -1,6 +1,7 @@
 // Tela Outros estudos (seção 10 da ESPECIFICACAO): "Onde está meu tempo" (Concurso × áreas), tempo por
 // dia (30 dias, um curso em cada cor), totais por curso e área no período, sessões e cursos.
 import { useState } from 'preact/hooks';
+import type { ComponentChildren } from 'preact';
 import type { CursoExtra, OutraSessao } from '../../dominio/tipos';
 import {
   concluidasNoIntervalo,
@@ -230,16 +231,21 @@ export function TelaOutros() {
 
 /* ---------------- Onde está meu tempo (Concurso × áreas; tocar numa área mostra os cursos) ---------------- */
 
-function OndeEstaMeuTempo({
+/** Também usado, em versão compacta (com o próprio seletor de período), na lateral da tela Estudar. */
+export function OndeEstaMeuTempo({
   segundosConcurso,
   areas,
   periodo,
   emAndamento,
+  compacto = false,
+  seletor,
 }: {
   segundosConcurso: number;
   areas: TempoDeArea[];
   periodo: PeriodoOutros;
   emAndamento: boolean;
+  compacto?: boolean;
+  seletor?: ComponentChildren;
 }) {
   const [aberta, setAberta] = useState<string | null>(null);
   const itens = ondeEstaMeuTempo(segundosConcurso, areas);
@@ -248,15 +254,16 @@ function OndeEstaMeuTempo({
   const corDaArea = (area: string) => areas.find((a) => a.area === area)?.cursos[0]?.curso?.cor ?? 'var(--texto-2)';
 
   return (
-    <section class="cartao">
+    <section class={`cartao${compacto ? ' onde-tempo-compacto' : ''}`}>
       <h2>
         Onde está meu tempo
         <span class="total-hoje">{formatarDuracaoCurta(total)}</span>
       </h2>
+      {seletor}
       {itens.length === 0 ? (
         <p class="dica">Nenhum estudo registrado: {ROTULO_PERIODO_OUTROS[periodo].toLowerCase()}.</p>
       ) : (
-        <ul class="barras-h onde-tempo">
+        <ul class={`barras-h onde-tempo${compacto ? ' compacto' : ''}`}>
           {itens.map((x) => {
             const area = x.chave.startsWith('area:') ? areas.find((a) => `area:${a.area}` === x.chave) : undefined;
             const cor = area ? corDaArea(area.area) : COR_CONCURSO;
@@ -301,8 +308,8 @@ function OndeEstaMeuTempo({
         </ul>
       )}
       <p class="dica">
-        Concurso = todas as sessões do concurso no período. Toque numa área para ver os cursos.
-        {emAndamento && ' Inclui a sessão em andamento (atualiza sozinho).'}
+        {compacto ? 'Toque numa área para ver os cursos.' : 'Concurso = todas as sessões do concurso no período. Toque numa área para ver os cursos.'}
+        {emAndamento && (compacto ? ' Inclui a sessão em andamento.' : ' Inclui a sessão em andamento (atualiza sozinho).')}
       </p>
     </section>
   );

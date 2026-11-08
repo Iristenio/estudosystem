@@ -131,3 +131,20 @@ form.cartao-sessao > .botao-grande { align-self: stretch; }
 .curso-concluido { color: var(--sucesso) !important; font-weight: 600; }
 .cursos-finalizados { font-size: 14px; margin: 4px 0; }
 .area-outros .linha-item-texto small { white-space: normal; }
+
+/* ---- "Onde está meu tempo" compacto, na lateral da tela Estudar ---- */
+.coluna-lateral-estudar { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.onde-tempo-compacto { display: flex; flex-direction: column; gap: 10px; }
+.onde-tempo-compacto h2 { margin: 0; }
+.periodo-compacto { align-self: stretch; }
+.onde-tempo.compacto .barra-h {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'nome valor' 'trilho trilho';
+  row-gap: 4px; padding: 6px; min-height: 0;
+}
+.onde-tempo.compacto .barra-h-nome { grid-area: nome; }
+.onde-tempo.compacto .barra-h-trilho { grid-area: trilho; height: 10px; }
+.onde-tempo.compacto .barra-h-valor { grid-area: valor; min-width: 0; }
+.onde-tempo.compacto .onde-tempo-cursos { margin-left: 14px; font-size: 13px; }
+.onde-tempo.compacto .onde-tempo-cursos li { grid-template-columns: auto minmax(0, 1fr) auto; }
+.onde-tempo.compacto .onde-tempo-cursos small { grid-column: 2 / -1; margin-top: -4px; }

@@ -7,6 +7,7 @@ import { ID_CICLO, TIPOS_SESSAO } from '../../dominio/tipos';
 import { andamentoDoCiclo, blocoDaSessao, blocosParaEscolher } from '../../dominio/ciclo';
 import { PainelCiclo } from '../componentes/PainelCiclo';
 import { CronometroOutro, FinalizarOutro, NovaOutra } from './EstudarOutros';
+import { OndeTempoLateral } from '../componentes/OndeTempoLateral';
 import { ordenarDisciplinas } from '../../dominio/disciplinas';
 import { lerNumero } from '../../dominio/numeros';
 import { artigosLidosDaLei } from '../../dominio/artigos';
@@ -62,7 +63,10 @@ export function TelaEstudar() {
           {outra && outra.situacao === 'finalizando' && <FinalizarOutro s={outra} cursos={cursos} />}
           {aberta && aberta.situacao !== 'finalizando' && <Cronometro s={aberta} disciplinas={disciplinas} leis={leis} sessoes={sessoes} ciclo={ciclo} />}
           {aberta && aberta.situacao === 'finalizando' && <Finalizar s={aberta} disciplinas={disciplinas} leis={leis} sessoes={sessoes} />}
-          <Hoje sessoes={sessoes} disciplinas={disciplinas} />
+          <div class="coluna-lateral-estudar">
+            <Hoje sessoes={sessoes} disciplinas={disciplinas} />
+            <OndeTempoLateral />
+          </div>
         </div>
       </div>
     </>

@@ -373,6 +373,8 @@ Sem páginas, questões, material, mapas ou ciclo.
   estudos, em barras e porcentagem do total. Tocar numa área mostra os cursos dela.
   A sessão **em andamento** (concurso ou outros) também entra na conta e os números se atualizam
   sozinhos — com "Hoje", dá para comparar o dia em tempo real.
+  Uma versão **compacta** aparece também na tela **Estudar**, abaixo de "Hoje" (com Hoje · Semana ·
+  Mês; abre em Hoje) — em teste (08/11/2026): a da tela Outros estudos continua.
 - **Tempo por dia:** barras dos últimos 30 dias, cada curso na sua cor (o dia mais recente à
   esquerda, como no Dashboard).
 - **Totais por curso e por área** no período.
