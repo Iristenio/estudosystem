@@ -1,8 +1,9 @@
-// Curso de outros estudos (painel lateral, 10.1 e R49): área, nome, cor, ativo; excluir só sem sessões.
+// Curso de outros estudos (painel lateral, 10.1, R49, R51): área, nome, cor, situação; excluir só sem sessões.
 import { useEffect, useRef, useState } from 'preact/hooks';
-import type { CursoExtra } from '../../dominio/tipos';
+import type { CursoExtra, SituacaoCurso } from '../../dominio/tipos';
 import { CORES_DISCIPLINA } from '../../dominio/disciplinas';
-import { areasUsadas, corLivre, normalizarCurso, novoCurso, podeExcluirCurso, validarCurso } from '../../dominio/outros';
+import { hojeISO } from '../../dominio/datas';
+import { areasUsadas, corLivre, mudarSituacao, ROTULO_SITUACAO_CURSO, situacaoDoCurso, normalizarCurso, novoCurso, podeExcluirCurso, validarCurso } from '../../dominio/outros';
 import { buscar, novoId } from '../../dados/repositorio';
 import { useEntidade } from '../../dados/ganchos';
 import { excluirCurso, salvarCurso } from '../acoes/outros';
@@ -78,14 +79,27 @@ export function FormCurso({ id, area }: { id?: string; area?: string }) {
         />
       </label>
 
-      <label class="interruptor">
-        <input type="checkbox" checked={c.ativo} onChange={(e) => mudar({ ativo: e.currentTarget.checked })} />
-        <span>
-          Ativo
-          <br />
-          <small>Inativo: sai da escolha ao iniciar, mas o histórico continua guardado.</small>
-        </span>
-      </label>
+      <fieldset>
+        <legend>Situação</legend>
+        <div class="segmentado segmentado-situacao" role="radiogroup" aria-label="Situação do curso">
+          {(Object.keys(ROTULO_SITUACAO_CURSO) as SituacaoCurso[]).map((x) => (
+            <button key={x} type="button" role="radio" aria-checked={situacaoDoCurso(c) === x} onClick={() => setC(mudarSituacao(c, x, hojeISO()))}>
+              {ROTULO_SITUACAO_CURSO[x]}
+            </button>
+          ))}
+        </div>
+        {situacaoDoCurso(c) === 'concluido' && (
+          <label class="rotulo em-linha">
+            Concluído em
+            <input type="date" class="campo" value={c.concluido_em ?? ''} onInput={(e) => mudar({ concluido_em: e.currentTarget.value })} />
+          </label>
+        )}
+        <small class="dica">
+          {situacaoDoCurso(c) === 'andamento'
+            ? 'Aparece para iniciar sessões.'
+            : 'Sai da escolha ao iniciar; as sessões e o histórico continuam guardados.'}
+        </small>
+      </fieldset>
 
       <fieldset>
         <legend>Cor</legend>

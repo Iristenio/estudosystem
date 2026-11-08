@@ -2,7 +2,7 @@
 // (pausar, continuar, finalizar, cancelar) e concluir sem campos extras. Fora do ciclo do concurso.
 import { useState } from 'preact/hooks';
 import type { CursoExtra, OutraSessao } from '../../dominio/tipos';
-import { cursosPorArea, validarInicioOutra } from '../../dominio/outros';
+import { cursosPorArea, emAndamento, validarInicioOutra } from '../../dominio/outros';
 import { duracaoSegundos, formatarDuracao, formatarDuracaoCurta } from '../../dominio/sessoes';
 import { useAgora } from '../../dados/ganchos';
 import * as acoes from '../acoes/outros';
@@ -31,7 +31,7 @@ function Identificacao({ s, cursos }: { s: OutraSessao; cursos: CursoExtra[] }) 
 
 export function NovaOutra({ cursos, algumaAberta }: { cursos: CursoExtra[]; algumaAberta: boolean }) {
   const { abrirPainel } = useEstado();
-  const grupos = cursosPorArea(cursos).map((g) => ({ ...g, cursos: g.cursos.filter((c) => c.ativo) })).filter((g) => g.cursos.length);
+  const grupos = cursosPorArea(cursos).map((g) => ({ ...g, cursos: g.cursos.filter(emAndamento) })).filter((g) => g.cursos.length);
   const [cursoId, setCursoId] = useState('');
   const [descricao, setDescricao] = useState('');
   const [erros, setErros] = useState<string[]>([]);

@@ -2,7 +2,7 @@
 // excluir (R48). Sem id = lançar uma sessão que já aconteceu.
 import { useEffect, useState } from 'preact/hooks';
 import type { OutraSessao } from '../../dominio/tipos';
-import { cursosPorArea, lancarOutra } from '../../dominio/outros';
+import { cursosPorArea, emAndamento, lancarOutra, ROTULO_SITUACAO_CURSO, situacaoDoCurso } from '../../dominio/outros';
 import { aplicarHorarios, duracaoSegundos, fimAtual, formatarDuracao, juntarDataHora, validarHorarios } from '../../dominio/sessoes';
 import { paraDataISO, paraHora } from '../../dominio/datas';
 import { buscar, novoId } from '../../dados/repositorio';
@@ -102,11 +102,11 @@ export function FormOutraSessao({ id }: { id?: string }) {
           {grupos.map((g) => (
             <optgroup key={g.area} label={g.area}>
               {g.cursos
-                .filter((c) => c.ativo || c.id === cursoId)
+                .filter((c) => emAndamento(c) || c.id === cursoId)
                 .map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.nome}
-                    {c.ativo ? '' : ' (inativo)'}
+                    {emAndamento(c) ? '' : ` (${ROTULO_SITUACAO_CURSO[situacaoDoCurso(c)].toLowerCase()})`}
                   </option>
                 ))}
             </optgroup>

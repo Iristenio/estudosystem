@@ -5,6 +5,8 @@ import type { CursoExtra, OutraSessao } from '../../dominio/tipos';
 import {
   concluidasNoIntervalo,
   cursosPorArea,
+  situacaoDoCurso,
+  tempoTotalDoCurso,
   intervaloOutros,
   ondeEstaMeuTempo,
   outrasConcluidas,
@@ -15,6 +17,7 @@ import {
   type TempoDeArea,
 } from '../../dominio/outros';
 import { deDataISO } from '../../dominio/datas';
+const fmtData = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 import { ColunasEmpilhadas, ProvedorDica, type ColunaEmpilhada } from '../componentes/Graficos';
 import { duracaoSegundos, formatarDuracaoCurta } from '../../dominio/sessoes';
 import { useAgora, useEntidade } from '../../dados/ganchos';
@@ -62,6 +65,8 @@ export function TelaOutros() {
   const segundosConcurso = concluidasNoIntervalo(sessoesConcurso, de, ate, true).reduce((t, s) => t + duracaoSegundos(s, agora), 0);
   const tempoDoCurso = new Map(areas.flatMap((a) => a.cursos.map((c) => [c.curso_id, c.segundos] as const)));
   const tempoDaArea = new Map(areas.map((a) => [a.area, a.segundos]));
+  // R51 — concluídos e cancelados ficam recolhidos em cada área (estas foram abertas à mão)
+  const [areasAbertas, setAreasAbertas] = useState<string[]>([]);
 
   return (
     <ProvedorDica>
@@ -158,22 +163,61 @@ export function TelaOutros() {
                       <IconeMais />
                     </button>
                   </h3>
-                  <ul class="lista-itens compacta">
-                    {g.cursos.map((c) => (
-                      <li key={c.id}>
-                        <button class={`linha-item${c.ativo ? '' : ' inativa'}`} onClick={() => abrirPainel({ tipo: 'curso', id: c.id })}>
-                          <span class="bolinha" style={{ background: c.cor }} />
-                          <span class="linha-item-texto">
-                            <strong>
-                              {c.nome}
-                              {!c.ativo && <span class="etiqueta neutra">Inativo</span>}
-                            </strong>
-                          </span>
-                          <span class="lista-hoje-duracao">{tempoDoCurso.get(c.id) ? formatarDuracaoCurta(tempoDoCurso.get(c.id)!) : '—'}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
+                  {(() => {
+                    const atuais = g.cursos.filter((c) => ['andamento', 'pausado'].includes(situacaoDoCurso(c)));
+                    const finalizados = g.cursos.filter((c) => ['concluido', 'cancelado'].includes(situacaoDoCurso(c)));
+                    const aberta = areasAbertas.includes(g.area);
+                    const qtd = (sit: string) => finalizados.filter((c) => situacaoDoCurso(c) === sit).length;
+                    const resumo = [
+                      qtd('concluido') ? `${qtd('concluido')} ${qtd('concluido') === 1 ? 'concluído' : 'concluídos'}` : '',
+                      qtd('cancelado') ? `${qtd('cancelado')} ${qtd('cancelado') === 1 ? 'cancelado' : 'cancelados'}` : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' · ');
+                    const linha = (c: CursoExtra) => {
+                      const sit = situacaoDoCurso(c);
+                      const finalizado = sit === 'concluido' || sit === 'cancelado';
+                      const total = finalizado ? tempoTotalDoCurso(sessoes, c.id) : 0;
+                      return (
+                        <li key={c.id}>
+                          <button class={`linha-item${sit === 'cancelado' ? ' inativa' : ''}`} onClick={() => abrirPainel({ tipo: 'curso', id: c.id })}>
+                            <span class="bolinha" style={{ background: c.cor }} />
+                            <span class="linha-item-texto">
+                              <strong>
+                                {c.nome}
+                                {sit === 'pausado' && <span class="etiqueta neutra">Pausado</span>}
+                              </strong>
+                              {sit === 'concluido' && (
+                                <small class="curso-concluido">
+                                  ✓ Concluído{c.concluido_em ? ` em ${fmtData.format(deDataISO(c.concluido_em))}` : ''} · {formatarDuracaoCurta(total)} no total
+                                </small>
+                              )}
+                              {sit === 'cancelado' && <small>Cancelado · {formatarDuracaoCurta(total)} no total</small>}
+                            </span>
+                            {!finalizado && (
+                              <span class="lista-hoje-duracao">{tempoDoCurso.get(c.id) ? formatarDuracaoCurta(tempoDoCurso.get(c.id)!) : '—'}</span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    };
+                    return (
+                      <>
+                        {atuais.length > 0 && <ul class="lista-itens compacta">{atuais.map(linha)}</ul>}
+                        {finalizados.length > 0 && (
+                          <button
+                            type="button"
+                            class="link link-inline cursos-finalizados"
+                            aria-expanded={aberta}
+                            onClick={() => setAreasAbertas((atual) => (atual.includes(g.area) ? atual.filter((x) => x !== g.area) : [...atual, g.area]))}
+                          >
+                            {aberta ? 'Esconder' : 'Mostrar'} {resumo}
+                          </button>
+                        )}
+                        {aberta && <ul class="lista-itens compacta">{finalizados.map(linha)}</ul>}
+                      </>
+                    );
+                  })()}
                 </div>
               ))
             )}

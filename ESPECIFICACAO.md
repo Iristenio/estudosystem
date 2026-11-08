@@ -334,7 +334,7 @@ Acompanhamento, nos mapas nem nas estatísticas do concurso — o Dashboard prin
 | Área | Texto livre, com sugestões das já usadas (ex.: Graduação, Especialização, Alura) |
 | Curso | Nome (ex.: Engenharia de Software; Python para Dados). Único dentro da área |
 | Cor | Usada nos gráficos |
-| Ativo | Sim/não. Inativo some da escolha ao iniciar, mas o histórico fica |
+| Situação | **Em andamento**, **Pausado**, **Concluído** (com a data) ou **Cancelado** (R51) |
 
 ### 10.2 Sessão de outros estudos
 | Campo | Observação |
@@ -357,6 +357,13 @@ Sem páginas, questões, material, mapas ou ciclo.
 - **R48.** Sessões de outros estudos podem ser corrigidas (horários, curso e descrição) e excluídas
   na própria tela (diferente do concurso, onde a sessão concluída não se exclui — R16).
 - **R49.** Um curso com sessões não pode ser apagado, só desativado (como as disciplinas, R23).
+- **R51.** **Situação do curso (08/11/2026):** em vez de ativo/inativo, cada curso está **Em
+  andamento**, **Pausado** (parado por um tempo, ex.: disciplina trancada), **Concluído** (com a data,
+  preenchida com hoje e corrigível) ou **Cancelado** (desistiu). Só os em andamento aparecem para
+  iniciar ou lançar sessões. Na lista de Cursos, cada área mostra primeiro os em andamento e os
+  pausados (com a etiqueta "Pausado"); concluídos e cancelados ficam recolhidos ("1 concluído · 1
+  cancelado") e mostram o **total de horas do curso inteiro**. As sessões continuam contando em
+  qualquer situação. Cursos antigos: ativo → em andamento; inativo → cancelado.
 - **R50.** Na tela Estudar, o quadro **Hoje** continua mostrando só o concurso; os outros estudos de
   hoje aparecem na tela Outros estudos.
 

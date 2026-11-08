@@ -1,7 +1,7 @@
 // Outros estudos (seção 10 da ESPECIFICACAO, R45–R50): cursos agrupados por área e sessões simples
 // (curso, horários, descrição), fora do ciclo e das estatísticas do concurso. Funções puras, testadas
 // em outros.test.ts. O cronômetro (pausar, continuar, finalizar, duração) é o mesmo de sessoes.ts.
-import type { Cronometrado, CursoExtra, Id, OutraSessao } from './tipos';
+import type { Cronometrado, CursoExtra, Id, OutraSessao, SituacaoCurso } from './tipos';
 import { paraDataISO, somarDias } from './datas';
 import { CORES_DISCIPLINA, mesmoNome } from './disciplinas';
 import { duracaoSegundos, sessaoAberta, sessoesValidas, validarHorarios } from './sessoes';
@@ -10,7 +10,43 @@ import { duracaoSegundos, sessaoAberta, sessoesValidas, validarHorarios } from '
 
 export function novoCurso(campos: Partial<CursoExtra> & { id: Id }, agora = new Date()): CursoExtra {
   const carimbo = agora.toISOString();
-  return { area: '', nome: '', cor: CORES_DISCIPLINA[3], ativo: true, status: 'ativo', criado_em: carimbo, atualizado_em: carimbo, ...campos };
+  return {
+    area: '',
+    nome: '',
+    cor: CORES_DISCIPLINA[3],
+    ativo: true,
+    situacao: 'andamento',
+    concluido_em: null,
+    status: 'ativo',
+    criado_em: carimbo,
+    atualizado_em: carimbo,
+    ...campos,
+  };
+}
+
+export const ROTULO_SITUACAO_CURSO: Record<SituacaoCurso, string> = {
+  andamento: 'Em andamento',
+  pausado: 'Pausado',
+  concluido: 'Concluído',
+  cancelado: 'Cancelado',
+};
+
+/** R51 — situação do curso; registros antigos (só com "ativo") viram "em andamento" ou "cancelado". */
+export function situacaoDoCurso(c: Pick<CursoExtra, 'ativo' | 'situacao'>): SituacaoCurso {
+  return c.situacao || (c.ativo ? 'andamento' : 'cancelado');
+}
+
+/** Só os em andamento aparecem para iniciar uma sessão. */
+export const emAndamento = (c: CursoExtra) => situacaoDoCurso(c) === 'andamento';
+
+/** Muda a situação: "Concluído" ganha a data de hoje (se não tiver); as outras perdem a data. */
+export function mudarSituacao(c: CursoExtra, situacao: SituacaoCurso, hoje: string): CursoExtra {
+  return {
+    ...c,
+    situacao,
+    ativo: situacao === 'andamento',
+    concluido_em: situacao === 'concluido' ? (c.concluido_em || hoje) : null,
+  };
 }
 
 export function normalizarCurso(c: CursoExtra): CursoExtra {
@@ -31,6 +67,7 @@ export function validarCurso(c: CursoExtra, todos: CursoExtra[]): string[] {
   else if (todos.some((o) => o.id !== c.id && o.status !== 'excluido' && mesmoNome(o.area, c.area) && mesmoNome(o.nome, c.nome)))
     erros.push('Essa área já tem um curso com esse nome.');
   if (!/^#[0-9a-f]{6}$/i.test(c.cor)) erros.push('Escolha uma cor.');
+  if (situacaoDoCurso(c) === 'concluido' && !/^\d{4}-\d{2}-\d{2}$/.test(c.concluido_em ?? '')) erros.push('Informe a data de conclusão.');
   return erros;
 }
 
@@ -38,7 +75,9 @@ export function validarCurso(c: CursoExtra, todos: CursoExtra[]): string[] {
 export const podeExcluirCurso = (id: Id, sessoes: Pick<OutraSessao, 'curso_id' | 'status'>[]) =>
   !sessoes.some((s) => s.status !== 'excluido' && s.curso_id === id);
 
-/** Áreas em ordem alfabética, cada uma com seus cursos (ativos primeiro, depois por nome). Excluídos ficam de fora. */
+const ORDEM_SITUACAO: Record<SituacaoCurso, number> = { andamento: 0, pausado: 1, concluido: 2, cancelado: 3 };
+
+/** Áreas em ordem alfabética; cursos: em andamento, pausados, concluídos, cancelados; depois por nome. Excluídos ficam de fora. */
 export function cursosPorArea(cursos: CursoExtra[]): { area: string; cursos: CursoExtra[] }[] {
   const validos = cursos.filter((c) => c.status !== 'excluido');
   const areas = [...new Set(validos.map((c) => c.area))].sort((a, b) => a.localeCompare(b, 'pt-BR'));
@@ -46,8 +85,18 @@ export function cursosPorArea(cursos: CursoExtra[]): { area: string; cursos: Cur
     area,
     cursos: validos
       .filter((c) => c.area === area)
-      .sort((a, b) => Number(b.ativo) - Number(a.ativo) || a.nome.localeCompare(b.nome, 'pt-BR', { numeric: true })),
+      .sort(
+        (a, b) =>
+          ORDEM_SITUACAO[situacaoDoCurso(a)] - ORDEM_SITUACAO[situacaoDoCurso(b)] || a.nome.localeCompare(b.nome, 'pt-BR', { numeric: true }),
+      ),
   }));
+}
+
+/** Tempo total de um curso (todas as sessões concluídas, de qualquer data). */
+export function tempoTotalDoCurso(sessoes: OutraSessao[], cursoId: Id): number {
+  return sessoesValidas(sessoes)
+    .filter((s) => s.curso_id === cursoId && s.situacao === 'concluida')
+    .reduce((t, s) => t + duracaoSegundos(s), 0);
 }
 
 /** Áreas já usadas (para sugerir ao digitar). */
@@ -66,7 +115,7 @@ export function validarInicioOutra(dados: DadosOutra, cursos: CursoExtra[], algu
   if (algumaAberta) erros.push('Já existe uma sessão aberta. Finalize ou cancele antes de iniciar outra.');
   const c = cursos.find((x) => x.id === dados.curso_id && x.status !== 'excluido');
   if (!c) erros.push('Escolha o curso.');
-  else if (!c.ativo) erros.push('Este curso está inativo.');
+  else if (!emAndamento(c)) erros.push(`Este curso está ${ROTULO_SITUACAO_CURSO[situacaoDoCurso(c)].toLowerCase()}.`);
   return erros;
 }
 

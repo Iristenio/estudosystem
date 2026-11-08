@@ -97,13 +97,20 @@ export interface Cronometrado extends Registro {
 
 /* ---------------- Outros estudos (graduação, pós, Alura… — seção 10 da ESPECIFICACAO) ---------------- */
 
+/** R51 — situação de um curso de outros estudos. Só "andamento" aparece ao iniciar uma sessão. */
+export type SituacaoCurso = 'andamento' | 'pausado' | 'concluido' | 'cancelado';
+
 /** Curso de outros estudos, dentro de uma área (ex.: Alura → Python para Dados). */
 export interface CursoExtra extends Registro {
   area: string;
   nome: string;
   cor: string;
+  /** Mantido pela planilha: true só "em andamento" (registros antigos não têm `situacao`). */
   ativo: boolean;
   status: StatusRegistro;
+  situacao?: SituacaoCurso;
+  /** Data de conclusão ("AAAA-MM-DD"), só quando concluído. */
+  concluido_em?: string | null;
 }
 
 /** Sessão de outros estudos: só curso, horários e descrição (R45–R48). */

@@ -46,6 +46,7 @@ var ESQUEMA = {
     campos: [
       ['id', 's'], ['area', 's'], ['nome', 's'], ['cor', 's'], ['ativo', 'b'], ['status', 's'],
       ['criado_em', 's'], ['atualizado_em', 's'],
+      ['situacao', 's'], ['concluido_em', 's?'], // 08/11/2026 — em andamento, pausado, concluído, cancelado
     ],
   },
   outras_sessoes: {

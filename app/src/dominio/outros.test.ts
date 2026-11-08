@@ -14,6 +14,9 @@ import {
   outraAberta,
   outrasConcluidas,
   podeExcluirCurso,
+  mudarSituacao,
+  situacaoDoCurso,
+  tempoTotalDoCurso,
   validarCurso,
   validarInicioOutra,
 } from './outros';
@@ -21,7 +24,8 @@ import { continuar, duracaoSegundos, finalizar, pausar } from './sessoes';
 
 const python = novoCurso({ id: 'c1', area: 'Alura', nome: 'Python para Dados' });
 const eng = novoCurso({ id: 'c2', area: 'Graduação', nome: 'Engenharia de Software' });
-const velho = novoCurso({ id: 'c3', area: 'Alura', nome: 'Excel', ativo: false });
+// registro antigo: só tinha "ativo" (sem situação)
+const velho = { ...novoCurso({ id: 'c3', area: 'Alura', nome: 'Excel', ativo: false }), situacao: undefined };
 const cursos = [python, eng, velho];
 const t = (hhmm: string) => new Date(`2026-11-07T${hhmm}:00Z`);
 
@@ -48,9 +52,30 @@ describe('cursos (10.1, R49)', () => {
 });
 
 describe('sessões de outros estudos (R45–R48)', () => {
-  it('iniciar exige curso ativo e nenhuma sessão aberta', () => {
+  it('R51: situação do curso (registros antigos, mudar, validar)', () => {
+    expect([situacaoDoCurso(python), situacaoDoCurso(velho)]).toEqual(['andamento', 'cancelado']); // "velho" só tem ativo: false
+    const fim = mudarSituacao(python, 'concluido', '2026-11-08');
+    expect([fim.situacao, fim.ativo, fim.concluido_em]).toEqual(['concluido', false, '2026-11-08']);
+    expect(mudarSituacao(fim, 'concluido', '2026-12-01').concluido_em).toBe('2026-11-08'); // mantém a data
+    expect(mudarSituacao(fim, 'pausado', '2026-12-01')).toMatchObject({ situacao: 'pausado', ativo: false, concluido_em: null });
+    expect(validarCurso({ ...fim, concluido_em: '' }, [])).toEqual(['Informe a data de conclusão.']);
+    const pausado = mudarSituacao(eng, 'pausado', '2026-11-08');
+    expect(validarInicioOutra({ curso_id: 'c2', descricao: '' }, [pausado], false)).toEqual(['Este curso está pausado.']);
+    expect(cursosPorArea([fim, pausado, velho, novoCurso({ id: 'n', area: 'Alura', nome: 'Zeta' })]).map((g) => g.cursos.map((c) => c.id))).toEqual([
+      ['n', 'c1', 'c3'],
+      ['c2'],
+    ]);
+  });
+
+  it('tempo total do curso: todas as sessões concluídas', () => {
+    const a = lancarOutra('ta', { curso_id: 'c1', descricao: '', inicio: t('08:00'), fim: t('09:30') }, cursos, t('12:00')).sessao!;
+    const b = lancarOutra('tb', { curso_id: 'c2', descricao: '', inicio: t('10:00'), fim: t('11:00') }, cursos, t('12:00')).sessao!;
+    expect(tempoTotalDoCurso([a, b, { ...a, id: 'tx', status: 'excluido' }], 'c1')).toBe(90 * 60);
+  });
+
+  it('iniciar exige curso em andamento e nenhuma sessão aberta', () => {
     expect(validarInicioOutra({ curso_id: 'c1', descricao: '' }, cursos, false)).toEqual([]);
-    expect(validarInicioOutra({ curso_id: 'c3', descricao: '' }, cursos, false)).toEqual(['Este curso está inativo.']);
+    expect(validarInicioOutra({ curso_id: 'c3', descricao: '' }, cursos, false)).toEqual(['Este curso está cancelado.']);
     expect(validarInicioOutra({ curso_id: '', descricao: '' }, cursos, true)).toHaveLength(2);
   });
 
