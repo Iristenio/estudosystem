@@ -4,7 +4,8 @@ import 'fake-indexeddb/auto';
 import { createRequire } from 'node:module';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { abrirBanco, fecharBanco, NOME_BANCO } from '../dados/db';
-import { buscar, garantirDadosIniciais, listarFila, salvar, salvarInterno } from '../dados/repositorio';
+import { buscar, garantirDadosIniciais, lerInterno, listarFila, salvar, salvarInterno } from '../dados/repositorio';
+import { novoCurso } from '../dominio/outros';
 import { novaDisciplina } from '../dominio/disciplinas';
 import { finalizar, iniciarSessao } from '../dominio/sessoes';
 import { baixarTudo, decodificarCodigo, lerEstadoSync, sincronizar } from './motor';
@@ -141,5 +142,26 @@ describe('dados iniciais num aparelho novo', () => {
     const linhaD01 = tabelas.disciplinas.linhas().find((l: string[]) => l[0] === 'D01');
     expect(linhaD01[5]).toBe('3'); // coluna "peso" continua com a edição
     expect(await listarFila()).toHaveLength(0);
+  });
+});
+
+describe('tipo de dado novo numa versão nova do app', () => {
+  it('se o aparelho não conhecia "cursos" na última sincronização, baixa tudo uma vez e recupera o que tinha descartado', async () => {
+    // Situação do tablet: o servidor já tem um curso, mas o aparelho sincronizou numa versão antiga
+    // (não conhecia "cursos"), descartou o curso e o cursor já passou dele.
+    const curso = { ...novoCurso({ id: 'cur1', area: 'Alura', nome: 'Python' }) };
+    outroAparelhoEnvia('cursos', curso);
+    await salvarInterno('_cursor', '2999-01-01T00:00:00.000Z');
+    await salvarInterno('_entidades', ['disciplinas', 'leis', 'sessoes', 'ciclo']);
+
+    await sincronizar();
+    expect((await buscar('cursos', 'cur1'))?.nome).toBe('Python');
+    expect(await lerInterno<string[]>('_entidades')).toContain('cursos');
+
+    // Daí em diante, volta a pedir só o que mudou (o cursor não é zerado de novo)
+    await salvarInterno('_cursor', '2999-01-01T00:00:00.000Z');
+    outroAparelhoEnvia('cursos', { ...curso, id: 'cur2', nome: 'Power BI' });
+    await sincronizar();
+    expect(await buscar('cursos', 'cur2')).toBeUndefined();
   });
 });

@@ -4,6 +4,7 @@
 //   1) envia um lote da fila local (até 50 alterações);
 //   2) recebe tudo o que o servidor recebeu depois do último cursor (de qualquer aparelho).
 import type { Entidade, ItemFila, Registro } from '../dominio/tipos';
+import { ENTIDADES } from '../dominio/tipos';
 import {
   aoGravarLocal,
   aplicarRemotos,
@@ -168,6 +169,17 @@ export async function desconectar() {
   await atualizarStatus();
 }
 
+/**
+ * Uma versão nova do app pode trazer um tipo de dado novo (ex.: "cursos"). Se o aparelho sincronizou
+ * antes de se atualizar, recebeu esses registros, descartou-os (não os conhecia) e avançou o cursor —
+ * e nunca mais os pediria. Por isso guardamos quais entidades este aparelho conhecia na última
+ * sincronização: se agora conhece alguma a mais, baixa tudo de novo uma vez (mescla, sem apagar nada).
+ */
+export async function precisaBaixarTudo(): Promise<boolean> {
+  const conhecidas = (await lerInterno<string[]>('_entidades')) ?? [];
+  return ENTIDADES.some((e) => !conhecidas.includes(e));
+}
+
 /** Baixa novamente tudo da planilha (mescla com o que há no aparelho). */
 export async function baixarTudo() {
   await salvarInterno('_cursor', undefined);
@@ -229,7 +241,7 @@ async function ciclo() {
     let voltas = 0;
     do {
       const lote = fila.slice(0, TAMANHO_LOTE);
-      const cursor = (await lerInterno<string>('_cursor')) ?? null;
+      const cursor = (await precisaBaixarTudo()) ? null : ((await lerInterno<string>('_cursor')) ?? null);
       const r = await chamar(conexao, {
         acao: 'sincronizar',
         cursor,
@@ -249,6 +261,7 @@ async function ciclo() {
       if (falhas.length) await registrarFalhas(falhas);
       await aplicarRemotos(r.dados ?? {});
       if (r.cursor) await salvarInterno('_cursor', r.cursor);
+      await salvarInterno('_entidades', [...ENTIDADES]);
 
       fila = await listarFila();
       voltas++;
