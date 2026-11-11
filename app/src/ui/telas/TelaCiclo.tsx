@@ -10,7 +10,9 @@ import {
   incluirPosicao,
   moverPosicao,
   novoCiclo,
+  paresMesmaCategoria,
   regenerar,
+  reorganizarIntercalando,
   removerPosicao,
   trocarDisciplina,
   type AndamentoDoCiclo,
@@ -156,7 +158,21 @@ interface PropsBlocos {
 }
 
 function Blocos({ ciclo, andamento, disciplinas, editando, setEditando }: PropsBlocos) {
-  const { avisar } = useEstado();
+  const { avisar, perguntar } = useEstado();
+  // R53 — intercalar as categorias sem recomeçar (só aparece se houver duas da mesma categoria seguidas)
+  const categorias = new Set(ciclo.sequencia.map((p) => (nomeDe(disciplinas, p.disciplina_id)?.categoria ?? '').trim().toLocaleUpperCase('pt-BR')));
+  const pares = categorias.size > 1 ? paresMesmaCategoria(ciclo.sequencia, disciplinas) : 0;
+  const melhorado = pares > 0 ? paresMesmaCategoria(reorganizarIntercalando(ciclo, disciplinas).sequencia, disciplinas) : pares;
+
+  async function intercalar() {
+    const r = await perguntar(
+      'Intercalar as categorias?',
+      [{ valor: 'sim', rotulo: 'Reorganizar a ordem' }],
+      'Muda só a ordem dos blocos, para não ficarem duas disciplinas da mesma categoria seguidas. O ciclo não recomeça: as cotas e as horas já estudadas continuam valendo.',
+    );
+    if (!r) return;
+    await aplicar(reorganizarIntercalando(ciclo, disciplinas), 'Ordem reorganizada: categorias intercaladas');
+  }
   const ativas = ordenarDisciplinas(disciplinas).filter((d) => d.ativa);
   const [nova, setNova] = useState('');
   const proximo = andamento.atual?.ordem ?? null; // R44: segue o último bloco escolhido
@@ -177,6 +193,16 @@ function Blocos({ ciclo, andamento, disciplinas, editando, setEditando }: PropsB
       <p class="dica">
         Cada bloco é cerca de 1 h. As sessões preenchem os blocos da disciplina, em qualquer duração; a ordem só serve para sugerir a próxima.
       </p>
+      {melhorado < pares && (
+        <div class="aviso-intercalar">
+          <span>
+            {pares === 1 ? 'Há 1 ponto' : `Há ${pares} pontos`} com duas disciplinas da mesma categoria seguidas.
+          </span>
+          <button class="botao botao-pequeno" onClick={intercalar}>
+            Intercalar categorias
+          </button>
+        </div>
+      )}
 
       <ol class="sequencia-ciclo">
         {andamento.blocos.map((b) => {
@@ -210,6 +236,7 @@ function Blocos({ ciclo, andamento, disciplinas, editando, setEditando }: PropsB
                   <span style={{ width: `${pct}%`, background: d?.cor ?? 'var(--primaria)' }} />
                 </span>
                 <small>
+                  {d?.categoria ? `${d.categoria} · ` : ''}
                   {b.cumprido ? 'cumprido' : `${horas(b.feito)} de ${horas(b.duracao)}`}
                   {estado === 'atual' && ' · próximo'}
                 </small>
@@ -280,7 +307,9 @@ function Gerar({ ciclo, disciplinas, sessoes }: { ciclo: Ciclo | null; disciplin
     if (ciclo) setTexto(mostrarNumero(ciclo.horas_totais));
   }, [ciclo?.horas_totais, ciclo?.atualizado_em]);
   const horasTotais = lerNumero(texto) ?? NaN;
-  const { sequencia, erros } = gerarSequencia(disciplinas, horasTotais);
+  // R52 — intercalar categorias ao gerar (lembra a última escolha; começa marcado)
+  const [intercalar, setIntercalar] = useState(ciclo?.intercalar ?? true);
+  const { sequencia, erros } = gerarSequencia(disciplinas, horasTotais, intercalar);
   const cotas = sequencia.length ? cotasDoCiclo({ ...novoCiclo(), sequencia }) : [];
 
   async function gerar() {
@@ -295,7 +324,7 @@ function Gerar({ ciclo, disciplinas, sessoes }: { ciclo: Ciclo | null; disciplin
       );
       if (!r) return;
     }
-    const desfazer = await salvarCiclo(regenerar(ciclo ?? novoCiclo(), sequencia, horasTotais));
+    const desfazer = await salvarCiclo(regenerar(ciclo ?? novoCiclo(), sequencia, horasTotais, new Date(), intercalar));
     avisar({ texto: 'Novo ciclo gerado · Ciclo 1', desfazer });
   }
 
@@ -305,6 +334,14 @@ function Gerar({ ciclo, disciplinas, sessoes }: { ciclo: Ciclo | null; disciplin
       <label class="rotulo">
         Horas por ciclo
         <input class="campo campo-numero" inputMode="decimal" value={texto} onInput={(e) => setTexto(e.currentTarget.value)} />
+      </label>
+      <label class="interruptor">
+        <input type="checkbox" checked={intercalar} onChange={(e) => setIntercalar(e.currentTarget.checked)} />
+        <span>
+          Intercalar categorias
+          <br />
+          <small>Evita duas disciplinas da mesma categoria seguidas (ex.: Núcleo Comum × Núcleo Técnico).</small>
+        </span>
       </label>
       {erros.length > 0 ? (
         <ul class="erros">

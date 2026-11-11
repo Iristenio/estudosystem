@@ -44,7 +44,11 @@ export function cicloAtual(c: Ciclo): Ciclo {
  * disciplinas ativas pelo peso (maiores restos; cada uma com pelo menos 1). Os blocos de cada disciplina
  * são espalhados ao longo do ciclo, na ordem das disciplinas. Ex.: 30 h, pesos 2,2,2,1,1,1 → 7,7,7,3,3,3.
  */
-export function gerarSequencia(disciplinas: Disciplina[], horasTotais: number): { sequencia: PosicaoCiclo[]; erros: string[] } {
+export function gerarSequencia(
+  disciplinas: Disciplina[],
+  horasTotais: number,
+  intercalar = false,
+): { sequencia: PosicaoCiclo[]; erros: string[] } {
   const erros: string[] = [];
   if (!(horasTotais > 0)) erros.push('Informe as horas do ciclo (maior que zero).');
   const ativas = ordenarDisciplinas(disciplinas).filter((d) => d.ativa);
@@ -74,13 +78,79 @@ export function gerarSequencia(disciplinas: Disciplina[], horasTotais: number): 
   // Espalhar: o j-ésimo bloco de uma disciplina com n blocos fica na posição (j + ½) / n do ciclo
   const lugares = ativas.flatMap((d, i) => Array.from({ length: quantos[i] }, (_, j) => ({ d: d.id, lugar: (j + 0.5) / quantos[i], i })));
   lugares.sort((a, b) => a.lugar - b.lugar || a.i - b.i);
-  return { sequencia: lugares.map((x) => ({ disciplina_id: x.d, duracao_prevista: duracao })), erros };
+  const sequencia = lugares.map((x) => ({ disciplina_id: x.d, duracao_prevista: duracao }));
+  return { sequencia: intercalar ? intercalarBlocos(sequencia, disciplinas) : sequencia, erros };
+}
+
+/* ============================ Intercalar categorias (R52, R53) ============================ */
+
+/** Categoria usada para intercalar (maiúsculas, sem espaços nas pontas; vazia = "sem categoria"). */
+const categoriaDe = (disciplinas: Disciplina[], id: Id) => (disciplinas.find((d) => d.id === id)?.categoria ?? '').trim().toLocaleUpperCase('pt-BR');
+
+/**
+ * R52 — reordena os blocos (mesmas disciplinas, mesmas durações: as cotas não mudam) para que duas
+ * disciplinas da MESMA categoria não fiquem seguidas.
+ *  1. Em cada categoria, os blocos formam uma fila em que a mesma disciplina não se repete em sequência
+ *     (a cada vez, a que tem mais blocos restantes, sem ser a anterior; empate: ordem das disciplinas).
+ *  2. As filas são intercaladas pela posição ideal de cada bloco no ciclo ((j + ½) / n): com categorias
+ *     do mesmo tamanho, a alternância é perfeita; com tamanhos diferentes, as sobras ficam espalhadas.
+ */
+export function intercalarBlocos(blocos: PosicaoCiclo[], disciplinas: Disciplina[]): PosicaoCiclo[] {
+  if (blocos.length < 2) return [...blocos];
+  const ordemDisc = new Map(ordenarDisciplinas(disciplinas).map((d, i) => [d.id, i]));
+  const posDisc = (id: Id) => ordemDisc.get(id) ?? Number.MAX_SAFE_INTEGER;
+
+  // Blocos de cada disciplina, na ordem em que aparecem (preserva a duração de cada um)
+  const porDisciplina = new Map<Id, PosicaoCiclo[]>();
+  for (const b of blocos) porDisciplina.set(b.disciplina_id, [...(porDisciplina.get(b.disciplina_id) ?? []), b]);
+
+  // 1. Uma fila por categoria, sem a mesma disciplina seguida
+  const categorias = new Map<string, Id[]>();
+  for (const id of [...porDisciplina.keys()].sort((a, b) => posDisc(a) - posDisc(b))) {
+    const c = categoriaDe(disciplinas, id);
+    categorias.set(c, [...(categorias.get(c) ?? []), id]);
+  }
+  const filas = [...categorias.entries()].map(([categoria, ids]) => {
+    const restantes = new Map(ids.map((id) => [id, [...porDisciplina.get(id)!]]));
+    const fila: PosicaoCiclo[] = [];
+    let anterior: Id | null = null;
+    while ([...restantes.values()].some((l) => l.length)) {
+      const candidatos = ids.filter((id) => restantes.get(id)!.length && id !== anterior);
+      const escolhidos = candidatos.length ? candidatos : ids.filter((id) => restantes.get(id)!.length);
+      const id = escolhidos.reduce((m, x) => (restantes.get(x)!.length > restantes.get(m)!.length ? x : m));
+      fila.push(restantes.get(id)!.shift()!);
+      anterior = id;
+    }
+    return { categoria, fila, ordem: posDisc(ids[0]) };
+  });
+
+  // 2. Intercala as filas pela posição ideal de cada bloco
+  const total = blocos.length;
+  const lugares = filas.flatMap((f) => f.fila.map((b, j) => ({ b, lugar: ((j + 0.5) / f.fila.length) * total, ordem: f.ordem })));
+  lugares.sort((x, y) => x.lugar - y.lugar || x.ordem - y.ordem);
+  return lugares.map((x) => x.b);
+}
+
+/**
+ * R53 — reorganiza a ordem do ciclo ATUAL intercalando as categorias, SEM recomeçar: mesmas cotas, mesmo
+ * número e início do ciclo, e as horas já estudadas continuam valendo. Passa a gerar sempre intercalado.
+ */
+export function reorganizarIntercalando(c: Ciclo, disciplinas: Disciplina[]): Ciclo {
+  return { ...c, sequencia: intercalarBlocos(c.sequencia, disciplinas), intercalar: true };
+}
+
+/** Quantos pares de blocos seguidos têm a mesma categoria (0 = perfeitamente intercalado). */
+export function paresMesmaCategoria(blocos: PosicaoCiclo[], disciplinas: Disciplina[]): number {
+  let n = 0;
+  for (let i = 1; i < blocos.length; i++)
+    if (categoriaDe(disciplinas, blocos[i].disciplina_id) === categoriaDe(disciplinas, blocos[i - 1].disciplina_id)) n++;
+  return n;
 }
 
 /** R18 — substitui a sequência e recomeça a contagem no Ciclo 1 (o histórico de sessões não muda). */
-export function regenerar(c: Ciclo, sequencia: PosicaoCiclo[], horasTotais: number, agora = new Date()): Ciclo {
+export function regenerar(c: Ciclo, sequencia: PosicaoCiclo[], horasTotais: number, agora = new Date(), intercalar = c.intercalar ?? false): Ciclo {
   const carimbo = agora.toISOString();
-  return { ...c, horas_totais: horasTotais, sequencia, volta: 1, ordem: 1, gerado_em: carimbo, iniciado_em: carimbo };
+  return { ...c, horas_totais: horasTotais, sequencia, volta: 1, ordem: 1, gerado_em: carimbo, iniciado_em: carimbo, intercalar };
 }
 
 /** Cota de cada disciplina no ciclo: soma das horas dos blocos dela, na ordem da sequência. */

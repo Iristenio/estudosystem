@@ -169,6 +169,8 @@ export interface Ciclo extends Registro {
   gerado_em: string | null;
   /** Início do ciclo atual (nº em `volta`): as sessões a partir daqui preenchem as cotas (R20). */
   iniciado_em: string | null;
+  /** R52 — ao gerar, intercalar as categorias (ex.: Núcleo Comum × Núcleo Técnico). */
+  intercalar?: boolean;
 }
 
 export const ID_CICLO = 'atual';

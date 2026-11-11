@@ -148,6 +148,15 @@ Cada **curso** da disciplina tem a chave **"conta no total"**.
   sessão não passa adiante). A sessão guarda em qual ciclo contou ("C3").
 - **R22.** **Próxima sugerida:** a disciplina do primeiro bloco ainda não cumprido.
 - Na mudança (21/10/2026), a contagem recomeçou no **Ciclo 1**, valendo as sessões a partir desse dia.
+- **R52.** **Intercalar categorias (11/11/2026):** ao gerar o ciclo, a opção **"Intercalar
+  categorias"** (lembrada; começa marcada) reordena os blocos para que duas disciplinas da **mesma
+  categoria** (ex.: Núcleo Comum × Núcleo Técnico) não fiquem seguidas. Em cada categoria a mesma
+  disciplina também não se repete em sequência. As cotas não mudam. Com categorias do mesmo tamanho a
+  alternância é perfeita; com tamanhos diferentes, as sobras ficam espalhadas pelo ciclo.
+- **R53.** **Reorganizar sem recomeçar:** na tela Ciclo, se houver duas da mesma categoria seguidas,
+  aparece **"Intercalar categorias"**, que muda **só a ordem** do ciclo atual — mesmo número, mesmo
+  início, mesmas cotas; as horas já estudadas continuam valendo (quais blocos aparecem cumpridos pode
+  mudar, porque cada sessão volta a preencher os blocos da sua disciplina na ordem).
 - **R44.** **Disciplina escolhida pelo ciclo (07/11/2026):** na tela Estudar, a disciplina é escolhida
   numa lista dos **blocos ainda não cumpridos** do ciclo ("24 · BANCO DE DADOS — faltam 37 min"), a
   partir do atual; os que ficaram para trás aparecem no fim ("Ficaram para trás"). Só disciplinas do

@@ -107,3 +107,9 @@
   .cartao-bloco small { flex: none; }
   .cartao-bloco strong { text-align: left; flex: 1; min-width: 0; }
 }
+
+/* ---- R53: aviso para intercalar categorias ---- */
+.aviso-intercalar {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px;
+  margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: var(--primaria-suave); font-size: 14px;
+}

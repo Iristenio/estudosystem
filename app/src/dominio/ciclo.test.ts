@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { Ciclo, Sessao } from './tipos';
 import {
   andamentoDoCiclo,
+  paresMesmaCategoria,
+  reorganizarIntercalando,
   blocoDaSessao,
   blocosParaEscolher,
   cicloAtual,
@@ -168,6 +170,51 @@ describe('edição manual (R19)', () => {
     expect(c.sequencia[6]).toEqual({ disciplina_id: 'D03', duracao_prevista: 1 });
     c = removerPosicao(c, 1);
     expect(ids(c)[0]).toBe('D01');
+  });
+});
+
+describe('intercalar categorias (R52, R53)', () => {
+  const d = (id: string, categoria: string, peso: number, ordem: number) => novaDisciplina({ id, nome: id, categoria, peso, ordem });
+  // O ciclo do usuário: Núcleo Comum (Const 2, Adm 1, Port 1, Controle Externo 1) × Núcleo Técnico (Redes 2, BD 2, IA 1)
+  const ds = [
+    d('CONST', 'NÚCLEO COMUM', 2, 1),
+    d('REDES', 'NÚCLEO TÉCNICO', 2, 2),
+    d('ADM', 'NÚCLEO COMUM', 1, 3),
+    d('BD', 'NÚCLEO TÉCNICO', 2, 4),
+    d('PORT', 'Núcleo Comum ', 1, 5), // categoria escrita diferente conta igual
+    d('IA', 'NÚCLEO TÉCNICO', 1, 6),
+    d('CE', 'NÚCLEO COMUM', 1, 7),
+  ];
+  const cat = (id: string) => (['CONST', 'ADM', 'PORT', 'CE'].includes(id) ? 'C' : 'T');
+
+  it('15 × 15: alternância perfeita, sem repetir disciplina seguida, cotas iguais', () => {
+    const { sequencia } = gerarSequencia(ds, 30, true);
+    const ids = sequencia.map((p) => p.disciplina_id);
+    expect(ids.map(cat).join('')).toBe('CT'.repeat(15));
+    expect(ids.some((x, i) => x === ids[i + 1])).toBe(false);
+    expect(paresMesmaCategoria(sequencia, ds)).toBe(0);
+    expect(contagem({ sequencia })).toEqual(contagem(gerarSequencia(ds, 30)));
+  });
+
+  it('sem a opção, gera como antes (com pares da mesma categoria)', () => {
+    expect(paresMesmaCategoria(gerarSequencia(ds, 30).sequencia, ds)).toBeGreaterThan(0);
+  });
+
+  it('grupos de tamanhos diferentes: as sobras ficam espalhadas (nunca três da mesma categoria seguidas)', () => {
+    const maisComum = ds.map((x) => (x.id === 'ADM' ? { ...x, peso: 3 } : x)); // 12 pontos: 7 comuns × 5 técnicos
+    const { sequencia } = gerarSequencia(maisComum, 24, true);
+    const cats = sequencia.map((p) => cat(p.disciplina_id)).join('');
+    expect(cats).not.toContain('CCC');
+    expect(paresMesmaCategoria(sequencia, maisComum)).toBeLessThanOrEqual(4);
+  });
+
+  it('R53: reorganizar intercala a ordem sem recomeçar (mesmo ciclo, mesmo início, mesmas durações)', () => {
+    const c = novoCiclo({ volta: 2, iniciado_em: INICIO, sequencia: gerarSequencia(ds, 30).sequencia });
+    const r = reorganizarIntercalando(c, ds);
+    expect([r.volta, r.iniciado_em, r.intercalar, r.sequencia.length]).toEqual([2, INICIO, true, 30]);
+    expect(paresMesmaCategoria(r.sequencia, ds)).toBe(0);
+    expect(contagem(r)).toEqual(contagem(c));
+    expect(regenerar(r, r.sequencia, 30, new Date('2026-11-11T10:00:00Z')).intercalar).toBe(true); // lembra a escolha
   });
 });
 
