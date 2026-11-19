@@ -8,6 +8,7 @@ import { TIPOS_SESSAO } from './tipos';
 import { duracaoSegundos } from './sessoes';
 import { diaDaSessao } from './historico';
 import { deDataISO, paraDataISO, somarDias } from './datas';
+import { contaNoTotal, cursosFora, itensDaDisciplina, mapaDoMaterial } from './material';
 
 const somaSeg = (lista: Sessao[]) => lista.reduce((s, x) => s + duracaoSegundos(x), 0);
 const doTipo = (lista: Sessao[], tipo: TipoSessao) => lista.filter((s) => s.tipo === tipo);
@@ -226,6 +227,35 @@ export interface LinhaAcompanhamento {
   horasEstimadasPdf: number | null;
   /** Horas de vídeo que faltam (null sem total). */
   horasVideoRestantes: number | null;
+  /** R54 — horas de estudo por hora de vídeo (null sem sessões com vídeos marcados). */
+  estudoPorHoraVideo: number | null;
+  /** R54 — horas estimadas para terminar os vídeos no seu ritmo (restantes × ritmo). */
+  horasEstimadasVideo: number | null;
+}
+
+/**
+ * R54 — vídeo assistido de uma disciplina = soma da DURAÇÃO dos vídeos marcados (numa sessão ou à mão),
+ * cada vídeo contado uma vez — nunca passa do total. Sessões mais longas que o vídeo não "estouram".
+ * Sem lista de vídeos (só o "Total anterior"), vale o jeito antigo: o tempo das sessões de Videoaula.
+ * Ritmo = tempo das sessões de Videoaula que marcaram vídeos ÷ duração dos vídeos marcados nelas.
+ */
+export function videoAssistido(d: Disciplina, concluidas: Sessao[]): { horas: number; ritmo: number | null } {
+  const daDisciplina = doTipo(concluidas, 'VideoAula').filter((s) => s.disciplina_id === d.id);
+  const itens = itensDaDisciplina(d).filter((i) => i.tipo === 'Video');
+  const contam = itens.filter((i) => contaNoTotal(i, cursosFora(d)));
+  const horas = contam.some((i) => i.numero > 0)
+    ? mapaDoMaterial(contam, daDisciplina).reduce((s, m) => s + (m.estudado ? m.item.tamanho : 0), 0) / 60
+    : somaSeg(daDisciplina) / 3600;
+  const duracao = new Map(itens.filter((i) => i.numero > 0).map((i) => [i.id, i.tamanho]));
+  let segundos = 0;
+  let minutosVideo = 0;
+  for (const s of daDisciplina) {
+    const marcados = [...new Set(s.materiais_estudados ?? [])].filter((id) => duracao.has(id));
+    if (!marcados.length) continue;
+    segundos += duracaoSegundos(s);
+    minutosVideo += marcados.reduce((t, id) => t + duracao.get(id)!, 0);
+  }
+  return { horas: Math.round(horas * 10000) / 10000, ritmo: minutosVideo ? Math.round((segundos / 60 / minutosVideo) * 100) / 100 : null };
 }
 
 const pct = (parte: number, total: number | null) => (total ? Math.round((parte / total) * 10000) / 100 : null);
@@ -243,15 +273,17 @@ export function acompanhamento(disciplinasOrdenadas: Disciplina[], leis: Lei[], 
         leisAtivas.length && leisAtivas.every((l) => l.total_artigos) ? leisAtivas.reduce((s, l) => s + (l.total_artigos ?? 0), 0) : null;
       const totalPaginas = d.possui_pdf ? d.total_paginas : null;
       const totalHorasVideo = d.possui_video ? d.total_horas_video : null;
+      const video = videoAssistido(d, daDisciplina);
+      const horasVideoRestantes = totalHorasVideo ? Math.max(0, totalHorasVideo - video.horas) : null;
       const paginasRestantes = totalPaginas ? Math.max(0, totalPaginas - ind.paginas) : null;
       return {
         disciplina: d,
         paginasLidas: ind.paginas,
         totalPaginas,
         percentualPaginas: pct(ind.paginas, totalPaginas),
-        horasVideo: ind.horasVideo,
+        horasVideo: video.horas,
         totalHorasVideo,
-        percentualVideo: pct(ind.horasVideo, totalHorasVideo),
+        percentualVideo: pct(video.horas, totalHorasVideo),
         artigosLidos,
         totalArtigos,
         percentualLeiSeca: pct(artigosLidos, totalArtigos),
@@ -263,7 +295,9 @@ export function acompanhamento(disciplinasOrdenadas: Disciplina[], leis: Lei[], 
         minutosPorQuestao: ind.minutosPorQuestao,
         paginasRestantes,
         horasEstimadasPdf: paginasRestantes !== null && ind.minutosPorPagina !== null ? (paginasRestantes * ind.minutosPorPagina) / 60 : null,
-        horasVideoRestantes: totalHorasVideo ? Math.max(0, totalHorasVideo - ind.horasVideo) : null,
+        horasVideoRestantes,
+        estudoPorHoraVideo: video.ritmo,
+        horasEstimadasVideo: horasVideoRestantes !== null && video.ritmo !== null ? horasVideoRestantes * video.ritmo : null,
       };
     });
 }

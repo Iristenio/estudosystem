@@ -12,6 +12,11 @@ const fmtInt = (n: number) => Math.round(n).toLocaleString('pt-BR');
 const fmtPct = (n: number | null) => (n === null ? '—' : `${n.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`);
 const fmtMin = (n: number | null) => (n === null ? '—' : n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 const fmtHoras = (h: number) => formatarDuracaoCurta(h * 3600);
+/** R54 — horas de estudo por hora de vídeo, em h/min (1,44 → "1h26"). */
+const fmtRitmo = (r: number) => {
+  const min = Math.round(r * 60);
+  return `${Math.floor(min / 60)}h${String(min % 60).padStart(2, '0')}`;
+};
 
 export function TelaAcompanhamento() {
   const disciplinas = useEntidade('disciplinas');
@@ -114,7 +119,12 @@ function CartaoDisciplina({ l, atraso }: { l: LinhaAcompanhamento; atraso: numbe
         <Progresso rotulo="PDF" cor={cor} percentual={l.percentualPaginas} texto={`${fmtInt(l.paginasLidas)} de ${fmtInt(l.totalPaginas)} páginas`} />
       )}
       {l.totalHorasVideo !== null && (
-        <Progresso rotulo="Videoaulas" cor={cor} percentual={l.percentualVideo} texto={`${fmtHoras(l.horasVideo)} de ${fmtHoras(l.totalHorasVideo)}`} />
+        <Progresso
+          rotulo="Videoaulas"
+          cor={cor}
+          percentual={l.percentualVideo}
+          texto={`${fmtHoras(l.horasVideo)} de ${fmtHoras(l.totalHorasVideo)}${l.estudoPorHoraVideo !== null ? ` · ${fmtRitmo(l.estudoPorHoraVideo)} de estudo por hora de vídeo` : ''}`}
+        />
       )}
       {l.totalArtigos !== null && (
         <Progresso rotulo="Lei seca" cor={cor} percentual={l.percentualLeiSeca} texto={`${fmtInt(l.artigosLidos)} de ${fmtInt(l.totalArtigos)} artigos`} />
@@ -142,7 +152,9 @@ function CartaoDisciplina({ l, atraso }: { l: LinhaAcompanhamento; atraso: numbe
             l.paginasRestantes
               ? `${fmtInt(l.paginasRestantes)} páginas${l.horasEstimadasPdf !== null ? ` (~${fmtHoras(l.horasEstimadasPdf)} no seu ritmo)` : ''}`
               : null,
-            l.horasVideoRestantes ? `${fmtHoras(l.horasVideoRestantes)} de vídeo` : null,
+            l.horasVideoRestantes
+              ? `${fmtHoras(l.horasVideoRestantes)} de vídeo${l.horasEstimadasVideo !== null ? ` (~${fmtHoras(l.horasEstimadasVideo)} no seu ritmo)` : ''}`
+              : null,
           ]
             .filter(Boolean)
             .join(' · ')}
@@ -178,6 +190,7 @@ function TabelaAcompanhamento({ linhas }: { linhas: LinhaAcompanhamento[] }) {
             <th class="num">% PDF</th>
             <th class="num">Vídeo</th>
             <th class="num">% vídeo</th>
+            <th class="num" title="Horas de estudo por hora de vídeo">Estudo/h vídeo</th>
             <th class="num">Artigos</th>
             <th class="num">% lei seca</th>
             <th class="num">Questões</th>
@@ -204,6 +217,7 @@ function TabelaAcompanhamento({ linhas }: { linhas: LinhaAcompanhamento[] }) {
                 {l.totalHorasVideo !== null && ` / ${fmtHoras(l.totalHorasVideo)}`}
               </td>
               <td class="num">{fmtPct(l.percentualVideo)}</td>
+              <td class="num">{l.estudoPorHoraVideo === null ? '—' : fmtRitmo(l.estudoPorHoraVideo)}</td>
               <td class="num">
                 {fmtInt(l.artigosLidos)}
                 {l.totalArtigos !== null && ` / ${fmtInt(l.totalArtigos)}`}

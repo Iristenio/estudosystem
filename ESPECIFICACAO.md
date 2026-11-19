@@ -262,11 +262,18 @@ Consideram apenas as **sessões concluídas**.
   - horas por **mês** do ano;
   - tempo médio por sessão, última sessão e última data estudada.
 - **Acompanhamento por disciplina:**
-  - páginas lidas / total (%), horas de vídeo / total (%);
+  - páginas lidas / total (%), horas de vídeo / total (%) — vídeo conforme R54;
   - lei seca: **artigos diferentes já lidos** / total das leis (%). Ler o mesmo artigo de novo não
     aumenta o percentual (R29: só sessões com faixas);
   - questões, acertos e % de acerto;
   - tempo total, minutos por página e minutos por questão.
+- **R54. Vídeo assistido (19/11/2026):** no Acompanhamento, o vídeo assistido é a **soma da duração
+  dos vídeos marcados** (numa sessão ou à mão, R36/R38), cada vídeo contado **uma vez** — nunca passa
+  do total, mesmo com sessões mais longas que o vídeo. O tempo das sessões continua valendo para o
+  ciclo, as horas estudadas e os gráficos. Disciplina sem lista de vídeos: vale o tempo das sessões de
+  Videoaula, como antes. Mostra também o **ritmo** — horas de estudo por hora de vídeo (tempo das
+  sessões de Videoaula que marcaram vídeos ÷ duração desses vídeos) — e, com ele, a estimativa para
+  terminar os vídeos que faltam ("~X h no seu ritmo").
 - **Mapa da lei** (botão ao lado de cada lei em Cadastros → Leis secas, ou "Mapa da lei" no cadastro dela):
   - um quadradinho por artigo: cinza = nunca lido; verde-claro = lido 1 vez; verde-escuro = 2 vezes
     ou mais;

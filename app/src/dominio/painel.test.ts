@@ -4,6 +4,8 @@ import { acompanhamento, constancia, horasPorDia, horasPorMes, indicadores, prim
 import { concluir, finalizar, iniciarSessao, juntarDataHora } from './sessoes';
 import { disciplinasIniciais, leisIniciais } from './dadosIniciais';
 import { novaLei } from './leis';
+import { novaDisciplina } from './disciplinas';
+import type { ItemMaterial } from './tipos';
 
 let seq = 0;
 function sessao(dia: string, minutos: number, campos: Partial<Sessao> = {}): Sessao {
@@ -152,6 +154,25 @@ describe('novas métricas', () => {
     const t = tempoPorDiaDaSemana(todas);
     expect(t[0]).toBe(60 * 60); // 20/09/2026 é domingo
     expect(t[1]).toBe(90 * 60 + 45 * 60); // segundas: 10/08 (vídeo) e 21/09
+  });
+
+  it('R54 — vídeo assistido = duração dos vídeos marcados (sessão longa não estoura o total)', () => {
+    const v = (id: string, numero: number, tamanho: number, extra: Partial<ItemMaterial> = {}): ItemMaterial =>
+      ({ id, tipo: 'Video', numero, nome: '', curso: 'C', tamanho, fora: false, ...extra });
+    const bd = novaDisciplina({ id: 'BD', nome: 'BANCO DE DADOS', possui_video: true, total_horas_video: 2,
+      materiais: [v('v1', 1, 30), v('v2', 2, 30), v('v3', 3, 60, { estudado_manual: true }), v('v4', 4, 20, { fora: true })] });
+    const marcou = (dia: string, min: number, ids: string[]) => ({ ...sessao(dia, min, { tipo: 'VideoAula', disciplina_id: 'BD' }), materiais_estudados: ids });
+    const s1 = marcou('2026-11-01', 45, ['v1']); // 45 min para um vídeo de 30
+    const s2 = marcou('2026-11-02', 40, ['v1']); // rever o mesmo vídeo não soma de novo
+    const s3 = marcou('2026-11-03', 50, []); // sessão sem marcar: não conta
+    const [l] = acompanhamento([bd], [], [s1, s2, s3]);
+    expect(l.horasVideo).toBe(1.5); // v1 (30) + v3 à mão (60); v4 está fora do total
+    expect([l.percentualVideo, l.horasVideoRestantes]).toEqual([75, 0.5]);
+    expect(l.estudoPorHoraVideo).toBe(1.42); // 85 min de sessão ÷ 60 min de vídeo marcado
+    expect(l.horasEstimadasVideo).toBeCloseTo(0.71, 5);
+    const muitas = Array.from({ length: 10 }, (_, i) => marcou(`2026-11-1${i}`, 120, ['v1', 'v2']));
+    expect(acompanhamento([bd], [], muitas)[0].percentualVideo).toBe(100); // nunca passa de 100%
+    expect(acompanhamento([bd], [], [])[0].estudoPorHoraVideo).toBeNull();
   });
 
   it('estimativa para terminar o material, no seu ritmo', () => {
