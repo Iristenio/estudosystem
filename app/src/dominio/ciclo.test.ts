@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import type { Ciclo, Sessao } from './tipos';
 import {
   andamentoDoCiclo,
+  FOLGA_ESPALHAR,
+  intercalarBlocos,
   paresMesmaCategoria,
+  podeRedistribuir,
   reorganizarIntercalando,
   blocoDaSessao,
   blocosParaEscolher,
@@ -67,7 +70,14 @@ describe('gerar os blocos (R17)', () => {
     expect(contagem({ sequencia })).toEqual({ A: 7, B: 7, C: 7, D: 3, E: 3, F: 3 });
     // espalhados: a mesma disciplina nunca aparece duas vezes seguidas
     expect(ids({ sequencia }).some((d, i, l) => d === l[i + 1])).toBe(false);
-    expect(ids({ sequencia }).slice(0, 6)).toEqual(['A', 'B', 'C', 'D', 'E', 'F']);
+    // R55: começa pela 1ª e cada uma fica no seu ritmo (7 aulas → a cada ~4,3; 3 aulas → a cada 10)
+    const l = ids({ sequencia });
+    expect(l[0]).toBe('A');
+    for (const x of ['A', 'D']) {
+      const p = l.flatMap((y, i) => (y === x ? [i] : []));
+      const g = p.map((v, k) => (k + 1 < p.length ? p[k + 1] - v : p[0] + 30 - v));
+      expect(g.every((v) => Math.abs(v - 30 / p.length) <= FOLGA_ESPALHAR)).toBe(true);
+    }
   });
 
   it('ignora inativas; com poucas horas, cada disciplina tem pelo menos 1 bloco', () => {
@@ -187,32 +197,61 @@ describe('intercalar categorias (R52, R53)', () => {
   ];
   const cat = (id: string) => (['CONST', 'ADM', 'PORT', 'CE'].includes(id) ? 'C' : 'T');
 
-  it('15 × 15: alternância perfeita, sem repetir disciplina seguida, cotas iguais', () => {
+  /** Intervalos entre as aulas de cada disciplina, contando a virada para o ciclo seguinte. */
+  const intervalosDe = (ids: string[]) => {
+    const r = new Map<string, number[]>();
+    for (const id of new Set(ids)) {
+      const p = ids.flatMap((x, i) => (x === id ? [i] : []));
+      r.set(id, p.map((x, k) => (k + 1 < p.length ? p[k + 1] - x : p[0] + ids.length - x)));
+    }
+    return r;
+  };
+  const dentroDaFolga = (ids: string[]) =>
+    [...intervalosDe(ids).values()].every((g) => g.every((x) => Math.abs(x - ids.length / g.length) <= FOLGA_ESPALHAR));
+  const semRepetir = (ids: string[]) => ids.every((x, i) => x !== ids[(i + 1) % ids.length]);
+
+  it('R55: 15 × 15 — espalhado, sem repetir disciplina, alternando; começa pela 1ª disciplina; cotas iguais', () => {
     const { sequencia } = gerarSequencia(ds, 30, true);
     const ids = sequencia.map((p) => p.disciplina_id);
-    expect(ids.map(cat).join('')).toBe('CT'.repeat(15));
-    expect(ids.some((x, i) => x === ids[i + 1])).toBe(false);
-    expect(paresMesmaCategoria(sequencia, ds)).toBe(0);
+    expect(dentroDaFolga(ids)).toBe(true);
+    expect(semRepetir(ids)).toBe(true);
+    expect(paresMesmaCategoria(sequencia, ds)).toBeLessThanOrEqual(2);
+    expect(ids[0]).toBe('CONST');
     expect(contagem({ sequencia })).toEqual(contagem(gerarSequencia(ds, 30)));
   });
 
-  it('sem a opção, gera como antes (com pares da mesma categoria)', () => {
-    expect(paresMesmaCategoria(gerarSequencia(ds, 30).sequencia, ds)).toBeGreaterThan(0);
+  it('R55: o ciclo de 22/11 (9 disciplinas, 15 × 15) — no ritmo de cada uma e só 4 pares, contra 0 pares mas concentrado antes', () => {
+    const nove = [
+      d('CONST', 'NÚCLEO COMUM', 2, 1), d('REDES', 'NÚCLEO TÉCNICO', 2, 2), d('PORT', 'NÚCLEO COMUM', 2, 3),
+      d('BD', 'NÚCLEO TÉCNICO', 2, 4), d('ES', 'NÚCLEO TÉCNICO', 2, 5), d('ADM', 'NÚCLEO COMUM', 1, 6),
+      d('CE', 'NÚCLEO COMUM', 1, 7), d('INTERP', 'NÚCLEO COMUM', 1, 8), d('IA', 'NÚCLEO TÉCNICO', 1, 9),
+    ];
+    const { sequencia } = gerarSequencia(nove, 30, true);
+    const ids = sequencia.map((p) => p.disciplina_id);
+    expect(dentroDaFolga(ids)).toBe(true); // Constitucional a cada 5 a 7 aulas (antes: 4 a 10)
+    expect(semRepetir(ids)).toBe(true);
+    expect(paresMesmaCategoria(sequencia, nove)).toBeLessThanOrEqual(4);
   });
 
-  it('grupos de tamanhos diferentes: as sobras ficam espalhadas (nunca três da mesma categoria seguidas)', () => {
-    const maisComum = ds.map((x) => (x.id === 'ADM' ? { ...x, peso: 3 } : x)); // 12 pontos: 7 comuns × 5 técnicos
-    const { sequencia } = gerarSequencia(maisComum, 24, true);
-    const cats = sequencia.map((p) => cat(p.disciplina_id)).join('');
-    expect(cats).not.toContain('CCC');
-    expect(paresMesmaCategoria(sequencia, maisComum)).toBeLessThanOrEqual(4);
+  it('R55: sem "intercalar", só espalha (o mais perto possível do ideal)', () => {
+    const ids = gerarSequencia(ds, 30).sequencia.map((p) => p.disciplina_id);
+    expect(dentroDaFolga(ids)).toBe(true);
+    expect(semRepetir(ids)).toBe(true);
   });
 
-  it('R53: reorganizar intercala a ordem sem recomeçar (mesmo ciclo, mesmo início, mesmas durações)', () => {
+  it('R55: determinístico e estável (redistribuir de novo não muda nada)', () => {
+    const a = gerarSequencia(ds, 30, true).sequencia;
+    expect(gerarSequencia(ds, 30, true).sequencia).toEqual(a);
+    expect(intercalarBlocos([...a].reverse(), ds)).toEqual(a);
+    expect(podeRedistribuir(novoCiclo({ sequencia: a }), ds)).toBe(false);
+  });
+
+  it('R53: redistribuir muda a ordem sem recomeçar (mesmo ciclo, mesmo início, mesmas durações)', () => {
     const c = novoCiclo({ volta: 2, iniciado_em: INICIO, sequencia: gerarSequencia(ds, 30).sequencia });
+    expect(podeRedistribuir(c, ds)).toBe(true);
     const r = reorganizarIntercalando(c, ds);
     expect([r.volta, r.iniciado_em, r.intercalar, r.sequencia.length]).toEqual([2, INICIO, true, 30]);
-    expect(paresMesmaCategoria(r.sequencia, ds)).toBe(0);
+    expect(paresMesmaCategoria(r.sequencia, ds)).toBeLessThan(paresMesmaCategoria(c.sequencia, ds));
     expect(contagem(r)).toEqual(contagem(c));
     expect(regenerar(r, r.sequencia, 30, new Date('2026-11-11T10:00:00Z')).intercalar).toBe(true); // lembra a escolha
   });

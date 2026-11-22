@@ -157,6 +157,15 @@ Cada **curso** da disciplina tem a chave **"conta no total"**.
   aparece **"Intercalar categorias"**, que muda **só a ordem** do ciclo atual — mesmo número, mesmo
   início, mesmas cotas; as horas já estudadas continuam valendo (quais blocos aparecem cumpridos pode
   mudar, porque cada sessão volta a preencher os blocos da sua disciplina na ordem).
+- **R55.** **Espalhar primeiro, alternar depois (22/11/2026):** a ordem dos blocos segue esta prioridade:
+  1. cada disciplina fica **espalhada pelo ciclo**: o intervalo entre duas aulas dela (contando a
+     virada para o ciclo seguinte) fica no máximo **1½ aula** do ideal (ex.: 5 aulas em 30 → a cada
+     6, aceitando de 5 a 7; 4 aulas → 6 a 9; 2 aulas → 14 a 16);
+  2. a mesma disciplina não fica seguida;
+  3. **dentro dessa folga**, as categorias se alternam o máximo possível (R52);
+  4. desempate: o mais perto do ideal. O ciclo começa pela primeira disciplina da lista.
+  O cálculo é sempre o mesmo para as mesmas disciplinas e pesos. Na tela Ciclo, quando a ordem atual
+  pode ficar mais bem distribuída, aparece **"Redistribuir a ordem"** (sem recomeçar, como na R53).
 - **R44.** **Disciplina escolhida pelo ciclo (07/11/2026):** na tela Estudar, a disciplina é escolhida
   numa lista dos **blocos ainda não cumpridos** do ciclo ("24 · BANCO DE DADOS — faltam 37 min"), a
   partir do atual; os que ficaram para trás aparecem no fim ("Ficaram para trás"). Só disciplinas do

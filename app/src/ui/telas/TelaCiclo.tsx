@@ -1,6 +1,6 @@
 // Tela Ciclo de estudos (por horas — método de Alexandre Meirelles): andamento do ciclo atual, cota de
 // cada disciplina, ordem dos blocos (com edição manual, R19) e geração por pesos (R17, R18).
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { Ciclo, Disciplina, Sessao } from '../../dominio/tipos';
 import { ID_CICLO } from '../../dominio/tipos';
 import {
@@ -10,7 +10,7 @@ import {
   incluirPosicao,
   moverPosicao,
   novoCiclo,
-  paresMesmaCategoria,
+  podeRedistribuir,
   regenerar,
   reorganizarIntercalando,
   removerPosicao,
@@ -160,18 +160,17 @@ interface PropsBlocos {
 function Blocos({ ciclo, andamento, disciplinas, editando, setEditando }: PropsBlocos) {
   const { avisar, perguntar } = useEstado();
   // R53 — intercalar as categorias sem recomeçar (só aparece se houver duas da mesma categoria seguidas)
-  const categorias = new Set(ciclo.sequencia.map((p) => (nomeDe(disciplinas, p.disciplina_id)?.categoria ?? '').trim().toLocaleUpperCase('pt-BR')));
-  const pares = categorias.size > 1 ? paresMesmaCategoria(ciclo.sequencia, disciplinas) : 0;
-  const melhorado = pares > 0 ? paresMesmaCategoria(reorganizarIntercalando(ciclo, disciplinas).sequencia, disciplinas) : pares;
+  // R55 — a ordem pode ficar mais bem distribuída? (cálculo pesado: só refaz quando o ciclo ou as disciplinas mudam)
+  const melhoravel = useMemo(() => podeRedistribuir(ciclo, disciplinas), [ciclo, disciplinas]);
 
   async function intercalar() {
     const r = await perguntar(
-      'Intercalar as categorias?',
-      [{ valor: 'sim', rotulo: 'Reorganizar a ordem' }],
-      'Muda só a ordem dos blocos, para não ficarem duas disciplinas da mesma categoria seguidas. O ciclo não recomeça: as cotas e as horas já estudadas continuam valendo.',
+      'Redistribuir a ordem?',
+      [{ valor: 'sim', rotulo: 'Redistribuir' }],
+      'Muda só a ordem: cada disciplina fica espalhada pelo ciclo e as categorias se alternam sempre que possível. O ciclo não recomeça: as cotas e as horas já estudadas continuam valendo.',
     );
     if (!r) return;
-    await aplicar(reorganizarIntercalando(ciclo, disciplinas), 'Ordem reorganizada: categorias intercaladas');
+    await aplicar(reorganizarIntercalando(ciclo, disciplinas), 'Ordem redistribuída');
   }
   const ativas = ordenarDisciplinas(disciplinas).filter((d) => d.ativa);
   const [nova, setNova] = useState('');
@@ -193,13 +192,13 @@ function Blocos({ ciclo, andamento, disciplinas, editando, setEditando }: PropsB
       <p class="dica">
         Cada bloco é cerca de 1 h. As sessões preenchem os blocos da disciplina, em qualquer duração; a ordem só serve para sugerir a próxima.
       </p>
-      {melhorado < pares && (
+      {melhoravel && (
         <div class="aviso-intercalar">
           <span>
-            {pares === 1 ? 'Há 1 ponto' : `Há ${pares} pontos`} com duas disciplinas da mesma categoria seguidas.
+            A ordem pode ficar mais bem distribuída: disciplinas espalhadas pelo ciclo e categorias alternadas.
           </span>
           <button class="botao botao-pequeno" onClick={intercalar}>
-            Intercalar categorias
+            Redistribuir a ordem
           </button>
         </div>
       )}
@@ -309,7 +308,7 @@ function Gerar({ ciclo, disciplinas, sessoes }: { ciclo: Ciclo | null; disciplin
   const horasTotais = lerNumero(texto) ?? NaN;
   // R52 — intercalar categorias ao gerar (lembra a última escolha; começa marcado)
   const [intercalar, setIntercalar] = useState(ciclo?.intercalar ?? true);
-  const { sequencia, erros } = gerarSequencia(disciplinas, horasTotais, intercalar);
+  const { sequencia, erros } = useMemo(() => gerarSequencia(disciplinas, horasTotais, intercalar), [disciplinas, horasTotais, intercalar]);
   const cotas = sequencia.length ? cotasDoCiclo({ ...novoCiclo(), sequencia }) : [];
 
   async function gerar() {
@@ -340,7 +339,9 @@ function Gerar({ ciclo, disciplinas, sessoes }: { ciclo: Ciclo | null; disciplin
         <span>
           Intercalar categorias
           <br />
-          <small>Evita duas disciplinas da mesma categoria seguidas (ex.: Núcleo Comum × Núcleo Técnico).</small>
+          <small>
+            Alterna as categorias (ex.: Núcleo Comum × Núcleo Técnico) sempre que não atrapalhar o espalhamento de cada disciplina.
+          </small>
         </span>
       </label>
       {erros.length > 0 ? (

@@ -79,7 +79,8 @@ export function gerarSequencia(
   const lugares = ativas.flatMap((d, i) => Array.from({ length: quantos[i] }, (_, j) => ({ d: d.id, lugar: (j + 0.5) / quantos[i], i })));
   lugares.sort((a, b) => a.lugar - b.lugar || a.i - b.i);
   const sequencia = lugares.map((x) => ({ disciplina_id: x.d, duracao_prevista: duracao }));
-  return { sequencia: intercalar ? intercalarBlocos(sequencia, disciplinas) : sequencia, erros };
+  // R55 — espalha ao máximo; com "intercalar", alterna as categorias dentro da folga
+  return { sequencia: intercalarBlocos(sequencia, disciplinas, intercalar), erros };
 }
 
 /* ============================ Intercalar categorias (R52, R53) ============================ */
@@ -87,56 +88,161 @@ export function gerarSequencia(
 /** Categoria usada para intercalar (maiúsculas, sem espaços nas pontas; vazia = "sem categoria"). */
 const categoriaDe = (disciplinas: Disciplina[], id: Id) => (disciplinas.find((d) => d.id === id)?.categoria ?? '').trim().toLocaleUpperCase('pt-BR');
 
-/**
- * R52 — reordena os blocos (mesmas disciplinas, mesmas durações: as cotas não mudam) para que duas
- * disciplinas da MESMA categoria não fiquem seguidas.
- *  1. Em cada categoria, os blocos formam uma fila em que a mesma disciplina não se repete em sequência
- *     (a cada vez, a que tem mais blocos restantes, sem ser a anterior; empate: ordem das disciplinas).
- *  2. As filas são intercaladas pela posição ideal de cada bloco no ciclo ((j + ½) / n): com categorias
- *     do mesmo tamanho, a alternância é perfeita; com tamanhos diferentes, as sobras ficam espalhadas.
- */
-export function intercalarBlocos(blocos: PosicaoCiclo[], disciplinas: Disciplina[]): PosicaoCiclo[] {
-  if (blocos.length < 2) return [...blocos];
-  const ordemDisc = new Map(ordenarDisciplinas(disciplinas).map((d, i) => [d.id, i]));
-  const posDisc = (id: Id) => ordemDisc.get(id) ?? Number.MAX_SAFE_INTEGER;
+/** Folga permitida (R55): cada intervalo entre duas aulas da mesma disciplina pode se afastar do ideal até isto. */
+export const FOLGA_ESPALHAR = 1.5;
 
-  // Blocos de cada disciplina, na ordem em que aparecem (preserva a duração de cada um)
-  const porDisciplina = new Map<Id, PosicaoCiclo[]>();
-  for (const b of blocos) porDisciplina.set(b.disciplina_id, [...(porDisciplina.get(b.disciplina_id) ?? []), b]);
-
-  // 1. Uma fila por categoria, sem a mesma disciplina seguida
-  const categorias = new Map<string, Id[]>();
-  for (const id of [...porDisciplina.keys()].sort((a, b) => posDisc(a) - posDisc(b))) {
-    const c = categoriaDe(disciplinas, id);
-    categorias.set(c, [...(categorias.get(c) ?? []), id]);
-  }
-  const filas = [...categorias.entries()].map(([categoria, ids]) => {
-    const restantes = new Map(ids.map((id) => [id, [...porDisciplina.get(id)!]]));
-    const fila: PosicaoCiclo[] = [];
-    let anterior: Id | null = null;
-    while ([...restantes.values()].some((l) => l.length)) {
-      const candidatos = ids.filter((id) => restantes.get(id)!.length && id !== anterior);
-      const escolhidos = candidatos.length ? candidatos : ids.filter((id) => restantes.get(id)!.length);
-      const id = escolhidos.reduce((m, x) => (restantes.get(x)!.length > restantes.get(m)!.length ? x : m));
-      fila.push(restantes.get(id)!.shift()!);
-      anterior = id;
-    }
-    return { categoria, fila, ordem: posDisc(ids[0]) };
-  });
-
-  // 2. Intercala as filas pela posição ideal de cada bloco
-  const total = blocos.length;
-  const lugares = filas.flatMap((f) => f.fila.map((b, j) => ({ b, lugar: ((j + 0.5) / f.fila.length) * total, ordem: f.ordem })));
-  lugares.sort((x, y) => x.lugar - y.lugar || x.ordem - y.ordem);
-  return lugares.map((x) => x.b);
+/** Sorteio com semente fixa: o mesmo ciclo sempre gera a mesma ordem. */
+function sorteador(semente: number) {
+  let t = semente >>> 0;
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let x = Math.imul(t ^ (t >>> 15), 1 | t);
+    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
 /**
- * R53 — reorganiza a ordem do ciclo ATUAL intercalando as categorias, SEM recomeçar: mesmas cotas, mesmo
- * número e início do ciclo, e as horas já estudadas continuam valendo. Passa a gerar sempre intercalado.
+ * Nota de uma ordem (menor é melhor), num número só, com esta prioridade (R55):
+ *  1. folga: quanto os intervalos entre as aulas de cada disciplina (contando a virada para o ciclo
+ *     seguinte) passam de ideal ± FOLGA_ESPALHAR (ideal = blocos ÷ aulas da disciplina);
+ *  2. mesma disciplina seguida;
+ *  3. duas da mesma categoria seguidas (só se intercalar);
+ *  4. desvio total do ideal (soma dos quadrados) — o mais espalhado possível.
+ * Os pesos garantem que um nível nunca compensa o de cima.
+ */
+function criarNota(n: number, qtd: number[], categoria: number[], intercalar: boolean) {
+  const d = qtd.length;
+  const ideal = qtd.map((q) => n / q);
+  const primeira = new Int32Array(d);
+  const ultima = new Int32Array(d);
+  const pDesvio = 1;
+  const pPares = 4 * n * n * n + 1; // desvio ≤ n · n²
+  const pMesma = pPares * (n + 1);
+  const pFolga = pMesma * (n + 1);
+  return (ids: Int32Array) => {
+    primeira.fill(-1);
+    let folga = 0;
+    let desvio = 0;
+    const conta = (x: number, g: number) => {
+      const e = Math.abs(g - ideal[x]);
+      if (e > FOLGA_ESPALHAR) folga += e - FOLGA_ESPALHAR;
+      desvio += e * e;
+    };
+    for (let i = 0; i < n; i++) {
+      const x = ids[i];
+      if (primeira[x] < 0) primeira[x] = i;
+      else conta(x, i - ultima[x]);
+      ultima[x] = i;
+    }
+    for (let x = 0; x < d; x++) conta(x, primeira[x] + n - ultima[x]);
+    let mesma = 0;
+    let pares = 0;
+    for (let i = 0; i < n; i++) {
+      const a = ids[i];
+      const b = ids[(i + 1) % n];
+      if (a === b) mesma++;
+      else if (intercalar && categoria[a] === categoria[b]) pares++;
+    }
+    return Math.round(folga * 2) * pFolga + mesma * pMesma + pares * pPares + Math.round(desvio * pDesvio * 4);
+  };
+}
+
+/**
+ * R52/R55 — reordena os blocos (mesmas disciplinas, mesmas durações: as cotas não mudam):
+ *  1. PRIMEIRO espalha cada disciplina pelo ciclo: os intervalos entre as aulas ficam no máximo
+ *     FOLGA_ESPALHAR do ideal (ex.: 5 aulas em 30 → a cada 6, aceitando de 5 a 7);
+ *  2. a mesma disciplina não fica seguida;
+ *  3. DENTRO dessa folga, alterna as categorias (ex.: Núcleo Comum × Núcleo Técnico) o máximo possível;
+ *  4. desempate: o mais perto do ideal.
+ * Busca local com trocas de dois blocos e recomeços com semente fixa (determinística). O resultado não
+ * depende da ordem de entrada (parte sempre do espalhamento simples), então redistribuir de novo não muda nada.
+ */
+export function intercalarBlocos(blocos: PosicaoCiclo[], disciplinas: Disciplina[], intercalar = true): PosicaoCiclo[] {
+  const n = blocos.length;
+  if (n < 3) return [...blocos];
+  const ordemDisc = new Map(ordenarDisciplinas(disciplinas).map((d, i) => [d.id, i]));
+  const posDisc = (id: Id) => ordemDisc.get(id) ?? Number.MAX_SAFE_INTEGER;
+  const porDisciplina = new Map<Id, PosicaoCiclo[]>();
+  for (const b of blocos) porDisciplina.set(b.disciplina_id, [...(porDisciplina.get(b.disciplina_id) ?? []), b]);
+  const ids = [...porDisciplina.keys()].sort((a, b) => posDisc(a) - posDisc(b) || a.localeCompare(b));
+  const qtd = ids.map((id) => porDisciplina.get(id)!.length);
+  const nomesCat = ids.map((id) => categoriaDe(disciplinas, id));
+  const categoria = nomesCat.map((c) => nomesCat.indexOf(c));
+  const nota = criarNota(n, qtd, categoria, intercalar && new Set(nomesCat).size > 1);
+
+  // Ponto de partida: o j-ésimo bloco de uma disciplina com q blocos na posição (j + ½) / q
+  const partida = Int32Array.from(
+    ids
+      .flatMap((_, x) => Array.from({ length: qtd[x] }, (_, j) => ({ x, lugar: (j + 0.5) / qtd[x] })))
+      .sort((a, b) => a.lugar - b.lugar || a.x - b.x)
+      .map((p) => p.x),
+  );
+
+  // Melhora trocando pares de posições até não haver troca que melhore
+  const subir = (v: Int32Array) => {
+    let atual = nota(v);
+    for (let melhorou = true; melhorou; ) {
+      melhorou = false;
+      for (let a = 0; a < n; a++)
+        for (let b = a + 1; b < n; b++) {
+          const va = v[a];
+          if (va === v[b]) continue;
+          v[a] = v[b];
+          v[b] = va;
+          const k = nota(v);
+          if (k < atual) {
+            atual = k;
+            melhorou = true;
+          } else {
+            v[b] = v[a];
+            v[a] = va;
+          }
+        }
+    }
+    return atual;
+  };
+
+  let melhor = partida.slice();
+  let melhorNota = subir(melhor);
+  const sortear = sorteador(n * 7919 + ids.length);
+  const limiteDesvio = 4 * n * n * n + 1; // abaixo disto, folga, repetições e pares já estão zerados
+  for (let r = 0; r < 30 && melhorNota >= limiteDesvio; r++) {
+    const v = melhor.slice();
+    for (let k = 0; k < 3; k++) {
+      const a = Math.floor(sortear() * n);
+      const b = Math.floor(sortear() * n);
+      const t = v[a];
+      v[a] = v[b];
+      v[b] = t;
+    }
+    const k = subir(v);
+    if (k < melhorNota) {
+      melhor = v;
+      melhorNota = k;
+    }
+  }
+
+  // O ciclo se repete, então girar não muda a nota: começa pela primeira disciplina da lista
+  const inicio = melhor.indexOf(0);
+  const girado = [...melhor.slice(inicio), ...melhor.slice(0, inicio)];
+  const fila = new Map([...porDisciplina.entries()].map(([id, l]) => [id, [...l]]));
+  return girado.map((x) => fila.get(ids[x])!.shift()!);
+}
+
+/**
+ * R53/R55 — redistribui a ordem do ciclo ATUAL (espalha as disciplinas e intercala as categorias), SEM
+ * recomeçar: mesmas cotas, mesmo número e início do ciclo, e as horas já estudadas continuam valendo.
+ * Passa a gerar sempre assim.
  */
 export function reorganizarIntercalando(c: Ciclo, disciplinas: Disciplina[]): Ciclo {
   return { ...c, sequencia: intercalarBlocos(c.sequencia, disciplinas), intercalar: true };
+}
+
+/** R55 — a ordem pode melhorar? (redistribuir daria uma ordem diferente da atual). */
+export function podeRedistribuir(c: Ciclo, disciplinas: Disciplina[]): boolean {
+  const nova = intercalarBlocos(c.sequencia, disciplinas);
+  return nova.some((b, i) => b.disciplina_id !== c.sequencia[i].disciplina_id);
 }
 
 /** Quantos pares de blocos seguidos têm a mesma categoria (0 = perfeitamente intercalado). */
